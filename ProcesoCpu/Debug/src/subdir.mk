@@ -4,20 +4,20 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../ProcesoCpu/procesoCpu.c 
+../src/ProcesoCpu.c 
 
 OBJS += \
-./ProcesoCpu/procesoCpu.o 
+./src/ProcesoCpu.o 
 
 C_DEPS += \
-./ProcesoCpu/procesoCpu.d 
+./src/ProcesoCpu.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-ProcesoCpu/%.o: ../ProcesoCpu/%.c
+src/%.o: ../src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -O2 -g -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
