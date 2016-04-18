@@ -17,7 +17,7 @@ umc:
 		
 clean:
 	-cd Consola/Debug && $(MAKE) clean
-	-cd Nucle/Debug && $(MAKE) clean
+	-cd Nucleo/Debug && $(MAKE) clean
 	-cd ProcesoCpu/Debug && $(MAKE) clean
 	-cd Swap/Debug && $(MAKE) clean
 	-cd UMC/Debug && $(MAKE) clean
