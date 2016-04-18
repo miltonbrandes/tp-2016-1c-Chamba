@@ -9,7 +9,7 @@
 #define LIBRERIAS_SOCKETSESCRITURALECTURA_H_
 #include <sys/socket.h>
 #include <stdint.h>
-int recibirDatos(int socket, char** datos, char* tamañoOcupa);
+//int recibirDatos(int socket, char** datos, char* tamañoOcupa);
 int leer(int socket, char* buffer, int longitud);
 int escribir(int socket, char* buffer, int longitud);
 
