@@ -20,24 +20,28 @@ int AbrirSocketServidor(int puerto)
 	if(socketServidor == -1)
 		return -1;
 
+	//le paso la informacion necesaria al socket y bindeo
+	informacionSocket.sin_family = AF_INET;
+	informacionSocket.sin_port = htons(puerto);
+	informacionSocket.sin_addr = INADDR_ANY;
+	if(bind(socketServidor, (struct sockaddr *)&informacionSocket, sizeof(informacionSocket)) != 0)
+	{
+		close(socketServidor);
+		return -1;
+	}
 	//ahora empiezo a escuchar la conexion de sockets cliente
-	informacionSocket.sin_family
+	//porque no hubo error de bindeo
+	if(listen(socketServidor , 10) == -1)
+	{
+		close(socketServidor);
+		return -1;
+	}
 
 	return socketServidor;
 }
-
-
-
-
-
-
 //se le pasa un socket servidor y acepto si hay una conexion cliente
 //es un socket afInet
 //devuelvo el descriptor al socket o -1 si hay error
-
-
-
-
 int AceptarConexionCliente(int socket)
 {
 	socklen_t longitudCliente;//esta variable tiene inicialmente el tamaño de la estructura cliente que se le pase
