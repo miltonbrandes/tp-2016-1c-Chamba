@@ -20,6 +20,7 @@ int finalizarConexion(int socket) {
 	close(socket);
 	return 0;
 }
+
 int escribir(int socket, char* buffer, int longitud) {
 	int escrito = 0, aux = 0;
 	/*

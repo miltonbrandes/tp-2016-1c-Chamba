@@ -12,7 +12,7 @@
 * Conecta con un servidor remoto a traves de socket INET
   y me devuelve el descriptor al socket creado.
 */
-int Abrir_Conexion (char *ip, int puerto)
+int Abrir_Conexion(char *ip, int puerto)
 {
 	struct sockaddr_in socket_info;
 	int nuevoSocket;

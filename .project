@@ -3,6 +3,7 @@
 	<name>tp-2016-1c-Chamba</name>
 	<comment></comment>
 	<projects>
+		<project>commons</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
