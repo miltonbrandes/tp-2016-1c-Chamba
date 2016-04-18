@@ -1,18 +1,18 @@
-all:Consola Nucleo ProcesoCpu Swap UMC
+all:con nu pcpu swap umc
 
-Consola:
+con:
 	-cd Consola/Debug && $(MAKE) all
 
-Nucleo:	
+nu:	
 	-cd Nucleo/Debug && $(MAKE) all
 	
-ProcesoCpu:
+pcpu:
 	-cd ProcesoCpu/Debug && $(MAKE) all
 
-Swap:
+swap:
 	 -cd Swap/Debug && $(MAKE) all
 	 
-UMC:
+umc:
 	-cd UMC/Debug && $(MAKE) all
 		
 clean:
