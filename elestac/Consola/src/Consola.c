@@ -3,8 +3,8 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
-#include "../../Librerias/socketsClienteFunciones.h"
-#include "../../Librerias/socketsEscrituraLectura.h"
+#include "../../Librerias/src/socketsClienteFunciones.h"
+#include "../../Librerias/src/socketsEscrituraLectura.h"
 
 
 int enviarProgramaAlNucleo(char *programa) {
