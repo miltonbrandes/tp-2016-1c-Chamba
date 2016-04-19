@@ -12,35 +12,41 @@ int AceptarConexionCliente(int socket);
 //abro un servidor de tipo AF_INET y me devuelve descriptor del socket servidor o -1 si hay error
 int AbrirSocketServidor(int puerto)
 {
-	struct sockaddr_in informacionSocket;
-	int socketServidor;
-	//creo el socket AFINET(ipv4), SOCKSTREAM(tcp, conexion a internet), 0 (protocolo por defecto)
+	struct sockaddr_in socketInfo;
+		int socketEscucha;
+		int optval = 1;
 
-	socketServidor = socket(AF_INET, SOCK_STREAM, 0);
-	if(socketServidor == -1)
-		return -1;
+		// Crear un socket
+		socketEscucha = socket (AF_INET, SOCK_STREAM, 0);
+		if (socketEscucha == -1)
+		 	return -1;
 
-	//le paso la informacion necesaria al socket y bindeo
-	informacionSocket.sin_family = AF_INET;
-	informacionSocket.sin_port = htons(puerto);
-	if(bind(socketServidor, (struct sockaddr *)&informacionSocket, sizeof(informacionSocket)) != 0)
-	{
-		close(socketServidor);
-		return -1;
+		setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, &optval,
+				sizeof(optval));
+		socketInfo.sin_family = AF_INET;
+		socketInfo.sin_port = htons(puerto);
+		socketInfo.sin_addr.s_addr = INADDR_ANY;
+		if (bind (socketEscucha,(struct sockaddr *)&socketInfo,sizeof (socketInfo)) != 0)
+		{
+			close (socketEscucha);
+			return -1;
+		}
+
+		/*
+		* Se avisa al sistema que comience a atender llamadas de clientes
+		*/
+		if (listen (socketEscucha, 10) == -1)
+		{
+			close (socketEscucha);
+			return -1;
+		}
+
+		/*
+		* Se devuelve el descriptor del socket servidor
+		*/
+		return socketEscucha;
 	}
-	//ahora empiezo a escuchar la conexion de sockets cliente
-	//porque no hubo error de bindeo
-	if(listen(socketServidor , 10) == -1)
-	{
-		close(socketServidor);
-		return -1;
-	}
 
-	return socketServidor;
-}
-//se le pasa un socket servidor y acepto si hay una conexion cliente
-//es un socket afInet
-//devuelvo el descriptor al socket o -1 si hay error
 int AceptarConexionCliente(int socket)
 {
 	socklen_t longitudCliente;//esta variable tiene inicialmente el tamaño de la estructura cliente que se le pase

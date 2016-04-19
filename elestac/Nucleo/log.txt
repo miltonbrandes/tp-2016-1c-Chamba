@@ -1,0 +1,3 @@
+[INFO] 12:05:55:413 Nucleo/(10142:10142): Esperando conexiones
+[INFO] 12:09:22:846 Nucleo/(10288:10288): Esperando conexiones
+[INFO] 12:12:44:170 Nucleo/(10587:10587): Esperando conexiones

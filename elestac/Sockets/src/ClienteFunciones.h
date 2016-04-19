@@ -9,7 +9,7 @@
 #define LIBRERIAS_SOCKETSCLIENTEFUNCIONES_H_
 #include <sys/socket.h>
 #include <stdint.h>
-int Abrir_Conexion(char *ip, int puerto);
+int AbrirConexion(char *ip, int puerto);
 
 
 #endif /* LIBRERIAS_SOCKETSCLIENTEFUNCIONES_H_ */

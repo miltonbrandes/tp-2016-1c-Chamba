@@ -4,8 +4,29 @@
  *  Created on: 18/4/2016
  *      Author: utnso
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <commons/log.h>
+#include <commons/collections/list.h>
+#include <commons/config.h>
+#include "../../Sockets/src/ServidorFunciones.h"
 
 
 int main() {
+	t_log* ptrLog;
+	t_config* config;
+	config = config_create("/home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Nucleo.txt");
+	ptrLog =log_create("/home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/log.txt","Nucleo",1,0);
+	//leo del archivo de configuracion el puerto y el ip
+	int socketNucleo;
+	socketNucleo = AbrirSocketServidor(config_get_int_value(config,"PUERTO"));
+	if (socketNucleo < 0) {
+		//aca me deberia mostrar por log que hubo un error
+		return -1;
+	}
+	log_info(ptrLog, "Esperando conexiones");
+	AceptarConexionCliente(socketNucleo);
+
+	return EXIT_SUCCESS;
 
 }

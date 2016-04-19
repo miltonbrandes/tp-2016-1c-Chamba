@@ -23,26 +23,22 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: Consola
-
-dependents:
-	-cd /home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug && $(MAKE) all
+all: libSockets.so
 
 # Tool invocations
-Consola: $(OBJS) $(USER_OBJS)
+libSockets.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -L"/home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug" -o "Consola" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -shared -o "libSockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Consola
+	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libSockets.so
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug/libSockets.so:
 
 -include ../makefile.targets

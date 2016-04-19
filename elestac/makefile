@@ -1,4 +1,7 @@
-all:con nuc cpu swap umc
+all:lib con nuc cpu swap umc 
+	
+lib:
+	-cd Sockets/Debug && $(MAKE) all
 
 con:
 	-cd Consola/Debug && $(MAKE) all
@@ -14,6 +17,7 @@ swap:
 
 umc:
 	-cd UMC/Debug && $(MAKE) all
+
 	
 
 clean:
@@ -22,3 +26,4 @@ clean:
 	-cd ProcesoCpu/Debug && $(MAKE) clean
 	-cd Swap/Debug && $(MAKE) clean
 	-cd UMC/Debug && $(MAKE) clean
+	-cd Sockets/Debug && $(MAKE) clean

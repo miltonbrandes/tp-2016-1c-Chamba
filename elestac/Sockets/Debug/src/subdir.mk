@@ -4,20 +4,26 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/Nucleo.c 
+../src/ClienteFunciones.c \
+../src/EscrituraLectura.c \
+../src/ServidorFunciones.c 
 
 OBJS += \
-./src/Nucleo.o 
+./src/ClienteFunciones.o \
+./src/EscrituraLectura.o \
+./src/ServidorFunciones.o 
 
 C_DEPS += \
-./src/Nucleo.d 
+./src/ClienteFunciones.d \
+./src/EscrituraLectura.d \
+./src/ServidorFunciones.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
 src/%.o: ../src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -I"/home/utnso/tp-2016-1c-Chamba/elestac/Sockets" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -O0 -g3 -Wall -c -fmessage-length=0 -fPIC -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

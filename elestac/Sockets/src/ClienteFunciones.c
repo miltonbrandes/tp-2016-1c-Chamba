@@ -12,7 +12,7 @@
 * Conecta con un servidor remoto a traves de socket INET
   y me devuelve el descriptor al socket creado.
 */
-int Abrir_Conexion(char *ip, int puerto)
+int AbrirConexion(char *ip, int puerto)
 {
 	struct sockaddr_in socket_info;
 	int nuevoSocket;
@@ -29,10 +29,7 @@ int Abrir_Conexion(char *ip, int puerto)
 		return -1;
 
 	// Conectar el socket con la direccion 'socketInfo'.
-	if (connect (
-			nuevoSocket,
-			(struct sockaddr *)&socket_info,
-			sizeof (socket_info)) != 0)
+	if (connect (nuevoSocket,(struct sockaddr *)&socket_info,sizeof (socket_info)) != 0)
 	{
 		return -1;
 	}
