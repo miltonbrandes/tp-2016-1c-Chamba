@@ -9,7 +9,7 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
-#include "../../Sockets/src/ServidorFunciones.h"
+#include <sockets/ServidorFunciones.h>
 
 
 int main() {

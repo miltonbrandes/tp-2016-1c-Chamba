@@ -3,14 +3,13 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
-#include "../../Sockets/src/ClienteFunciones.h"
-#include "../../Sockets/src/EscrituraLectura.h"
-
+#include <sockets/ClienteFunciones.h>
+#include <sockets/EscrituraLectura.h>
 
 
 int main() {
 	 t_config* config;
-	 config = config_create("/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Consola.txt");
+	 config = config_create("/home/utnso/workspace/Consola/Consola.txt");
 	 //leo del archivo de configuracion el puerto y el ip
 	 char *direccion = config_get_string_value(config, "IP");
 	 int puerto = config_get_int_value(config, "PUERTO");

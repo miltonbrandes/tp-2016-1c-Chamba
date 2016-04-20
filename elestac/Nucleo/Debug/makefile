@@ -26,13 +26,14 @@ endif
 all: Nucleo
 
 dependents:
-	-cd ../../Sockets/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
 
 # Tool invocations
-Nucleo: $(OBJS) $(USER_OBJS)
+Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/sockets/Debug/libsockets.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"../../Sockets/Debug" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/sockets/Debug" -L"/home/utnso/workspace/commons/Debug" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -43,6 +44,7 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-../../Sockets/Debug/libSockets.so:
+/home/utnso/workspace/commons/Debug/libcommons.so:
+/home/utnso/workspace/sockets/Debug/libsockets.so:
 
 -include ../makefile.targets
