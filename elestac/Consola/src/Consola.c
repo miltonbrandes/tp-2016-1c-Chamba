@@ -3,6 +3,8 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
+#include "../../Sockets/src/ClienteFunciones.h"
+#include "../../Sockets/src/EscrituraLectura.h"
 
 
 

@@ -1,0 +1,26 @@
+00:03:28 **** Incremental Build of configuration Default for project elestac ****
+make all 
+cd Sockets/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Sockets/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Sockets/Debug»
+cd Consola/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Consola/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Consola/Debug»
+cd Nucleo/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Nucleo/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Nucleo/Debug»
+cd ProcesoCpu/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug»
+cd Swap/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Swap/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Swap/Debug»
+cd UMC/Debug && make all
+make[1]: se ingresa al directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/UMC/Debug»
+make[1]: No se hace nada para «all».
+make[1]: se sale del directorio «/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/UMC/Debug»

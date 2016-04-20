@@ -26,13 +26,13 @@ endif
 all: Nucleo
 
 dependents:
-	-cd /home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug && $(MAKE) all
+	-cd ../../Sockets/Debug && $(MAKE) all
 
 # Tool invocations
 Nucleo: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"../../Sockets/Debug" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -43,6 +43,6 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/tp-2016-1c-Chamba/elestac/Sockets/Debug/libSockets.so:
+../../Sockets/Debug/libSockets.so:
 
 -include ../makefile.targets

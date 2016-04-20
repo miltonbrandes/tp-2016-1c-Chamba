@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.base.415493354/LD_library_path/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.base.415493354/LD_library_path/operation=replace
+environment/project/cdt.managedbuild.toolchain.gnu.base.415493354/LD_library_path/value=/home/utnso/Escritorio/so-commons-library
+environment/project/cdt.managedbuild.toolchain.gnu.base.415493354/append=true
+environment/project/cdt.managedbuild.toolchain.gnu.base.415493354/appendContributed=true
