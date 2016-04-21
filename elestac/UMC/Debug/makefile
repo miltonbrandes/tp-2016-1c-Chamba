@@ -4,7 +4,7 @@
 
 -include ../makefile.init
 
-RM := rm -rf
+RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
@@ -25,11 +25,15 @@ endif
 # All Target
 all: UMC
 
+dependents:
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
+
 # Tool invocations
-UMC: $(OBJS) $(USER_OBJS)
+UMC: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/sockets/Debug/libsockets.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "UMC" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/sockets/Debug" -L"/home/utnso/workspace/commons/Debug" -o "UMC" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -40,5 +44,7 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
+/home/utnso/workspace/commons/Debug/libcommons.so:
+/home/utnso/workspace/sockets/Debug/libsockets.so:
 
 -include ../makefile.targets

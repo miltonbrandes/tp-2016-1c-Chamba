@@ -5,7 +5,6 @@
 	<projects>
 		<project>commons</project>
 		<project>sockets</project>
-		<project>Sockets</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

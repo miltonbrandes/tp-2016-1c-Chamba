@@ -4,7 +4,7 @@
 
 -include ../makefile.init
 
-RM := rm -rf
+RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
@@ -26,8 +26,8 @@ endif
 all: Consola
 
 dependents:
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
 
 # Tool invocations
 Consola: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/sockets/Debug/libsockets.so
