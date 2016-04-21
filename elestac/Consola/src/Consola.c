@@ -20,7 +20,7 @@ int main() {
 		return -1;
 	}
 	char* buff = "Hola como estas?";
-	char* respuestaServidor;
+	char* respuestaServidor="kease";
 	//aca se conecto con el nucleo
 	if (escribir(socketConexionNucleo, buff, sizeof(buff) + 1) < 0) {
 		//error, no encontro el servidor
@@ -29,6 +29,7 @@ int main() {
 	//si pasa este if se conecta correctamente al socket servidor
 	printf("se conecto correctamente");
 	//Respuesta del socket servidor
+
 	if (leer(socketConexionNucleo, respuestaServidor,
 			sizeof(respuestaServidor) + 1) < 0) {
 		//no pude recibir nada del nucleo

@@ -1,0 +1,2 @@
+[INFO] 16:44:07:976 Swap/(5240:5240): Esperando conexiones
+[INFO] 16:47:43:67 Swap/(5368:5368): Esperando conexiones
