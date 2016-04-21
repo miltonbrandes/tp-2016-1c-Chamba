@@ -8,7 +8,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include src/subdir.mk
+-include sockets/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -23,19 +23,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: libSockets.so
+all: libsockets.so
 
 # Tool invocations
-libSockets.so: $(OBJS) $(USER_OBJS)
+libsockets.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -shared -o "libSockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -shared -o "libsockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libSockets.so
+	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libsockets.so
 	-@echo ' '
 
 .PHONY: all clean dependents
