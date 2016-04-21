@@ -1,0 +1,15 @@
+01:10:48 **** Build of configuration Debug for project Swap ****
+make all 
+Building file: ../src/Swap.c
+Invoking: GCC C Compiler
+gcc -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets" -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Swap.d" -MT"src/Swap.d" -o "src/Swap.o" "../src/Swap.c"
+Finished building: ../src/Swap.c
+ 
+Building target: Swap
+Invoking: GCC C Linker
+gcc -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/Debug" -o "Swap"  ./src/Swap.o   -lsockets -lcommons
+Finished building target: Swap
+ 
+
+01:10:49 Build Finished (took 178ms)
+

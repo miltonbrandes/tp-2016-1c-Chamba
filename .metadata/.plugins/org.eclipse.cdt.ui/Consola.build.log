@@ -1,0 +1,19 @@
+01:10:49 **** Build of configuration Debug for project Consola ****
+make all 
+Building file: ../src/Consola.c
+Invoking: GCC C Compiler
+gcc -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets" -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Consola.d" -MT"src/Consola.d" -o "src/Consola.o" "../src/Consola.c"
+../src/Consola.c: In function ‘main’:
+../src/Consola.c:32:10: warning: ‘respuestaServidor’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  if (leer(socketConexionNucleo, respuestaServidor,
+          ^
+Finished building: ../src/Consola.c
+ 
+Building target: Consola
+Invoking: GCC C Linker
+gcc -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets/Debug" -o "Consola"  ./src/Consola.o   -lcommons -lsockets
+Finished building target: Consola
+ 
+
+01:10:49 Build Finished (took 184ms)
+

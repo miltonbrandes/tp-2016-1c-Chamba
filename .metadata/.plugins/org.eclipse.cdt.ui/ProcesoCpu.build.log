@@ -1,0 +1,15 @@
+01:10:49 **** Build of configuration Debug for project ProcesoCpu ****
+make all 
+Building file: ../src/ProcesoCpu.c
+Invoking: GCC C Compiler
+gcc -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets" -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/ProcesoCpu.d" -MT"src/ProcesoCpu.d" -o "src/ProcesoCpu.o" "../src/ProcesoCpu.c"
+Finished building: ../src/ProcesoCpu.c
+ 
+Building target: ProcesoCpu
+Invoking: GCC C Linker
+gcc -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/Debug" -o "ProcesoCpu"  ./src/ProcesoCpu.o   -lsockets -lcommons
+Finished building target: ProcesoCpu
+ 
+
+01:10:49 Build Finished (took 122ms)
+

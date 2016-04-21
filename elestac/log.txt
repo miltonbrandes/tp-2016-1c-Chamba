@@ -1,0 +1,3 @@
+[INFO] 16:24:47:376 Nucleo/(7209:7209): Esperando conexiones
+[INFO] 16:33:17:80 UMC/(7682:7682): No se pudo abrir el Socket Servidor
+[INFO] 16:33:33:850 UMC/(7731:7731): Esperando conexiones

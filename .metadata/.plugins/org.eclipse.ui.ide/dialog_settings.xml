@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.internal.ide.dialogs.ProjectContentsLocationArea">
+		<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac" key="OUTSIDE_LOCATION"/>
+	</section>
+	<section name="ExternalProjectImportWizard">
+		<item value="false" key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_NESTED_PROJECTS"/>
+		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons"/>
+			<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets"/>
+			<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/UMC"/>
+			<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/Swap"/>
+			<item value="/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/ProcesoCpu"/>
+		</list>
+		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value=""/>
+		</list>
+	</section>
+	<section name="CleanDialogSettings">
+		<item value="565" key="DIALOG_WIDTH"/>
+		<item value="255" key="DIALOG_Y_ORIGIN"/>
+		<item value="559" key="DIALOG_X_ORIGIN"/>
+		<item value="390" key="DIALOG_HEIGHT"/>
+		<item value="false" key="TOGGLE_SELECTED"/>
+	</section>
+</section>

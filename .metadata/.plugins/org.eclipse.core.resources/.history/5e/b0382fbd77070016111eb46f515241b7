@@ -1,0 +1,82 @@
+/*
+ * nucleo.c
+ *
+ *  Created on: 18/4/2016
+ *      Author: utnso
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <commons/log.h>
+#include <commons/string.h>
+#include <commons/collections/list.h>
+#include <commons/config.h>
+#include <sockets/ServidorFunciones.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+
+int AbrirSocketServidor(int puerto)
+{
+	struct sockaddr_in socketInfo;
+		int socketEscucha;
+		int optval = 1;
+
+		// Crear un socket
+		socketEscucha = socket (AF_INET, SOCK_STREAM, 0);
+		if (socketEscucha == -1)
+		 	return -1;
+
+		setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, &optval,
+				sizeof(optval));
+		socketInfo.sin_family = AF_INET;
+		socketInfo.sin_port = htons(puerto);
+		socketInfo.sin_addr.s_addr = INADDR_ANY;
+		if (bind (socketEscucha,(struct sockaddr *)&socketInfo,sizeof (socketInfo)) != 0)
+		{
+			close (socketEscucha);
+			return -1;
+		}
+
+		/*
+		* Se avisa al sistema que comience a atender llamadas de clientes
+		*/
+		if (listen (socketEscucha, 10) == -1)
+		{
+			close (socketEscucha);
+			return -1;
+		}
+
+		/*
+		* Se devuelve el descriptor del socket servidor
+		*/
+		return socketEscucha;
+	}
+
+int main() {
+//	t_log* ptrLog;
+//	t_config* config;
+//	config = config_create("/home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Nucleo.txt");
+//	ptrLog =log_create("/home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/log.txt","Nucleo",1,0);
+//	//leo del archivo de configuracion el puerto y el ip
+	int socketNucleo;
+	socketNucleo = AbrirSocketServidor(9809);
+	if (socketNucleo < 0) {
+		printf("Hola gato");
+//		//aca me deberia mostrar por log que hubo un error
+//		return -1;
+	}else{
+		printf("Abri el socket papa\n");
+		char* texto = "uppercaseame esta";
+		string_to_upper(&texto);
+		printf(texto);
+	}
+//	log_info(ptrLog, "Esperando conexiones");
+//	AceptarConexionCliente(socketNucleo);
+
+	return EXIT_SUCCESS;
+
+}

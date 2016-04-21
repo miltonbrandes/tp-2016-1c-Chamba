@@ -1,0 +1,26 @@
+[INFO] 17:06:43:306 UMC/(10324:10324): Se abrio el socket Servidor
+[INFO] 17:06:43:307 UMC/(10324:10324): Se conecto con Swap
+[INFO] 17:06:43:307 UMC/(10324:10324): Esperando conexiones
+[INFO] 17:16:02:950 UMC/(10524:10524): No se pudo abrir el Socket Servidor
+[INFO] 17:16:20:672 UMC/(10557:10557): No se pudo abrir el Socket Servidor
+[INFO] 17:16:39:877 UMC/(10591:10591): Se abrio el socket Servidor
+[INFO] 17:16:39:883 UMC/(10591:10591): No pudo conectarse con Swap
+[INFO] 17:18:12:391 UMC/(10697:10697): Se abrio el socket Servidor
+[INFO] 17:19:55:714 UMC/(11042:11042): Se abrio el socket Servidor
+[INFO] 17:20:53:988 UMC/(11118:11118): Se abrio el socket Servidor
+[INFO] 17:21:00:287 UMC/(11161:11161): Se abrio el socket Servidor
+[INFO] 17:21:14:121 UMC/(11203:11203): Se abrio el socket Servidor
+[INFO] 17:23:53:677 UMC/(11928:11928): Se abrio el socket Servidor
+[INFO] 17:25:01:169 UMC/(11970:11970): Se abrio el socket Servidor
+[INFO] 17:27:05:103 UMC/(12360:12360): Se abrio el socket Servidor
+[INFO] 17:27:05:104 UMC/(12360:12360): No pudo conectarse con Swap
+[INFO] 17:28:43:461 UMC/(12720:12720): Se abrio el socket Servidor
+[INFO] 17:28:43:461 UMC/(12720:12720): No pudo conectarse con Swap
+[INFO] 17:30:10:78 UMC/(12756:12756): Se abrio el socket Servidor
+[INFO] 17:30:10:78 UMC/(12756:12756): No pudo conectarse con Swap
+[INFO] 17:43:29:631 UMC/(13123:13123): Se abrio el socket Servidor
+[INFO] 17:43:29:645 UMC/(13123:13123): No pudo conectarse con Swap
+[INFO] 17:45:00:48 UMC/(13449:13449): Se abrio el socket Servidor
+[INFO] 17:45:00:53 UMC/(13449:13449): No pudo conectarse con Swap
+[INFO] 17:46:50:969 UMC/(13813:13813): Se abrio el socket Servidor
+[INFO] 17:46:50:970 UMC/(13813:13813): No pudo conectarse con Swap

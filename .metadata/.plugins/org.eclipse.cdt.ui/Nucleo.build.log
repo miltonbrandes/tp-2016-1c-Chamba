@@ -1,0 +1,26 @@
+01:16:02 **** Incremental Build of configuration Debug for project Nucleo ****
+make all 
+Building file: ../src/Nucleo.c
+Invoking: GCC C Compiler
+gcc -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets" -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Nucleo.d" -MT"src/Nucleo.d" -o "src/Nucleo.o" "../src/Nucleo.c"
+../src/Nucleo.c: In function ‘main’:
+../src/Nucleo.c:74:3: warning: passing argument 1 of ‘string_to_upper’ from incompatible pointer type [enabled by default]
+   string_to_upper(&a);
+   ^
+In file included from ../src/Nucleo.c:10:0:
+/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/commons/string.h:102:8: note: expected ‘char *’ but argument is of type ‘char **’
+  void  string_to_upper(char * text);
+        ^
+../src/Nucleo.c:75:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   printf(a);
+   ^
+Finished building: ../src/Nucleo.c
+ 
+Building target: Nucleo
+Invoking: GCC C Linker
+gcc -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets/Debug" -o "Nucleo"  ./src/Nucleo.o   -lcommons -lsockets
+Finished building target: Nucleo
+ 
+
+01:16:02 Build Finished (took 231ms)
+

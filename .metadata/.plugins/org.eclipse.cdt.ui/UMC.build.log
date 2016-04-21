@@ -1,0 +1,15 @@
+01:10:48 **** Build of configuration Debug for project UMC ****
+make all 
+Building file: ../src/UMC.c
+Invoking: GCC C Compiler
+gcc -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets" -I"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/UMC.d" -MT"src/UMC.d" -o "src/UMC.o" "../src/UMC.c"
+Finished building: ../src/UMC.c
+ 
+Building target: UMC
+Invoking: GCC C Linker
+gcc -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/sockets/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-Chamba/elestac/commons/Debug" -o "UMC"  ./src/UMC.o   -lsockets -lcommons
+Finished building target: UMC
+ 
+
+01:10:48 Build Finished (took 183ms)
+
