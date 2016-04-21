@@ -24,3 +24,10 @@
 [INFO] 17:45:00:53 UMC/(13449:13449): No pudo conectarse con Swap
 [INFO] 17:46:50:969 UMC/(13813:13813): Se abrio el socket Servidor
 [INFO] 17:46:50:970 UMC/(13813:13813): No pudo conectarse con Swap
+[INFO] 19:04:52:341 UMC/(7483:7483): Se abrio el socket Servidor
+[INFO] 19:04:52:343 UMC/(7483:7483): No pudo conectarse con Swap
+[INFO] 19:07:03:444 UMC/(7593:7593): Se abrio el socket Servidor
+[INFO] 19:07:03:445 UMC/(7593:7593): Se conecto con Swap
+[INFO] 19:07:03:445 UMC/(7593:7593): Esperando conexiones
+[INFO] 19:08:28:170 UMC/(7651:7651): Se abrio el socket Servidor
+[INFO] 19:08:28:170 UMC/(7651:7651): No pudo conectarse con Swap

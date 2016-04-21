@@ -26,8 +26,8 @@ endif
 all: UMC
 
 dependents:
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
 
 # Tool invocations
 UMC: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/sockets/Debug/libsockets.so

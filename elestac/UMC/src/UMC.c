@@ -77,7 +77,7 @@ int iniciarUMC(t_config* config) {
 
 int cargarValoresDeConfig() {
 	t_config* config;
-	config = config_create("../UMC/config");
+	config = config_create("../UMC/UMC.txt");
 
 	if (config) {
 		if (config_has_property(config, "PUERTO")) {
