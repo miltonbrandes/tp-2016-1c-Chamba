@@ -150,6 +150,7 @@
 		<configuration configurationName="Default">
 			<resource resourceType="PROJECT" workspacePath="/Nucleo"/>
 		</configuration>
+		<configuration configurationName="Debug"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
