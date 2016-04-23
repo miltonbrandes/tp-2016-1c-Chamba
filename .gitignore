@@ -31,3 +31,9 @@
 # Debug files
 *.dSYM/
 /Default/
+
+#Eclipse project
+.metadata/
+.settings/
+.cproject
+.project
