@@ -150,13 +150,17 @@
 		<configuration configurationName="Default">
 			<resource resourceType="PROJECT" workspacePath="/Consola"/>
 		</configuration>
+		<configuration configurationName="Debug"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1025540419;cdt.managedbuild.config.gnu.exe.release.1025540419.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1199428367;cdt.managedbuild.tool.gnu.c.compiler.input.628598195">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1904683952;cdt.managedbuild.config.gnu.exe.debug.1904683952.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.368517945;cdt.managedbuild.tool.gnu.c.compiler.input.813232184">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1025540419;cdt.managedbuild.config.gnu.exe.release.1025540419.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1199428367;cdt.managedbuild.tool.gnu.c.compiler.input.628598195">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.331779773.1156499932;cdt.managedbuild.toolchain.gnu.base.331779773.1156499932.;cdt.managedbuild.tool.gnu.c.compiler.base.1429933540;cdt.managedbuild.tool.gnu.c.compiler.input.137083948">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.331779773;cdt.managedbuild.toolchain.gnu.base.331779773.425744171;cdt.managedbuild.tool.gnu.c.compiler.base.623936734;cdt.managedbuild.tool.gnu.c.compiler.input.77401683">

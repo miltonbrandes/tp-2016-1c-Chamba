@@ -31,3 +31,36 @@
 [INFO] 19:07:03:445 UMC/(7593:7593): Esperando conexiones
 [INFO] 19:08:28:170 UMC/(7651:7651): Se abrio el socket Servidor
 [INFO] 19:08:28:170 UMC/(7651:7651): No pudo conectarse con Swap
+[INFO] 18:03:42:718 UMC/(4923:4923): Se abrio el socket Servidor
+[INFO] 18:03:42:718 UMC/(4923:4923): No pudo conectarse con Swap
+[INFO] 18:11:43:938 UMC/(6363:6363): Se abrio el socket Servidor
+[INFO] 18:11:43:938 UMC/(6363:6363): No pudo conectarse con Swap
+[INFO] 18:12:16:936 UMC/(6401:6401): Se abrio el socket Servidor
+[INFO] 18:12:16:941 UMC/(6401:6401): No pudo conectarse con Swap
+[INFO] 18:13:52:827 UMC/(6537:6537): Se abrio el socket Servidor
+[INFO] 18:13:52:827 UMC/(6537:6537): No pudo conectarse con Swap
+[INFO] 17:40:19:235 UMC/(3017:3017): Se abrio el socket Servidor
+[INFO] 17:40:43:979 UMC/(3017:3017): Se conecto con Swap
+[INFO] 17:40:45:757 UMC/(3017:3017): Esperando conexiones
+[INFO] 17:41:37:416 UMC/(3182:3182): Se abrio el socket Servidor
+[INFO] 17:41:39:85 UMC/(3182:3182): Se conecto con Swap
+[INFO] 17:41:39:85 UMC/(3182:3182): Esperando conexiones
+[INFO] 17:42:11:330 UMC/(3263:3263): Se abrio el socket Servidor
+[INFO] 17:42:11:336 UMC/(3263:3263): Se conecto con Swap
+[INFO] 17:42:11:337 UMC/(3263:3263): Esperando conexiones
+[INFO] 18:16:45:84 UMC/(4158:4158): No pudo conectarse con Swap
+[INFO] 18:17:13:439 UMC/(4217:4217): Se conecto con Swap
+[INFO] 18:17:13:439 UMC/(4217:4217): Se abrio el socket Servidor UMC
+[INFO] 18:17:13:439 UMC/(4217:4217): Esperando conexiones
+[INFO] 18:20:01:737 UMC/(4321:4321): Se conecto con Swap
+[INFO] 18:20:03:352 UMC/(4321:4321): Se abrio el socket Servidor UMC
+[INFO] 18:20:03:352 UMC/(4321:4321): Esperando conexiones
+[INFO] 19:10:17:682 UMC/(6298:6298): Se conecto con Swap
+[INFO] 19:10:17:683 UMC/(6298:6298): Se abrio el socket Servidor UMC
+[INFO] 19:10:17:683 UMC/(6298:6298): Esperando conexiones
+[INFO] 19:11:15:972 UMC/(6412:6412): Se conecto con Swap
+[INFO] 19:11:15:973 UMC/(6412:6412): Se abrio el socket Servidor UMC
+[INFO] 19:11:15:973 UMC/(6412:6412): Esperando conexiones
+[INFO] 19:12:14:149 UMC/(6581:6581): Se conecto con Swap
+[INFO] 19:12:14:151 UMC/(6581:6581): Se abrio el socket Servidor UMC
+[INFO] 19:12:14:151 UMC/(6581:6581): Esperando conexiones

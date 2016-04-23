@@ -23,19 +23,19 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1108359906" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.805048172" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.include.paths.1196679716" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1822334521" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1422613382" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
 								<option id="gnu.c.link.option.libs.1390058271" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sockets"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="commons"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sockets"/>
 								</option>
 								<option id="gnu.c.link.option.paths.32597046" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons/Debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets/Debug}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.820140776" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -45,8 +45,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.1910448232" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1432280030" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
 								<option id="gnu.both.asm.option.include.paths.1631747944" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1936270031" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -55,18 +55,18 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
-				<externalSettings containerId="commons;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
-					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/commons"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/commons/Debug"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="commons" srcPrefixMapping="" srcRootPath=""/>
-					</externalSetting>
-				</externalSettings>
 				<externalSettings containerId="sockets;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sockets"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sockets/Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sockets" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
+				<externalSettings containerId="commons;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/commons"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/commons/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="commons" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 			</storageModule>
@@ -93,19 +93,19 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1081555584" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.2073013063" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.include.paths.1062416918" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1816096772" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.521198963" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
 								<option id="gnu.c.link.option.libs.1597480160" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sockets"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="commons"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sockets"/>
 								</option>
 								<option id="gnu.c.link.option.paths.115260046" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons/Debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets/Debug}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.957140260" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -115,8 +115,8 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.922174935" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1771278412" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
 								<option id="gnu.both.asm.option.include.paths.1394335060" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1919245139" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -125,18 +125,18 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
-				<externalSettings containerId="commons;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
-					<externalSetting>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/commons"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/commons/Debug"/>
-						<entry flags="RESOLVED" kind="libraryFile" name="commons" srcPrefixMapping="" srcRootPath=""/>
-					</externalSetting>
-				</externalSettings>
 				<externalSettings containerId="sockets;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sockets"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sockets/Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sockets" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
+				<externalSettings containerId="commons;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/commons"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/commons/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="commons" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
 			</storageModule>
@@ -157,9 +157,13 @@
 			<resource resourceType="PROJECT" workspacePath="/Swap"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1364237722;cdt.managedbuild.config.gnu.exe.release.1364237722.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1011073344;cdt.managedbuild.tool.gnu.c.compiler.input.1026974443">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.142825679.1056204633;cdt.managedbuild.toolchain.gnu.base.142825679.1056204633.;cdt.managedbuild.tool.gnu.c.compiler.base.2073013063;cdt.managedbuild.tool.gnu.c.compiler.input.1816096772">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.142825679;cdt.managedbuild.toolchain.gnu.base.142825679.969564697;cdt.managedbuild.tool.gnu.c.compiler.base.805048172;cdt.managedbuild.tool.gnu.c.compiler.input.1822334521">
@@ -169,5 +173,4 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

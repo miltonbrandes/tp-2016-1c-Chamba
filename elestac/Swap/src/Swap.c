@@ -16,8 +16,8 @@ int main() {
 	////////////////////////CREO LOS ARCHIVOS DE CONFIGURACION Y LOG/////////////////////////////////////////////
 	t_log* log_file;
 	t_config* config_file;
-	char* config_file_root="/home/utnso/tp-2016-1c-Chamba/elestac/Swap/Swap.txt";
-	char* log_file_root="/home/utnso/tp-2016-1c-Chamba/elestac/Swap/log.txt";
+	char* config_file_root="../Swap/Swap.txt";
+	char* log_file_root="../Swap/log.txt";
 	log_file =log_create(log_file_root,"Swap",1,0);
 	config_file= config_create(config_file_root);
 

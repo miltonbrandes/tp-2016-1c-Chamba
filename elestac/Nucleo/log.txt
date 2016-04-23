@@ -1,0 +1,1 @@
+[INFO] 19:12:02:183 Nucleo/(6526:6526): No pudo conectarse con UMC

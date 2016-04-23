@@ -157,6 +157,9 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.228855772;cdt.managedbuild.config.gnu.exe.release.228855772.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1079449190;cdt.managedbuild.tool.gnu.c.compiler.input.302132887">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2058695952.197859662;cdt.managedbuild.toolchain.gnu.base.2058695952.197859662.;cdt.managedbuild.tool.gnu.c.compiler.base.2081533168;cdt.managedbuild.tool.gnu.c.compiler.input.1321318046">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.2058695952;cdt.managedbuild.toolchain.gnu.base.2058695952.1419550075;cdt.managedbuild.tool.gnu.c.compiler.base.1536171300;cdt.managedbuild.tool.gnu.c.compiler.input.306204228">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>

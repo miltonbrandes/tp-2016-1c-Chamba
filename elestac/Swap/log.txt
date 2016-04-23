@@ -2,3 +2,11 @@
 [INFO] 16:47:43:67 Swap/(5368:5368): Esperando conexiones
 [INFO] 19:04:19:881 Swap/(7431:7431): Esperando conexiones
 [INFO] 19:06:14:961 Swap/(7513:7513): Esperando conexiones
+[INFO] 17:39:25:940 Swap/(2946:2946): Esperando conexiones
+[INFO] 17:41:26:645 Swap/(3140:3140): Esperando conexiones
+[INFO] 17:42:07:685 Swap/(3231:3231): Esperando conexiones
+[INFO] 18:17:10:734 Swap/(4189:4189): Esperando conexiones
+[INFO] 18:19:54:721 Swap/(4262:4262): Esperando conexiones
+[INFO] 19:10:13:954 Swap/(6268:6268): Esperando conexiones
+[INFO] 19:11:12:749 Swap/(6382:6382): Esperando conexiones
+[INFO] 19:12:11:704 Swap/(6554:6554): Esperando conexiones
