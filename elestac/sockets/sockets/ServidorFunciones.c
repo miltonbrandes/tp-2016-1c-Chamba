@@ -40,7 +40,6 @@ int AbrirSocketServidor(int puerto)
 			close (socketEscucha);
 			return -1;
 		}
-
 		/*
 		* Se devuelve el descriptor del socket servidor
 		*/

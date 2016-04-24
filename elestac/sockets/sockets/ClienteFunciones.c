@@ -16,7 +16,6 @@ int AbrirConexion(char *ip, int puerto)
 {
 	struct sockaddr_in socket_info;
 	int nuevoSocket;
-
 	// Se carga informacion del socket
 	socket_info.sin_family = AF_INET;
 	socket_info.sin_addr.s_addr = inet_addr(ip);
@@ -27,10 +26,10 @@ int AbrirConexion(char *ip, int puerto)
 	nuevoSocket = socket (AF_INET, SOCK_STREAM, 0);
 	if (nuevoSocket < 0)
 		return -1;
-
 	// Conectar el socket con la direccion 'socketInfo'.
 	if (connect (nuevoSocket,(struct sockaddr *)&socket_info,sizeof (socket_info)) != 0)
 	{
+		printf("Soy un crack me conecte");
 		return -1;
 	}
 

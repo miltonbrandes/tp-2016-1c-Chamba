@@ -36,7 +36,7 @@ int crearSocketCliente(char* direccion,int puerto){
 		}
 
 	char* buff = "Hola como estas? Soy Cpu\n";
-	char* respuestaServidor;
+	char* respuestaServidor = "piola";
 	//aca se conecto con el nucleo
 
 	if (escribir(socketConexion, buff, sizeof(buff) + 1) < 0) {
@@ -46,9 +46,9 @@ int crearSocketCliente(char* direccion,int puerto){
 	//si pasa este if se conecta correctamente al socket servidor
 	printf("Se conecto correctamente\n");
 	//Respuesta del socket servidor
-	if (leer(socketConexion, respuestaServidor,
-		sizeof(respuestaServidor) + 1) < 0) {
+	if (leer(socketConexion, respuestaServidor,sizeof(respuestaServidor) + 1) < 0) {
 		//no pude recibir nada del nucleo
+		respuestaServidor = "no hice nada";
 		return -1;
 		}
 

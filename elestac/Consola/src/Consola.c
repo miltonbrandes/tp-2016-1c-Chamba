@@ -6,38 +6,107 @@
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
 
+#define MAX_BUFFER_SIZE 4096
 
-int main() {
-	 t_config* config;
-	 config = config_create("../Consola/Consola.txt");
-	 //leo del archivo de configuracion el puerto y el ip
-	 char *direccion = config_get_string_value(config, "IP");
-	 int puerto = config_get_int_value(config, "PUERTO");
-	 int socketConexionNucleo;
-	 socketConexionNucleo = AbrirConexion(direccion, puerto);
-	 if (socketConexionNucleo < 0) {
-		//aca me deberia mostrar por log que hubo un error
-		return -1;
+t_log* ptrLog;
+t_config* config;
+char *direccion;
+int puerto;
+int crearLog()
+{
+	ptrLog = log_create("../Consola/log.txt", "Consola", 1, 0);
+		 if(ptrLog)
+		 {
+			 return 1;
+			 iniciarConsola(config);
+		 }else
+		 {
+			 return 0;
+		 }
+}
+int iniciarConsola(t_config* config)
+{
+	config = config_create("../Consola/Consola.txt");
+	if(config)
+	{
+		if(config_has_property(config, "PUERTO"))
+		{
+			puerto = config_get_int_value(config, "PUERTO");
+		}
+		else
+		{
+			log_info(ptrLog, "El archivo de configuracion no tiene puerto");
+			return 0;
+
+		}
+		if(config_has_property(config, "IP"))
+		{
+			direccion = config_get_string_value(config, "IP");
+		}
+		else
+		{
+			log_info(ptrLog, "El archivo de configuracion no tiene IP");
+			return 0;
+		}
 	}
-	char* buff = "Hola como estas?";
+	return 1;
+}
+int enviarScriptAlNucleo()
+{
+	char buff[MAX_BUFFER_SIZE] = "Hola como estas?";
 	char* respuestaServidor="kease";
+	int bytesRecibidos = 0;
+	int socketConexionNucleo;
+	socketConexionNucleo = AbrirConexion(direccion, puerto);
+	if (socketConexionNucleo < 0)
+	{
+	//aca me deberia mostrar por log que hubo un error
+		log_info(ptrLog, "Error en la conexion con el nucleo");
+		return -1;
+	}
+	log_info(ptrLog, "Se conecto con el nucleo");
 	//aca se conecto con el nucleo
-	if (escribir(socketConexionNucleo, buff, sizeof(buff) + 1) < 0) {
-		//error, no encontro el servidor
+	if (escribir(socketConexionNucleo, buff, sizeof(buff)) < 0)
+	{
+	//error, no encontro el servidor
 		return -1;
 	}
+	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	//si pasa este if se conecta correctamente al socket servidor
-	printf("se conecto correctamente");
 	//Respuesta del socket servidor
-
-	if (leer(socketConexionNucleo, respuestaServidor,
-			sizeof(respuestaServidor) + 1) < 0) {
+	while(1)
+	{
+		bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
+		if (bytesRecibidos < 0) {
 		//no pude recibir nada del nucleo
-		return -1;
+			log_info(ptrLog, "Error en la lectura del nucleo");
+			return -1;
+		}
+		log_info(ptrLog, respuestaServidor);
+		//free(respuestaServidor); ES NECESARIO???
 	}
-	printf("Recibi %s", respuestaServidor);
 	finalizarConexion(socketConexionNucleo);
-	return 0;
+	return EXIT_SUCCESS;
+}
+int main() {
 
+	 //leo del archivo de configuracion el puerto y el ip
+	 //creo el log
+	 if(crearLog())
+	 {
+		 conectarNucleo();
+	 }
+	 else
+	 {
+		 log_info(ptrLog, "La consola no pudo iniciarse");
+		 return -1;
+	 }
 	 return EXIT_SUCCESS;
 }
+
+
+
+
+
+
+
