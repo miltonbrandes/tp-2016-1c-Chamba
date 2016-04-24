@@ -18,6 +18,10 @@ int crearLog()
 		 if(ptrLog)
 		 {
 			 return 1;
+<<<<<<< HEAD
+=======
+			 
+>>>>>>> 7744005e645c050e881a8f9eb6559ee5e5a463ef
 		 }else
 		 {
 			 return 0;
@@ -74,8 +78,7 @@ int enviarScriptAlNucleo()
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	//si pasa este if se conecta correctamente al socket servidor
 	//Respuesta del socket servidor
-	while(1)
-	{
+	
 		bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
 		if (bytesRecibidos < 0) {
 		//no pude recibir nada del nucleo
@@ -84,7 +87,7 @@ int enviarScriptAlNucleo()
 		}
 		log_info(ptrLog, respuestaServidor);
 		//free(respuestaServidor); ES NECESARIO???
-	}
+	
 	finalizarConexion(socketConexionNucleo);
 	return EXIT_SUCCESS;
 }
@@ -119,6 +122,10 @@ int main(int argc, char **argv) {
 		 //cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		 //programa = fopen(argv[1], "r");
 		 //script = leerArchivo(programa);
+<<<<<<< HEAD
+=======
+		 iniciarConsola(config);
+>>>>>>> 7744005e645c050e881a8f9eb6559ee5e5a463ef
 		 enviarScriptAlNucleo();
 	 }
 	 else
