@@ -53,6 +53,7 @@ int iniciarConsola(t_config* config)
 }
 int enviarScriptAlNucleo()
 {
+	//aca lo que deberia mandar es el script, no una cosa cualquiera
 	char buff[MAX_BUFFER_SIZE] = "Hola como estas?";
 	char* respuestaServidor="kease";
 	int bytesRecibidos = 0;
@@ -88,12 +89,36 @@ int enviarScriptAlNucleo()
 	finalizarConexion(socketConexionNucleo);
 	return EXIT_SUCCESS;
 }
-int main() {
+//creo la funcion leer archivo para poder asignarle al script ansisop lo que dice el archivo
+char* leerArchivo(FILE *archivo)
+{
+	//busco el final del archivo
+	fseek(archivo, 0, SEEK_END);
+	//veo que tan grande es
+	long fsize = ftell(archivo);
+	//voy al principio nuevamente para leerlo
+	fseek(archivo, 0, SEEK_SET);
+	//reservo memoria para poder usarlo
+	char *script = malloc(fsize + 1);
+	//leo el archivo
+	fread(script, fsize, 1, archivo);
+	script[fsize] = '\0';
+	//muestro el script por el log para ver si es correcto
+	log_info(ptrLog, script);
+	return script;
 
+}
+int main(int argc, char **argv) {
+	//creo la variable que me va a leer el script mediante el archivo que me llegue.
+	char* script;
+	 FILE *programa;
 	 //leo del archivo de configuracion el puerto y el ip
 	 //creo el log
 	 if(crearLog())
 	 {
+		 //cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
+		 //programa = fopen(argv[1], "r");
+		 //script = leerArchivo(programa);
 		 conectarNucleo();
 	 }
 	 else
@@ -101,6 +126,7 @@ int main() {
 		 log_info(ptrLog, "La consola no pudo iniciarse");
 		 return -1;
 	 }
+
 	 return EXIT_SUCCESS;
 }
 
