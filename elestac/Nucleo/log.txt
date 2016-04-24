@@ -1,1 +1,35 @@
-[INFO] 19:12:02:183 Nucleo/(6526:6526): No pudo conectarse con UMC
+[INFO] 21:18:01:208 Nucleo/(19196:19196): Se conecto con UMC
+[INFO] 21:18:01:208 Nucleo/(19196:19196): Se abrio el Socket Servidor CPU
+[INFO] 21:18:01:208 Nucleo/(19196:19196): Se abrio el Socket Servidor Consola
+[INFO] 21:18:01:208 Nucleo/(19196:19196): Eh UMC contestame algo
+[INFO] 21:18:01:214 Nucleo/(19196:19196): Mensaje a UMC enviado
+[INFO] 21:18:01:214 Nucleo/(19196:19196): Esperando respuesta de UMC
+[INFO] 21:18:04:210 Nucleo/(19196:19196): Aca tenes el mensaje que pediste
+[INFO] 21:18:04:211 Nucleo/(19196:19196): Esperando respuesta de UMC
+[INFO] 21:18:04:917 Nucleo/(19264:19264): Se conecto con UMC
+[INFO] 21:18:04:917 Nucleo/(19264:19264): No se pudo abrir el Socket Servidor CPU
+[INFO] 21:18:46:135 Nucleo/(19466:19466): Se conecto con UMC
+[INFO] 21:18:46:135 Nucleo/(19466:19466): Se abrio el Socket Servidor CPU
+[INFO] 21:18:46:135 Nucleo/(19466:19466): Se abrio el Socket Servidor Consola
+[INFO] 21:18:46:135 Nucleo/(19466:19466): Eh UMC contestame algo
+[INFO] 21:18:46:136 Nucleo/(19466:19466): Mensaje a UMC enviado
+[INFO] 21:18:46:141 Nucleo/(19466:19466): Esperando respuesta de UMC
+[INFO] 21:18:49:137 Nucleo/(19466:19466): Aca tenes el mensaje que pediste
+[INFO] 21:18:49:138 Nucleo/(19466:19466): Esperando respuesta de UMC
+[INFO] 21:18:56:316 Nucleo/(19532:19532): Se conecto con UMC
+[INFO] 21:18:56:316 Nucleo/(19532:19532): Se abrio el Socket Servidor CPU
+[INFO] 21:18:56:316 Nucleo/(19532:19532): Se abrio el Socket Servidor Consola
+[INFO] 21:18:56:317 Nucleo/(19532:19532): Eh UMC contestame algo
+[INFO] 21:18:56:323 Nucleo/(19532:19532): Mensaje a UMC enviado
+[INFO] 21:18:56:323 Nucleo/(19532:19532): Esperando respuesta de UMC
+[INFO] 21:18:56:323 Nucleo/(19532:19532): Aca tenes el mensaje que pediste
+[INFO] 21:18:56:323 Nucleo/(19532:19532): Esperando respuesta de UMC
+[INFO] 21:19:10:420 Nucleo/(19598:19598): Se conecto con UMC
+[INFO] 21:19:10:420 Nucleo/(19598:19598): Se abrio el Socket Servidor CPU
+[INFO] 21:19:10:420 Nucleo/(19598:19598): Se abrio el Socket Servidor Consola
+[INFO] 21:19:10:420 Nucleo/(19598:19598): Eh UMC contestame algo
+[INFO] 21:19:10:425 Nucleo/(19598:19598): Mensaje a UMC enviado
+[INFO] 21:19:10:425 Nucleo/(19598:19598): Esperando respuesta de UMC
+[INFO] 21:19:10:425 Nucleo/(19598:19598): Aca tenes el mensaje que pediste
+[INFO] 21:19:10:425 Nucleo/(19598:19598): Esperando respuesta de UMC
+[INFO] 21:19:15:115 Nucleo/(19598:19598): No se obtuvo respuesta de UMC y se cerro la conexion

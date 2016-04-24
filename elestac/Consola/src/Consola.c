@@ -9,7 +9,7 @@
 
 int main() {
 	 t_config* config;
-	 config = config_create("/home/utnso/workspace/Consola/Consola.txt");
+	 config = config_create("../Consola/Consola.txt");
 	 //leo del archivo de configuracion el puerto y el ip
 	 char *direccion = config_get_string_value(config, "IP");
 	 int puerto = config_get_int_value(config, "PUERTO");

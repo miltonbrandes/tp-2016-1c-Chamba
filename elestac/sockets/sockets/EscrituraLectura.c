@@ -51,7 +51,7 @@ int leer(int socket, char* buffer, int longitud) {
 	 * Mientras no hayamos leido todos los datos solicitados
 	 */
 	while (leido < longitud && leido != -1) {
-		aux = recv(socket, buffer + leido, longitud - leido, 0);
+		aux = recv(socket, (void*)buffer + leido, longitud - leido, 0);
 		if (aux > 0) {
 			/*
 			 * Si hemos conseguido leer datos, incrementamos la variable
@@ -66,6 +66,7 @@ int leer(int socket, char* buffer, int longitud) {
 				break;
 			if (aux == -1) {
 				printf("Hubo un error en la lectura");
+				leido = -1;
 			}
 		}
 	}

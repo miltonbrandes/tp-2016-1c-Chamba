@@ -11,6 +11,9 @@
 #include <commons/config.h>
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
+#include <sockets/EscrituraLectura.h>
+
+#define MAX_BUFFER_SIZE 4096
 
 typedef struct {
 	char *nombre;
@@ -199,7 +202,40 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
+int enviarMensajeAUMC() {
+	char buffer[MAX_BUFFER_SIZE] = "Eh UMC contestame algo";
+	log_info(ptrLog, buffer);
+	int bytesEnviados = escribir(socketUMC, buffer, sizeof(buffer));
+	if(bytesEnviados < 0) {
+		log_info(ptrLog, "Ocurrio un error al enviar mensajes a UMC");
+		return -1;
+	}else if(bytesEnviados == 0){
+		log_info(ptrLog, "No se envio ningun byte a UMC");
+	}else{
+		log_info(ptrLog, "Mensaje a UMC enviado");
+	}
+	return 1;
+}
+
+int escucharAUMC() {
+	char buffer[MAX_BUFFER_SIZE];
+	do {
+		log_info(ptrLog, "Esperando respuesta de UMC");
+		int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
+		if(bytesRecibidos < 0) {
+			log_info(ptrLog, "Ocurrio un error al recibir mensajes de UMC");
+			return -1;
+		}else if(bytesRecibidos == 0){
+			log_info(ptrLog, "No se obtuvo respuesta de UMC y se cerro la conexion");
+			return -1;
+		}else{
+			log_info(ptrLog, buffer);
+		}
+	}while(1);
+}
+
 int main() {
+	int returnInt = EXIT_SUCCESS;
 
 	if (init()) {
 
@@ -224,11 +260,20 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
+		returnInt = enviarMensajeAUMC();
+		if(returnInt) {
+			returnInt = escucharAUMC();
+		}
+
 	} else {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");
 		return -1;
 	}
 
-	return EXIT_SUCCESS;
+	finalizarConexion(socketUMC);
+	finalizarConexion(socketReceptorConsola);
+	finalizarConexion(socketReceptorCPU);
+
+	return returnInt;
 
 }

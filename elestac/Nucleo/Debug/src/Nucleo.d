@@ -5,7 +5,8 @@ src/Nucleo.d: ../src/Nucleo.c \
  /home/utnso/Escritorio/tp-2016-1c-chamba/commons/commons/config.h \
  /home/utnso/Escritorio/tp-2016-1c-chamba/commons/commons/collections/dictionary.h \
  /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/ServidorFunciones.h \
- /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/ClienteFunciones.h
+ /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/ClienteFunciones.h \
+ /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/EscrituraLectura.h
 
 /home/utnso/Escritorio/tp-2016-1c-chamba/commons/commons/log.h:
 
@@ -20,3 +21,5 @@ src/Nucleo.d: ../src/Nucleo.c \
 /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/ServidorFunciones.h:
 
 /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/ClienteFunciones.h:
+
+/home/utnso/Escritorio/tp-2016-1c-chamba/sockets/sockets/EscrituraLectura.h:

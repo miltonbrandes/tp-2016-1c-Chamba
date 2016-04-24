@@ -128,21 +128,46 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
-void recibirDatos(fd_set *tempSockets, fd_set *sockets, int socketMaximo) {
-	char *buffer;
+void enviarMensajeASwapYLuegoANucleo(int socketFor) {
+
+	//Envio un mensaje a Swap.
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Nucleo me esta pidiendo una pagina\0";
+	int sendBytes = escribir(socketSwap, mensajeSwap, sizeof(mensajeSwap));
+
+	//Espero recibir respuesta de Swap.
+	char mensajeRecibidoDeSwap[MAX_BUFFER_SIZE];
+	int bytesRecibidos = leer(socketSwap, mensajeRecibidoDeSwap, sizeof(mensajeRecibidoDeSwap));
+	log_info(ptrLog, mensajeRecibidoDeSwap);
+
+	//Envio un mensaje a Nucleo.
+	char mensajeNucleo[MAX_BUFFER_SIZE] = "Aca tenes el mensaje que pediste\0";
+	sendBytes = escribir(socketFor, mensajeNucleo, sizeof(mensajeNucleo));
+}
+
+void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
+	char *buffer[MAX_BUFFER_SIZE];
 	int bytesRecibidos;
 	int socketFor;
 	for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 		if (FD_ISSET(socketFor, tempSockets)) {
-			bytesRecibidos = leer(socket, buffer, MAX_BUFFER_SIZE);
+			bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
 
 			if (bytesRecibidos > 0) {
 				buffer[bytesRecibidos] = 0;
-				//Aca hacemos algo porque recibimos algo
+				log_info(ptrLog, buffer);
+
+				//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
+				//Hay que ver bien que hacer cuando se recibe un paquete
+				enviarMensajeASwapYLuegoANucleo(socketFor);
+				//Fin
+
 			} else if (bytesRecibidos == 0) {
+				//Aca preguntamos quien carajo es el que llamo me parece
+				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+			}else{
 				finalizarConexion(socketFor);
 				FD_CLR(socketFor, sockets);
-				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion");
+				log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
 			}
 
 		}
@@ -152,16 +177,16 @@ void recibirDatos(fd_set *tempSockets, fd_set *sockets, int socketMaximo) {
 void manejarConexionesRecibidas() {
 	fd_set sockets, tempSockets;
 	int resultadoSelect;
-	int socketMaximo = socketReceptorNucleoCPU + 1;
-
-	FD_ZERO(&sockets);
-	FD_SET(socketReceptorNucleoCPU, &sockets);
+	int socketMaximo = socketReceptorNucleoCPU;
 
 	do {
-		log_info(ptrLog, "Esperando conexiones");
-		memcpy(&tempSockets, &sockets, sizeof(tempSockets));
+		FD_ZERO(&sockets);
+		FD_SET(socketReceptorNucleoCPU, &sockets);
 
-		resultadoSelect = select(socketMaximo, &tempSockets, NULL, NULL, NULL);
+		log_info(ptrLog, "Esperando conexiones");
+		memcpy(&tempSockets, &sockets, sizeof(sockets));
+
+		resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
 		if (resultadoSelect == 0) {
 			log_info(ptrLog, "Time out. Volviendo a esperar conexiones");
 		} else if (resultadoSelect < 0) {
@@ -177,9 +202,10 @@ void manejarConexionesRecibidas() {
 							"Ocurrio un error al intentar aceptar una conexion");
 				} else {
 					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo =
 							(socketMaximo < nuevoSocketConexion) ?
-									nuevoSocketConexion+1 : socketMaximo;
+									nuevoSocketConexion : socketMaximo;
 				}
 
 				FD_CLR(socketReceptorNucleoCPU, &tempSockets);
