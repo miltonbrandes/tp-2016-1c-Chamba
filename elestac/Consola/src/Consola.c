@@ -18,7 +18,6 @@ int crearLog()
 		 if(ptrLog)
 		 {
 			 return 1;
-			 iniciarConsola(config);
 		 }else
 		 {
 			 return 0;
@@ -110,16 +109,17 @@ char* leerArchivo(FILE *archivo)
 }
 int main(int argc, char **argv) {
 	//creo la variable que me va a leer el script mediante el archivo que me llegue.
-	char* script;
-	 FILE *programa;
+	//char* script;
+	 //FILE *programa;
 	 //leo del archivo de configuracion el puerto y el ip
 	 //creo el log
 	 if(crearLog())
 	 {
+		 iniciarConsola(config);
 		 //cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		 //programa = fopen(argv[1], "r");
 		 //script = leerArchivo(programa);
-		 conectarNucleo();
+		 enviarScriptAlNucleo();
 	 }
 	 else
 	 {
