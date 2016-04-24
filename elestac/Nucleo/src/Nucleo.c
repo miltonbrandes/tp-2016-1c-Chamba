@@ -11,6 +11,7 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
+#include <commons/string.h>
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
@@ -236,11 +237,11 @@ int escucharAUMC() {
 		}
 	}while(1);
 }
-int escucharAConsola() {
+int escucharAConsola(int socket) {
 	char buffer[MAX_BUFFER_SIZE];
 	do {
 		log_info(ptrLog, "Esperando que me hable la consola");
-		int bytesRecibidos = leer(socketReceptorConsola, buffer, MAX_BUFFER_SIZE);
+		int bytesRecibidos = leer(socket, buffer, MAX_BUFFER_SIZE);
 		if(bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al recibir mensajes de consola");
 			return -1;
@@ -252,10 +253,10 @@ int escucharAConsola() {
 		}
 	}while(1);
 }
-int enviarMensajeAConsola() {
+int enviarMensajeAConsola(int socket) {
 	char buffer[MAX_BUFFER_SIZE] = "consola aca terminas papa";
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socketReceptorConsola, buffer, sizeof(buffer));
+	int bytesEnviados = escribir(socket, buffer, sizeof(buffer));
 	if(bytesEnviados < 0) {
 		log_info(ptrLog, "Ocurrio un error al enviar mensajes a la consola");
 		return -1;
@@ -271,37 +272,37 @@ void *comenzarEscucharConsolas()
 {
 	while(1)
 	{
-		fd_set descriptoresLecturaConsolas;	// Descriptores de interes para select()
+		fd_set sockets;	// Descriptores de interes para select()
 		fd_set tempSockets; //descriptor master
 		int maximo; //descriptor mas grande
 		listaProgramasConsola = list_create();
 		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
 		if (socketReceptorConsola < 0) {
 			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
-			return -1;
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
-		FD_ZERO(&descriptoresLecturaConsolas);
-		FD_ZERO(&master);
+		FD_ZERO(&sockets);
+		FD_ZERO(&tempSockets);
 		FD_SET(socketReceptorConsola, &tempSockets);
 		maximo = socketReceptorConsola;
 		log_info(ptrLog, "Esperando conexiones");
-		memcpy(&tempSockets, &descriptoresLecturaConsolas, sizeof(descriptoresLecturaConsolas));
+		//memcpy(&tempSockets, &sockets, sizeof(sockets));
 
 		/*ahora espero que alguno de los que se conectan tenga algo para decir*/
-		if(select(maximo +1, &descriptoresLecturaConsolas, NULL, NULL, NULL) < 0)
+		if(select(maximo +1, &sockets, NULL, NULL, NULL) < 0)
 		{
 			log_info(ptrLog, "Error en el select");
-			return -1;
 		}
 		//ahora me fijo si me mandan algo
-		for(int i = 0; i <= maximo; i++)
+		int i = 0;
+		for(i = 0; i <= maximo; i++)
 		{
-			if(FD_ISSET(i, &descriptoresLecturaConsolas))
+			if(FD_ISSET(i, &sockets))
 			{
+				int newfd;
 				if(i == socketReceptorConsola)
 				{
-					int newfd = AceptarConexionCliente(socketReceptorConsola);
+					newfd = AceptarConexionCliente(socketReceptorConsola);
 					if(newfd == -1)
 					{
 						log_info(ptrLog, "Error al aceptar consola");
@@ -310,22 +311,29 @@ void *comenzarEscucharConsolas()
 					{
 						log_info(ptrLog, "Se conecto una consola!!!!");
 						FD_SET(newfd, &tempSockets);
+						FD_SET(newfd, &sockets);
 						if(newfd > maximo)
 						{
 							maximo = newfd;
 						}
 					}
 				}
-				FD_CLR(socketReceptorConsola, &tempSockets);
+				escucharAConsola(newfd);
+				//aca respondo a la consola
+				enviarMensajeAConsola(newfd);
+				FD_CLR(i, &tempSockets);
+				if(i == socketReceptorCPU)
+				{
+					//aca deberia estar la logica de conexion con cpu desde nucleo me parece no?
+				}
 			}
-			recibirDatos(&tempSockets, &descriptoresLecturaConsolas, maximo);
+
 		}
 	}
 }
-
 int main() {
 	int returnInt = EXIT_SUCCESS;
-	int conConsola = EXIT_SUCCESS;
+
 	if (init()) {
 
 		socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);

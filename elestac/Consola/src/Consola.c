@@ -55,7 +55,7 @@ int enviarScriptAlNucleo()
 {
 	//aca lo que deberia mandar es el script, no una cosa cualquiera
 	char buff[MAX_BUFFER_SIZE] = "Hola como estas?";
-	char* respuestaServidor="kease";
+	char* respuestaServidor;
 	int bytesRecibidos = 0;
 	int socketConexionNucleo;
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
@@ -76,15 +76,17 @@ int enviarScriptAlNucleo()
 	//si pasa este if se conecta correctamente al socket servidor
 	//Respuesta del socket servidor
 	
-		bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
-		if (bytesRecibidos < 0) {
-		//no pude recibir nada del nucleo
-			log_info(ptrLog, "Error en la lectura del nucleo");
-			return -1;
+		while(bytesRecibidos == 0)
+		{
+				bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
+				if (bytesRecibidos < 0) {
+					//no pude recibir nada del nucleo
+					log_info(ptrLog, "Error en la lectura del nucleo");
+					return -1;
+				}
 		}
 		log_info(ptrLog, respuestaServidor);
 		//free(respuestaServidor); ES NECESARIO???
-	
 	finalizarConexion(socketConexionNucleo);
 	return EXIT_SUCCESS;
 }
