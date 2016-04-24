@@ -75,8 +75,7 @@ int enviarScriptAlNucleo()
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	//si pasa este if se conecta correctamente al socket servidor
 	//Respuesta del socket servidor
-	while(1)
-	{
+	
 		bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
 		if (bytesRecibidos < 0) {
 		//no pude recibir nada del nucleo
@@ -85,7 +84,7 @@ int enviarScriptAlNucleo()
 		}
 		log_info(ptrLog, respuestaServidor);
 		//free(respuestaServidor); ES NECESARIO???
-	}
+	
 	finalizarConexion(socketConexionNucleo);
 	return EXIT_SUCCESS;
 }
