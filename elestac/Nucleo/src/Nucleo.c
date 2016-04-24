@@ -35,7 +35,7 @@ typedef struct {
 //Socket que recibe conexiones de CPU y Consola
 int socketReceptorCPU, socketReceptorConsola;
 int socketUMC;
-
+t_list* listaProgramasConsola;
 //Archivo de Log
 t_log* ptrLog;
 
@@ -219,6 +219,7 @@ int enviarMensajeAUMC() {
 	return 1;
 }
 
+
 int escucharAUMC() {
 	char buffer[MAX_BUFFER_SIZE];
 	do {
@@ -235,10 +236,96 @@ int escucharAUMC() {
 		}
 	}while(1);
 }
+int escucharAConsola() {
+	char buffer[MAX_BUFFER_SIZE];
+	do {
+		log_info(ptrLog, "Esperando que me hable la consola");
+		int bytesRecibidos = leer(socketReceptorConsola, buffer, MAX_BUFFER_SIZE);
+		if(bytesRecibidos < 0) {
+			log_info(ptrLog, "Ocurrio un error al recibir mensajes de consola");
+			return -1;
+		}else if(bytesRecibidos == 0){
+			log_info(ptrLog, "No se obtuvo nada de la consola y se cerro la conexion");
+			return -1;
+		}else{
+			log_info(ptrLog, buffer);
+		}
+	}while(1);
+}
+int enviarMensajeAConsola() {
+	char buffer[MAX_BUFFER_SIZE] = "consola aca terminas papa";
+	log_info(ptrLog, buffer);
+	int bytesEnviados = escribir(socketReceptorConsola, buffer, sizeof(buffer));
+	if(bytesEnviados < 0) {
+		log_info(ptrLog, "Ocurrio un error al enviar mensajes a la consola");
+		return -1;
+	}else if(bytesEnviados == 0){
+		log_info(ptrLog, "No se envio ningun byte a la consola");
+	}else{
+		log_info(ptrLog, "Mensaje a la consola enviado");
+	}
+	return 1;
+}
+
+void *comenzarEscucharConsolas()
+{
+	while(1)
+	{
+		fd_set descriptoresLecturaConsolas;	// Descriptores de interes para select()
+		fd_set tempSockets; //descriptor master
+		int maximo; //descriptor mas grande
+		listaProgramasConsola = list_create();
+		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
+		if (socketReceptorConsola < 0) {
+			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
+			return -1;
+		}
+		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
+		FD_ZERO(&descriptoresLecturaConsolas);
+		FD_ZERO(&master);
+		FD_SET(socketReceptorConsola, &tempSockets);
+		maximo = socketReceptorConsola;
+		log_info(ptrLog, "Esperando conexiones");
+		memcpy(&tempSockets, &descriptoresLecturaConsolas, sizeof(descriptoresLecturaConsolas));
+
+		/*ahora espero que alguno de los que se conectan tenga algo para decir*/
+		if(select(maximo +1, &descriptoresLecturaConsolas, NULL, NULL, NULL) < 0)
+		{
+			log_info(ptrLog, "Error en el select");
+			return -1;
+		}
+		//ahora me fijo si me mandan algo
+		for(int i = 0; i <= maximo; i++)
+		{
+			if(FD_ISSET(i, &descriptoresLecturaConsolas))
+			{
+				if(i == socketReceptorConsola)
+				{
+					int newfd = AceptarConexionCliente(socketReceptorConsola);
+					if(newfd == -1)
+					{
+						log_info(ptrLog, "Error al aceptar consola");
+
+					}else
+					{
+						log_info(ptrLog, "Se conecto una consola!!!!");
+						FD_SET(newfd, &tempSockets);
+						if(newfd > maximo)
+						{
+							maximo = newfd;
+						}
+					}
+				}
+				FD_CLR(socketReceptorConsola, &tempSockets);
+			}
+			recibirDatos(&tempSockets, &descriptoresLecturaConsolas, maximo);
+		}
+	}
+}
 
 int main() {
 	int returnInt = EXIT_SUCCESS;
-
+	int conConsola = EXIT_SUCCESS;
 	if (init()) {
 
 		socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);
@@ -255,17 +342,12 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor CPU");
 
-		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
-		if (socketReceptorConsola < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
-			return -1;
-		}
-		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
-
 		returnInt = enviarMensajeAUMC();
 		if(returnInt) {
 			returnInt = escucharAUMC();
 		}
+		comenzarEscucharConsolas();
+
 
 	} else {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");

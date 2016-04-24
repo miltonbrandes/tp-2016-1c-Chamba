@@ -18,10 +18,7 @@ int crearLog()
 		 if(ptrLog)
 		 {
 			 return 1;
-<<<<<<< HEAD
-=======
-			 
->>>>>>> 7744005e645c050e881a8f9eb6559ee5e5a463ef
+
 		 }else
 		 {
 			 return 0;
@@ -122,10 +119,6 @@ int main(int argc, char **argv) {
 		 //cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		 //programa = fopen(argv[1], "r");
 		 //script = leerArchivo(programa);
-<<<<<<< HEAD
-=======
-		 iniciarConsola(config);
->>>>>>> 7744005e645c050e881a8f9eb6559ee5e5a463ef
 		 enviarScriptAlNucleo();
 	 }
 	 else
