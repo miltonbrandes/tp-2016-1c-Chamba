@@ -14,6 +14,8 @@ int leer(int socket, char* buffer, int longitud);
 int escribir(int socket, char* buffer, int longitud);
 
 
+enum  { CONSOLA=1, CPU=2, NUCLEO=3, SWAP=4, UMC=5 } quien_conecto;
+
 //recibo datos de un socket pasado por parametros
 //Finaliza la conexion de un socket
 int finalizarConexion(int socket) {
