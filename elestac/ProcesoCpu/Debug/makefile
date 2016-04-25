@@ -26,14 +26,14 @@ endif
 all: ProcesoCpu
 
 dependents:
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug && $(MAKE) clean all
+	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug && $(MAKE) clean all
 
 # Tool invocations
-ProcesoCpu: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so
+ProcesoCpu: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug/libsockets.so /home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "ProcesoCpu" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug" -L"/home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug" -o "ProcesoCpu" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -44,7 +44,7 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/workspace/sockets/Debug/libsockets.so:
-/home/utnso/workspace/commons/Debug/libcommons.so:
+/home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug/libsockets.so:
+/home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug/libcommons.so:
 
 -include ../makefile.targets

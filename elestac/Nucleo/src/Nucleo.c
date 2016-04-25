@@ -36,7 +36,10 @@ typedef struct {
 //Socket que recibe conexiones de CPU y Consola
 int socketReceptorCPU, socketReceptorConsola;
 int socketUMC;
-t_list* listaProgramasConsola;
+
+t_list* listaSocketsConsola;
+t_list* listaSocketsCPUs;
+
 //Archivo de Log
 t_log* ptrLog;
 
@@ -205,10 +208,9 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
-int enviarMensajeAUMC() {
-	char buffer[MAX_BUFFER_SIZE] = "Eh UMC contestame algo";
+int enviarMensajeAUMC(char buffer[]) {
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socketUMC, buffer, sizeof(buffer));
+	int bytesEnviados = escribir(socketUMC, buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 		log_info(ptrLog, "Ocurrio un error al enviar mensajes a UMC");
 		return -1;
@@ -220,39 +222,6 @@ int enviarMensajeAUMC() {
 	return 1;
 }
 
-
-int escucharAUMC() {
-	char buffer[MAX_BUFFER_SIZE];
-	do {
-		log_info(ptrLog, "Esperando respuesta de UMC");
-		int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
-		if(bytesRecibidos < 0) {
-			log_info(ptrLog, "Ocurrio un error al recibir mensajes de UMC");
-			return -1;
-		}else if(bytesRecibidos == 0){
-			log_info(ptrLog, "No se obtuvo respuesta de UMC y se cerro la conexion");
-			return -1;
-		}else{
-			log_info(ptrLog, buffer);
-		}
-	}while(1);
-}
-int escucharAConsola(int socket) {
-	char buffer[MAX_BUFFER_SIZE];
-	do {
-		log_info(ptrLog, "Esperando que me hable la consola");
-		int bytesRecibidos = leer(socket, buffer, MAX_BUFFER_SIZE);
-		if(bytesRecibidos < 0) {
-			log_info(ptrLog, "Ocurrio un error al recibir mensajes de consola");
-			return -1;
-		}else if(bytesRecibidos == 0){
-			log_info(ptrLog, "No se obtuvo nada de la consola y se cerro la conexion");
-			return -1;
-		}else{
-			log_info(ptrLog, buffer);
-		}
-	}while(1);
-}
 int enviarMensajeAConsola(int socket) {
 	char buffer[MAX_BUFFER_SIZE] = "consola aca terminas papa";
 	log_info(ptrLog, buffer);
@@ -268,69 +237,167 @@ int enviarMensajeAConsola(int socket) {
 	return 1;
 }
 
-void *comenzarEscucharConsolas()
-{
-	while(1)
-	{
-		fd_set sockets;	// Descriptores de interes para select()
-		fd_set tempSockets; //descriptor master
-		int maximo; //descriptor mas grande
-		listaProgramasConsola = list_create();
-		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
-		if (socketReceptorConsola < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
-		}
-		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
-		FD_ZERO(&sockets);
-		FD_ZERO(&tempSockets);
-		FD_SET(socketReceptorConsola, &tempSockets);
-		maximo = socketReceptorConsola;
-		log_info(ptrLog, "Esperando conexiones");
-		//memcpy(&tempSockets, &sockets, sizeof(sockets));
+void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
+	char *buffer[MAX_BUFFER_SIZE];
+	int bytesRecibidos;
+	int socketFor;
+	for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
+		if (FD_ISSET(socketFor, tempSockets)) {
+			bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
 
-		/*ahora espero que alguno de los que se conectan tenga algo para decir*/
-		if(select(maximo +1, &sockets, NULL, NULL, NULL) < 0)
-		{
-			log_info(ptrLog, "Error en el select");
-		}
-		//ahora me fijo si me mandan algo
-		int i = 0;
-		for(i = 0; i <= maximo; i++)
-		{
-			if(FD_ISSET(i, &sockets))
-			{
-				int newfd;
-				if(i == socketReceptorConsola)
-				{
-					newfd = AceptarConexionCliente(socketReceptorConsola);
-					if(newfd == -1)
-					{
-						log_info(ptrLog, "Error al aceptar consola");
+			if (bytesRecibidos > 0) {
+				buffer[bytesRecibidos] = 0;
+				log_info(ptrLog, "Mensaje recibido: ", buffer);
 
-					}else
-					{
-						log_info(ptrLog, "Se conecto una consola!!!!");
-						FD_SET(newfd, &tempSockets);
-						FD_SET(newfd, &sockets);
-						if(newfd > maximo)
-						{
-							maximo = newfd;
-						}
-					}
-				}
-				escucharAConsola(newfd);
-				//aca respondo a la consola
-				enviarMensajeAConsola(newfd);
-				FD_CLR(i, &tempSockets);
-				if(i == socketReceptorCPU)
-				{
-					//aca deberia estar la logica de conexion con cpu desde nucleo me parece no?
-				}
+				//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
+				//Hay que ver bien que hacer cuando se recibe un paquete
+
+				//Fin
+
+			} else if (bytesRecibidos == 0) {
+				//Aca preguntamos quien carajo es el que llamo me parece
+				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+			}else{
+				finalizarConexion(socketFor);
+				FD_CLR(socketFor, sockets);
+				log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
 			}
 
 		}
 	}
 }
+
+int obtenerSocketMaximoInicial() {
+	int socketMaximoInicial = 0;
+
+	if(socketReceptorCPU > socketReceptorConsola) {
+		if(socketReceptorCPU > socketUMC) {
+			socketMaximoInicial = socketReceptorCPU;
+		}else if(socketUMC > socketReceptorCPU) {
+			socketMaximoInicial = socketUMC;
+		}
+	}else if(socketReceptorConsola > socketUMC) {
+		socketMaximoInicial = socketReceptorConsola;
+	} else {
+		socketMaximoInicial = socketUMC;
+	}
+
+	return socketMaximoInicial;
+}
+
+void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
+	char *buffer[MAX_BUFFER_SIZE];
+	int bytesRecibidos = leer(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+
+	if(bytesRecibidos < 0) {
+		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket CPU");
+	} else if(bytesRecibidos == 0) {
+		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
+	} else {
+		log_info(ptrLog, "Bytes recibidos desde una CPU: ", buffer);
+		*buffer = "Este es un mensaje para vos, CPU\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+	}
+}
+
+void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
+	char *buffer[MAX_BUFFER_SIZE];
+	int bytesRecibidos = leer(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+
+	if(bytesRecibidos < 0) {
+		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Consola");
+	} else if(bytesRecibidos == 0) {
+		log_info(ptrLog, "No se recibieron datos en el Socket Consola");
+	} else {
+		log_info(ptrLog, "Bytes recibidos desde una CPU: ", buffer);
+		*buffer = "Este es un mensaje para vos, Consola\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+	}
+
+}
+
+void datosEnSocketUMC() {
+	char *buffer[MAX_BUFFER_SIZE];
+	int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
+
+	if(bytesRecibidos < 0) {
+		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
+	} else if(bytesRecibidos == 0) {
+		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
+	} else {
+		log_info(ptrLog, "Bytes recibidos desde UMC: ", buffer);
+	}
+
+}
+
+void escucharPuertos() {
+	fd_set sockets, tempSockets; //descriptores
+	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
+
+	listaSocketsCPUs = list_create();
+	listaSocketsConsola = list_create();
+
+	FD_SET(socketReceptorCPU, &sockets);
+	FD_SET(socketReceptorConsola, &sockets);
+	FD_SET(socketUMC, &sockets);
+
+	while(1)
+	{
+		FD_ZERO(&tempSockets);
+		memcpy(&tempSockets, &sockets, sizeof(sockets));
+
+		log_info(ptrLog, "Esperando conexiones");
+
+		int resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
+		if (resultadoSelect == 0) {
+			log_info(ptrLog, "Time out. Volviendo a esperar conexiones");
+		} else if (resultadoSelect < 0) {
+			log_info(ptrLog, "Ocurrio un error");
+		} else {
+
+			if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
+
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorCPU);
+				if (nuevoSocketConexion < 0) {
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
+				} else {
+					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
+					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
+				}
+
+				FD_CLR(socketReceptorCPU, &tempSockets);
+				datosEnSocketReceptorCPU(nuevoSocketConexion);
+
+			} else if(FD_ISSET(socketReceptorConsola, &tempSockets)) {
+
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorConsola);
+				if (nuevoSocketConexion < 0) {
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Consola");
+				} else {
+					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
+					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
+				}
+
+				FD_CLR(socketReceptorConsola, &tempSockets);
+				datosEnSocketReceptorConsola(nuevoSocketConexion);
+
+			} else if(FD_ISSET(socketUMC, &tempSockets)) {
+
+				//Ver como es aca porque no estamos aceptando una conexion cliente, sino recibiendo algo de UMC
+				datosEnSocketUMC();
+
+			} else {
+
+				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
+				recibirDatos(&tempSockets, &sockets, socketMaximo);
+
+			}
+		}
+	}
+}
+
 int main() {
 	int returnInt = EXIT_SUCCESS;
 
@@ -350,11 +417,16 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor CPU");
 
-		returnInt = enviarMensajeAUMC();
-		if(returnInt) {
-			returnInt = escucharAUMC();
+		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
+		if (socketReceptorCPU < 0) {
+			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
+			return -1;
 		}
-		comenzarEscucharConsolas();
+		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
+
+		returnInt = enviarMensajeAUMC("Mensaje desde Nucleo\0");
+
+		escucharPuertos();
 
 
 	} else {

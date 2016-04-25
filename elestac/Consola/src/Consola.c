@@ -12,87 +12,81 @@ t_log* ptrLog;
 t_config* config;
 char *direccion;
 int puerto;
-int crearLog()
-{
-	ptrLog = log_create("../Consola/log.txt", "Consola", 1, 0);
-		 if(ptrLog)
-		 {
-			 return 1;
 
-		 }else
-		 {
-			 return 0;
-		 }
+int crearLog() {
+	ptrLog = log_create("../Consola/log.txt", "Consola", 1, 0);
+	if (ptrLog) {
+		return 1;
+
+	} else {
+		return 0;
+	}
 }
-int iniciarConsola(t_config* config)
-{
+
+int iniciarConsola(t_config* config) {
 	config = config_create("../Consola/Consola.txt");
-	if(config)
-	{
-		if(config_has_property(config, "PUERTO"))
-		{
+	if (config) {
+		if (config_has_property(config, "PUERTO")) {
 			puerto = config_get_int_value(config, "PUERTO");
-		}
-		else
-		{
+		} else {
 			log_info(ptrLog, "El archivo de configuracion no tiene puerto");
 			return 0;
 
 		}
-		if(config_has_property(config, "IP"))
-		{
+		if (config_has_property(config, "IP")) {
 			direccion = config_get_string_value(config, "IP");
-		}
-		else
-		{
+		} else {
 			log_info(ptrLog, "El archivo de configuracion no tiene IP");
 			return 0;
 		}
 	}
 	return 1;
 }
-int enviarScriptAlNucleo()
-{
+
+int enviarScriptAlNucleo() {
 	//aca lo que deberia mandar es el script, no una cosa cualquiera
-	char buff[MAX_BUFFER_SIZE] = "Hola como estas?";
-	char* respuestaServidor;
+	char buff[MAX_BUFFER_SIZE] = "Hola como estas?\0";
+	char respuestaServidor[MAX_BUFFER_SIZE];
 	int bytesRecibidos = 0;
 	int socketConexionNucleo;
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
-	if (socketConexionNucleo < 0)
-	{
-	//aca me deberia mostrar por log que hubo un error
+	if (socketConexionNucleo < 0) {
+		//aca me deberia mostrar por log que hubo un error
 		log_info(ptrLog, "Error en la conexion con el nucleo");
+		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Se conecto con el nucleo");
 	//aca se conecto con el nucleo
-	if (escribir(socketConexionNucleo, buff, sizeof(buff)) < 0)
-	{
-	//error, no encontro el servidor
+	if (escribir(socketConexionNucleo, buff, MAX_BUFFER_SIZE) < 0) {
+		//error, no encontro el servidor
+		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	//si pasa este if se conecta correctamente al socket servidor
 	//Respuesta del socket servidor
-	
-		while(bytesRecibidos == 0)
-		{
-				bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, sizeof(respuestaServidor));
-				if (bytesRecibidos < 0) {
-					//no pude recibir nada del nucleo
-					log_info(ptrLog, "Error en la lectura del nucleo");
-					return -1;
-				}
+
+	while (1) {
+		log_info(ptrLog, "Esperando mensaje del Nucleo");
+		bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, MAX_BUFFER_SIZE);
+		if (bytesRecibidos < 0) {
+			//no pude recibir nada del nucleo
+			finalizarConexion(socketConexionNucleo);
+			log_info(ptrLog, "Error en la lectura del nucleo");
+			return -1;
+		}else if(bytesRecibidos > 0) {
+			log_info(ptrLog, "Mensaje recibido de Nucleo: ", respuestaServidor);
 		}
-		log_info(ptrLog, respuestaServidor);
-		//free(respuestaServidor); ES NECESARIO???
+	}
+	log_info(ptrLog, respuestaServidor);
+	//free(respuestaServidor); ES NECESARIO???
 	finalizarConexion(socketConexionNucleo);
 	return EXIT_SUCCESS;
 }
+
 //creo la funcion leer archivo para poder asignarle al script ansisop lo que dice el archivo
-char* leerArchivo(FILE *archivo)
-{
+char* leerArchivo(FILE *archivo) {
 	//busco el final del archivo
 	fseek(archivo, 0, SEEK_END);
 	//veo que tan grande es
@@ -109,32 +103,24 @@ char* leerArchivo(FILE *archivo)
 	return script;
 
 }
+
 int main(int argc, char **argv) {
 	//creo la variable que me va a leer el script mediante el archivo que me llegue.
 	//char* script;
-	 //FILE *programa;
-	 //leo del archivo de configuracion el puerto y el ip
-	 //creo el log
-	 if(crearLog())
-	 {
-		 iniciarConsola(config);
-		 //cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
-		 //programa = fopen(argv[1], "r");
-		 //script = leerArchivo(programa);
-		 enviarScriptAlNucleo();
-	 }
-	 else
-	 {
-		 log_info(ptrLog, "La consola no pudo iniciarse");
-		 return -1;
-	 }
+	//FILE *programa;
+	//leo del archivo de configuracion el puerto y el ip
+	//creo el log
+	if (crearLog()) {
+		iniciarConsola(config);
+		//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
+		//programa = fopen(argv[1], "r");
+		//script = leerArchivo(programa);
+		enviarScriptAlNucleo();
+	} else {
+		log_info(ptrLog, "La consola no pudo iniciarse");
+		return -1;
+	}
 
-	 return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
-
-
-
-
-
-
 
