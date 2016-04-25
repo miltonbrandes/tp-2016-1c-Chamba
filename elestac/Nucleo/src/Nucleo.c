@@ -295,8 +295,8 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde una CPU: ", buffer);
-		*buffer = "Este es un mensaje para vos, CPU\0";
-		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+		char mensajeParaCPU[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaCPU, MAX_BUFFER_SIZE);
 	}
 }
 

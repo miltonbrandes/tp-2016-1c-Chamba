@@ -26,8 +26,8 @@ endif
 all: ProcesoCpu
 
 dependents:
-	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug && $(MAKE) clean all
-	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug && $(MAKE) all
 
 # Tool invocations
 ProcesoCpu: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2016-1c-chamba/sockets/Debug/libsockets.so /home/utnso/Escritorio/tp-2016-1c-chamba/commons/Debug/libcommons.so

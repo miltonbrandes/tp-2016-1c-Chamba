@@ -30,16 +30,19 @@ int crearSocketCliente(char* direccion,int puerto);
 
 int main() {
 
+	crearLog();
+
 	t_config* config;
 	config = config_create("../ProcesoCpu/ProcesoCpu.txt");
 	//leo del archivo de configuracion el puerto y el ip
-	char *direccionUmc = config_get_string_value(config, "IP_UMC");
-	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
-	crearSocketCliente(direccionUmc,puertoUmc);
 
 	char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
 	int puertoNucleo = config_get_int_value(config, "PUERTO_NUCLEO");
-	crearSocketCliente(direccionNucleo,puertoNucleo);
+	int socketNucleo = crearSocketCliente(direccionNucleo,puertoNucleo);
+
+	char *direccionUmc = config_get_string_value(config, "IP_UMC");
+	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
+	int socketUMC = crearSocketCliente(direccionUmc,puertoUmc);
 
 	return EXIT_SUCCESS;
 }
@@ -54,12 +57,12 @@ int crearSocketCliente(char* direccion,int puerto){
 		return -1;
 	}
 
-	char* buff = "Hola como estas? Soy Cpu\n";
-	char* respuestaServidor;
+	char buff[MAX_BUFFER_SIZE] = "Hola como estas? Soy Cpu\0";
+	char respuestaServidor[MAX_BUFFER_SIZE];
 	log_info(ptrLog, "Se conecto con el nucleo");
 	//aca se conecto con el nucleo/Umc
 
-	if (escribir(socketConexion, buff, sizeof(buff) + 1) < 0) {
+	if (escribir(socketConexion, buff, MAX_BUFFER_SIZE) < 0) {
 		//error, no pudo escribir
 		return -1;
 		}
@@ -68,7 +71,7 @@ int crearSocketCliente(char* direccion,int puerto){
 	log_info(ptrLog, "Mensaje Enviado al servidor");
 
 	//Respuesta del socket servidor
-	int bytesRecibidos = leer(socketConexion, respuestaServidor, sizeof(respuestaServidor)+1);
+	int bytesRecibidos = leer(socketConexion, respuestaServidor, MAX_BUFFER_SIZE);
 	if (bytesRecibidos < 0) {
 		log_info(ptrLog,"Error en al lectura del mensaje del servidor");
 		//no pude recibir nada del nucleo/umc
@@ -79,7 +82,6 @@ int crearSocketCliente(char* direccion,int puerto){
 	//free(respuestaServidor);
 
 	printf("Recibi %s\n", respuestaServidor);
-	finalizarConexion(socketConexion);
 	return socketConexion;
 }
 
