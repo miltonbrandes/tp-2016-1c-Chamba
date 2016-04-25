@@ -37,3 +37,6 @@
 .settings/
 .cproject
 .project
+
+#Otros
+log.txt
