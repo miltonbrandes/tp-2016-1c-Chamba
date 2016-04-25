@@ -104,10 +104,15 @@ void manejarConexionesRecibidas(int socketUMC) {
 		char buffer[MAX_BUFFER_SIZE];
 		int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
 
-		if(bytesRecibidos < 1) {
+		if(bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC");
+			finalizarConexion(socketUMC);
+			return;
 		}else if(bytesRecibidos == 0) {
 			log_info(ptrLog, "No se recibio ningun byte de UMC");
+			//Aca matamos Socket UMC
+			finalizarConexion(socketUMC);
+			return;
 		}else{
 			log_info(ptrLog, buffer);
 

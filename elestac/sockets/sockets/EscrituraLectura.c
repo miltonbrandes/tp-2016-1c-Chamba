@@ -23,7 +23,7 @@ int finalizarConexion(int socket) {
 	return 0;
 }
 
-int escribir(int socket, char** buf, int longitud) {
+int escribir(int socket, char* buf, int longitud) {
 	//char* buffer = malloc(MAX_BUFFER_SIZE);
 	//memcpy(buffer, *buf, longitud);
 	int escrito = 0, aux = 0;

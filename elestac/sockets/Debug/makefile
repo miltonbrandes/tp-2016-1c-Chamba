@@ -4,7 +4,7 @@
 
 -include ../makefile.init
 
-RM := rm -rf
+RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
@@ -23,22 +23,26 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: libsockets.so
+all: sockets
+
+dependents:
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
 
 # Tool invocations
-libsockets.so: $(OBJS) $(USER_OBJS)
+sockets: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -shared -o "libsockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/commons/Debug" -o "sockets" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libsockets.so
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) sockets
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
+/home/utnso/workspace/commons/Debug/libcommons.so:
 
 -include ../makefile.targets

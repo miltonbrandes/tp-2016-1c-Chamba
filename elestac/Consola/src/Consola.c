@@ -77,6 +77,11 @@ int enviarScriptAlNucleo() {
 			return -1;
 		}else if(bytesRecibidos > 0) {
 			log_info(ptrLog, "Mensaje recibido de Nucleo: ", respuestaServidor);
+		} else {
+			//Aca matamos a Nucleo
+			finalizarConexion(socketConexionNucleo);
+			log_info(ptrLog, "No se recibio nada de Nucleo. Cerramos conexion");
+			break;
 		}
 	}
 	log_info(ptrLog, respuestaServidor);

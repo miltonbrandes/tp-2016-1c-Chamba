@@ -154,7 +154,11 @@ void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
 				//Recibimos algo
 
 			} else if (bytesRecibidos == 0) {
-				//Aca preguntamos quien carajo es el que llamo me parece
+				//Aca estamos matando el Socket que esta fallando
+				//Ver que hay que hacer porque puede venir de CPU o de Nucleo
+				finalizarConexion(socketFor);
+				FD_CLR(socketFor, tempSockets);
+				FD_CLR(socketFor, sockets);
 				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
 			}else{
 				finalizarConexion(socketFor);
@@ -180,17 +184,21 @@ void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
 	}
 }
 
-void datosEnSocketSwap() {
+int datosEnSocketSwap() {
 	char buffer[MAX_BUFFER_SIZE];
 	int bytesRecibidos = leer(socketSwap, buffer, MAX_BUFFER_SIZE);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos de Swap");
 	} else if(bytesRecibidos == 0) {
-		log_info(ptrLog, "No se recibieron datos de Swap");
+		log_info(ptrLog, "No se recibieron datos de Swap. Se cierra la conexion");
+		finalizarConexion(socketSwap);
+		return -1;
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde Swap: ", buffer);
 	}
+
+	return 0;
 }
 
 void manejarConexionesRecibidas() {
@@ -226,13 +234,16 @@ void manejarConexionesRecibidas() {
 				}
 
 				FD_CLR(socketReceptorNucleoCPU, &tempSockets);
-//				datosEnSocketReceptorNucleoCPU(nuevoSocketConexion);
 				enviarMensajeANucleoOCPU(nuevoSocketConexion, "Nucleo y CPU no me rompan las pelotas\0");
 
 			} else if(FD_ISSET(socketSwap, &tempSockets)) {
 
 				//Ver que hacer aca, no se acepta conexion, se recibe algo de Swap.
-				datosEnSocketSwap();
+				int returnDeSwap = datosEnSocketSwap();
+				if(returnDeSwap == -1) {
+					//Aca matamos Socket SWAP
+					FD_CLR(socketSwap, &sockets);
+				}
 
 			} else {
 

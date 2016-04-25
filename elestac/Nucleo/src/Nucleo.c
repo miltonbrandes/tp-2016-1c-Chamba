@@ -255,7 +255,10 @@ void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
 				//Fin
 
 			} else if (bytesRecibidos == 0) {
-				//Aca preguntamos quien carajo es el que llamo me parece
+				//Ver que hay que hacer porque puede venir de CPU, de Consola, o de UMC
+				finalizarConexion(socketFor);
+				FD_CLR(socketFor, tempSockets);
+				FD_CLR(socketFor, sockets);
 				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
 			}else{
 				finalizarConexion(socketFor);
@@ -316,7 +319,7 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 
 }
 
-void datosEnSocketUMC() {
+int datosEnSocketUMC() {
 	char *buffer[MAX_BUFFER_SIZE];
 	int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
 
@@ -324,10 +327,13 @@ void datosEnSocketUMC() {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
 	} else if(bytesRecibidos == 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
+		finalizarConexion(socketUMC);
+		return -1;
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde UMC: ", buffer);
 	}
 
+	return 0;
 }
 
 void escucharPuertos() {
@@ -386,7 +392,11 @@ void escucharPuertos() {
 			} else if(FD_ISSET(socketUMC, &tempSockets)) {
 
 				//Ver como es aca porque no estamos aceptando una conexion cliente, sino recibiendo algo de UMC
-				datosEnSocketUMC();
+				int returnDeUMC = datosEnSocketUMC();
+				if(returnDeUMC == -1) {
+					//Aca matamos Socket UMC
+					FD_CLR(socketUMC, &sockets);
+				}
 
 			} else {
 

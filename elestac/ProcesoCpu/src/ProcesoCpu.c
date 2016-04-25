@@ -17,16 +17,18 @@
 t_log* ptrLog;
 t_config* config;
 
-int crearLog(){
+int socketNucleo, socketUMC;
+
+int crearLog() {
 	ptrLog = log_create("../ProcesoCpu/log.txt", "ProcesoCpu", 1, 0);
-		if(ptrLog){
-			 return 1;
-		 }else{
-			 return 0;
-		}
+	if (ptrLog) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
-int crearSocketCliente(char* direccion,int puerto);
+int crearSocketCliente(char* direccion, int puerto);
 
 int main() {
 
@@ -38,16 +40,29 @@ int main() {
 
 	char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
 	int puertoNucleo = config_get_int_value(config, "PUERTO_NUCLEO");
-	int socketNucleo = crearSocketCliente(direccionNucleo,puertoNucleo);
+	socketNucleo = crearSocketCliente(direccionNucleo, puertoNucleo);
+
+	enviarMensaje(socketNucleo);
+	recibirMensaje(socketNucleo);
 
 	char *direccionUmc = config_get_string_value(config, "IP_UMC");
 	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
-	int socketUMC = crearSocketCliente(direccionUmc,puertoUmc);
+	socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
+
+	enviarMensaje(socketUMC);
+	while (1) {
+		int bytesRecibidosOk = recibirMensaje(socketUMC);
+		if(bytesRecibidosOk == -1) {
+			//Cerramos el CPU
+			log_info(ptrLog, "Se perdio conexion con UMC. Termino proceso CPU");
+			break;
+		}
+	}
 
 	return EXIT_SUCCESS;
 }
 
-int crearSocketCliente(char* direccion,int puerto){
+int crearSocketCliente(char* direccion, int puerto) {
 
 	int socketConexion;
 	socketConexion = AbrirConexion(direccion, puerto);
@@ -56,32 +71,45 @@ int crearSocketCliente(char* direccion,int puerto){
 		log_info(ptrLog, "Error en la conexion con el nucleo");
 		return -1;
 	}
-
-	char buff[MAX_BUFFER_SIZE] = "Hola como estas? Soy Cpu\0";
-	char respuestaServidor[MAX_BUFFER_SIZE];
-	log_info(ptrLog, "Se conecto con el nucleo");
-	//aca se conecto con el nucleo/Umc
-
-	if (escribir(socketConexion, buff, MAX_BUFFER_SIZE) < 0) {
-		//error, no pudo escribir
-		return -1;
-		}
-	//si pasa este if se conecta correctamente al socket servidor
-	printf("Se conecto correctamente\n");
-	log_info(ptrLog, "Mensaje Enviado al servidor");
-
-	//Respuesta del socket servidor
-	int bytesRecibidos = leer(socketConexion, respuestaServidor, MAX_BUFFER_SIZE);
-	if (bytesRecibidos < 0) {
-		log_info(ptrLog,"Error en al lectura del mensaje del servidor");
-		//no pude recibir nada del nucleo/umc
-		return -1;
-		}
-
-	log_info(ptrLog, respuestaServidor);
-	//free(respuestaServidor);
-
-	printf("Recibi %s\n", respuestaServidor);
+	log_info(ptrLog, "Socket creado y conectado");
 	return socketConexion;
 }
 
+int enviarMensaje(int socket) {
+	char buff[MAX_BUFFER_SIZE] = "Hola como estas? Soy Cpu\0";
+	//aca se conecto con el nucleo/Umc
+
+	if (escribir(socket, buff, MAX_BUFFER_SIZE) < 0) {
+		//error, no pudo escribir
+		return -1;
+	}
+	log_info(ptrLog, "Mensaje Enviado");
+
+}
+
+int recibirMensaje(int socket) {
+	char respuestaServidor[MAX_BUFFER_SIZE];
+	//Respuesta del socket servidor
+	int bytesRecibidos = leer(socket, respuestaServidor, MAX_BUFFER_SIZE);
+	if (bytesRecibidos < 0) {
+		log_info(ptrLog, "Error en al lectura del mensaje del servidor");
+		//no pude recibir nada del nucleo/umc
+		return -1;
+	}else if(bytesRecibidos == 0) {
+		//Matamos socket
+		if(socket == socketNucleo) {
+			//Cierro conexion con Nucleo
+			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
+			finalizarConexion(socketNucleo);
+		}else if(socket == socketUMC) {
+			//Cierro conexion con UMC
+			log_info(ptrLog, "No se recibio nada de UMC, cierro conexion");
+			finalizarConexion(socketUMC);
+		}
+		return -1;
+	} else {
+		log_info(ptrLog, respuestaServidor);
+	}
+
+	return 0;
+}
