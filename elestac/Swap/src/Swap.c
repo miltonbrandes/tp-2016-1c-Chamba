@@ -10,6 +10,7 @@
 #include <sockets/ServidorFunciones.h>
 #include <commons/collections/list.h>
 #include <commons/log.h>
+#include <sockets/EscrituraLectura.h>
 
 #define MAX_BUFFER_SIZE 4096
 
