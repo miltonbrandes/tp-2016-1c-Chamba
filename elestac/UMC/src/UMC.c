@@ -17,14 +17,16 @@
 #define MAX_BUFFER_SIZE 4096
 
 //Socket que recibe conexiones de Nucleo y CPU
-int socketReceptorNucleoCPU;
+int socketReceptorNucleo;
+int socketReceptorCPU;
 int socketSwap;
 
 //Archivo de Log
 t_log* ptrLog;
 
 //Variables de configuracion
-int puertoTCPRecibirConexiones;
+int puertoTCPRecibirConexionesCPU;
+int puertoTCPRecibirConexionesNucleo;
 int puertoReceptorSwap;
 char *ipSwap;
 
@@ -89,11 +91,19 @@ int cargarValoresDeConfig() {
 	config = config_create("../UMC/UMC.txt");
 
 	if (config) {
-		if (config_has_property(config, "PUERTO")) {
-			puertoTCPRecibirConexiones = config_get_int_value(config, "PUERTO");
+		if (config_has_property(config, "PUERTO_CPU")) {
+			puertoTCPRecibirConexionesCPU = config_get_int_value(config, "PUERTO_CPU");
 		} else {
 			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave PUERTO");
+					"El archivo de configuracion no contiene la clave PUERTO_CPU");
+			return 0;
+		}
+
+		if (config_has_property(config, "PUERTO_NUCLE0")) {
+			puertoTCPRecibirConexionesNucleo = config_get_int_value(config, "PUERTO_NUCLE0");
+		} else {
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave PUERTO_NUCLE0");
 			return 0;
 		}
 
@@ -134,10 +144,16 @@ void enviarMensajeASwap() {
 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
-void enviarMensajeANucleoOCPU(int socketNucleoOCPU, char* buffer) {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a Nucleo o a CPU\0";
-	log_info(ptrLog, "Envio mensaje a Nucleo o CPU: ", mensajeSwap);
-	int sendBytes = escribir(socketNucleoOCPU, mensajeSwap, MAX_BUFFER_SIZE);
+void enviarMensajeACPU(int socketCPU, char* buffer) {
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a CPU\0";
+	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeSwap);
+	int sendBytes = escribir(socketCPU, mensajeSwap, MAX_BUFFER_SIZE);
+}
+
+void enviarMensajeANucleo(int socketNucleo, char* buffer) {
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a Nucleo\0";
+	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeSwap);
+	int sendBytes = escribir(socketNucleo, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
 void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
@@ -201,16 +217,36 @@ int datosEnSocketSwap() {
 	return 0;
 }
 
+int obtenerSocketMaximoInicial() {
+	int socketMaximoInicial = 0;
+
+	if(socketReceptorCPU > socketReceptorNucleo) {
+		if(socketReceptorCPU > socketSwap) {
+			socketMaximoInicial = socketReceptorCPU;
+		}else if(socketSwap > socketReceptorNucleo) {
+			socketMaximoInicial = socketSwap;
+		}
+	}else if(socketReceptorNucleo > socketSwap) {
+		socketMaximoInicial = socketReceptorNucleo;
+	} else {
+		socketMaximoInicial = socketSwap;
+	}
+
+	return socketMaximoInicial;
+}
+
 void manejarConexionesRecibidas() {
 	fd_set sockets, tempSockets;
 	int resultadoSelect;
-	int socketMaximo = socketReceptorNucleoCPU;
+	int socketMaximo = obtenerSocketMaximoInicial();
 
-	FD_SET(socketReceptorNucleoCPU, &sockets);
+	FD_SET(socketReceptorNucleo, &sockets);
+	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketSwap, &sockets);
 
 	do {
 		FD_ZERO(&tempSockets);
+
 		log_info(ptrLog, "Esperando conexiones");
 		memcpy(&tempSockets, &sockets, sizeof(sockets));
 
@@ -221,19 +257,33 @@ void manejarConexionesRecibidas() {
 			log_info(ptrLog, "Ocurrio un error");
 		} else {
 
-			if (FD_ISSET(socketReceptorNucleoCPU, &tempSockets)) {
+			if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
 
-				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorNucleoCPU);
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorCPU);
 				if (nuevoSocketConexion < 0) {
-					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU o Nucleo");
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 				} else {
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
 
-				FD_CLR(socketReceptorNucleoCPU, &tempSockets);
-				enviarMensajeANucleoOCPU(nuevoSocketConexion, "Nucleo y CPU no me rompan las pelotas\0");
+				FD_CLR(socketReceptorCPU, &tempSockets);
+				enviarMensajeACPU(nuevoSocketConexion, "CPU no me rompas las pelotas\0");
+
+			} else if(FD_ISSET(socketReceptorNucleo, &tempSockets)) {
+
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorNucleo);
+				if (nuevoSocketConexion < 0) {
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Nucleo");
+				} else {
+					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
+					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
+				}
+
+				FD_CLR(socketReceptorNucleo, &tempSockets);
+				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompas las pelotas\0");
 
 			} else if(FD_ISSET(socketSwap, &tempSockets)) {
 
@@ -266,13 +316,19 @@ int main() {
 		}
 		log_info(ptrLog, "Se conecto con Swap");
 
-		socketReceptorNucleoCPU = AbrirSocketServidor(
-				puertoTCPRecibirConexiones);
-		if (socketReceptorNucleoCPU < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor UMC");
+		socketReceptorNucleo = AbrirSocketServidor(puertoTCPRecibirConexionesNucleo);
+		if (socketReceptorNucleo < 0) {
+			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de UMC");
 			return -1;
 		}
-		log_info(ptrLog, "Se abrio el socket Servidor UMC");
+		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
+
+		socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
+		if (socketReceptorCPU < 0) {
+			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de CPU");
+			return -1;
+		}
+		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 
 		enviarMensajeASwap();
 		manejarConexionesRecibidas();

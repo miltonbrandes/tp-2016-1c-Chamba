@@ -1,0 +1,39 @@
+[INFO] 16:45:53:102 UMC/(2976:2976): El archivo de configuracion no contiene la clave PUERTO_NUCLEO
+[INFO] 16:45:53:106 UMC/(2976:2976): La UMC no pudo inicializarse correctamente
+[INFO] 16:47:34:208 UMC/(3367:3367): Se conecto con Swap
+[INFO] 16:47:34:208 UMC/(3367:3367): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 16:47:34:208 UMC/(3367:3367): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 16:47:34:208 UMC/(3367:3367): Envio mensaje a Swap: 
+[INFO] 16:47:34:208 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:47:37:209 UMC/(3367:3367): Bytes recibidos desde Swap: 
+[INFO] 16:47:37:210 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:47:41:709 UMC/(3367:3367): Envio mensaje a Nucleo: 
+[INFO] 16:47:41:709 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:47:41:710 UMC/(3367:3367): 
+[INFO] 16:47:41:710 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:47:54:755 UMC/(3367:3367): Envio mensaje a CPU: 
+[INFO] 16:47:54:755 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:47:54:755 UMC/(3367:3367): 
+[INFO] 16:47:54:755 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:52:29:180 UMC/(3367:3367): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 16:52:29:180 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:52:30:366 UMC/(3367:3367): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 16:52:30:366 UMC/(3367:3367): Esperando conexiones
+[INFO] 16:52:46:938 UMC/(3512:3512): Se conecto con Swap
+[INFO] 16:52:46:938 UMC/(3512:3512): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 16:52:46:938 UMC/(3512:3512): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 16:52:46:938 UMC/(3512:3512): Envio mensaje a Swap: 
+[INFO] 16:52:46:938 UMC/(3512:3512): Esperando conexiones
+[INFO] 16:52:49:939 UMC/(3512:3512): Bytes recibidos desde Swap: 
+[INFO] 16:52:49:940 UMC/(3512:3512): Esperando conexiones
+[INFO] 17:00:15:128 UMC/(3662:3662): Se conecto con Swap
+[INFO] 17:00:15:128 UMC/(3662:3662): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 17:00:15:128 UMC/(3662:3662): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 17:00:15:128 UMC/(3662:3662): Envio mensaje a Swap: 
+[INFO] 17:00:15:128 UMC/(3662:3662): Esperando conexiones
+[INFO] 17:00:18:130 UMC/(3662:3662): Bytes recibidos desde Swap: 
+[INFO] 17:00:18:131 UMC/(3662:3662): Esperando conexiones
+[INFO] 17:00:20:754 UMC/(3662:3662): Envio mensaje a Nucleo: 
+[INFO] 17:00:20:754 UMC/(3662:3662): Esperando conexiones
+[INFO] 17:00:20:758 UMC/(3662:3662): 
+[INFO] 17:00:20:758 UMC/(3662:3662): Esperando conexiones

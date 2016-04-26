@@ -84,7 +84,7 @@ int enviarMensaje(int socket) {
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado");
-	return 0;
+
 }
 
 int recibirMensaje(int socket) {

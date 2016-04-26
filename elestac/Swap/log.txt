@@ -1,0 +1,32 @@
+[INFO] 16:45:44:726 Swap/(2945:2945): Se abrio el socket Servidor Swap
+[INFO] 16:45:44:726 Swap/(2945:2945): Esperando conexiones
+[INFO] 16:47:21:425 Swap/(3305:3305): No se pudo abrir el Socket Servidor Swap
+[INFO] 16:47:30:248 Swap/(3336:3336): Se abrio el socket Servidor Swap
+[INFO] 16:47:30:248 Swap/(3336:3336): Esperando conexiones
+[INFO] 16:47:34:208 Swap/(3336:3336): Conexion de UMC aceptada
+[INFO] 16:47:34:208 Swap/(3336:3336): Esperando recibir alguna peticion
+[INFO] 16:47:34:208 Swap/(3336:3336): 
+[INFO] 16:47:34:208 Swap/(3336:3336): Esperando Compactacion
+[INFO] 16:47:37:209 Swap/(3336:3336): Pagina enviada
+[INFO] 16:47:37:210 Swap/(3336:3336): Esperando recibir alguna peticion
+[INFO] 16:52:31:760 Swap/(3336:3336): No se recibio ningun byte de UMC
+[INFO] 16:52:31:760 Swap/(3336:3336): Esperando conexiones
+[INFO] 16:52:42:198 Swap/(3481:3481): Se abrio el socket Servidor Swap
+[INFO] 16:52:42:200 Swap/(3481:3481): Esperando conexiones
+[INFO] 16:52:46:938 Swap/(3481:3481): Conexion de UMC aceptada
+[INFO] 16:52:46:938 Swap/(3481:3481): Esperando recibir alguna peticion
+[INFO] 16:52:46:938 Swap/(3481:3481): 
+[INFO] 16:52:46:938 Swap/(3481:3481): Esperando Compactacion
+[INFO] 16:52:49:939 Swap/(3481:3481): Pagina enviada
+[INFO] 16:52:49:940 Swap/(3481:3481): Esperando recibir alguna peticion
+[INFO] 16:59:54:627 Swap/(3602:3602): No se pudo abrir el Socket Servidor Swap
+[INFO] 17:00:06:193 Swap/(3481:3481): No se recibio ningun byte de UMC
+[INFO] 17:00:06:193 Swap/(3481:3481): Esperando conexiones
+[INFO] 17:00:11:567 Swap/(3632:3632): Se abrio el socket Servidor Swap
+[INFO] 17:00:11:569 Swap/(3632:3632): Esperando conexiones
+[INFO] 17:00:15:121 Swap/(3632:3632): Conexion de UMC aceptada
+[INFO] 17:00:15:122 Swap/(3632:3632): Esperando recibir alguna peticion
+[INFO] 17:00:15:128 Swap/(3632:3632): 
+[INFO] 17:00:15:128 Swap/(3632:3632): Esperando Compactacion
+[INFO] 17:00:18:129 Swap/(3632:3632): Pagina enviada
+[INFO] 17:00:18:130 Swap/(3632:3632): Esperando recibir alguna peticion

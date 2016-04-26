@@ -313,8 +313,8 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Consola");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde una Consola: ", buffer);
-		*buffer = "Este es un mensaje para vos, Consola\0";
-		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+		char mensajeParaConsola[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaConsola, MAX_BUFFER_SIZE);
 	}
 
 }

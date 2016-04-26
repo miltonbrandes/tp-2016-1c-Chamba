@@ -1,0 +1,6 @@
+[INFO] 16:47:54:754 ProcesoCpu/(3446:3446): Socket creado y conectado
+[INFO] 16:47:54:754 ProcesoCpu/(3446:3446): Mensaje Enviado
+[INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Hola como estas? Soy Cpu
+[INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Socket creado y conectado
+[INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Mensaje Enviado
+[INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Hola como estas? Soy Cpu
