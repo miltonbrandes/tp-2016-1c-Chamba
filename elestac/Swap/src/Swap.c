@@ -13,12 +13,13 @@
 #include <sockets/EscrituraLectura.h>
 
 #define MAX_BUFFER_SIZE 4096
-
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorUMC;
 
 //Archivo de Log
 t_log* ptrLog;
+
+
 
 //Variables de configuracion
 int puertoTCPRecibirConexiones;

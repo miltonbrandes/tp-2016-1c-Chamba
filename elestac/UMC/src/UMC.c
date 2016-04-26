@@ -211,7 +211,6 @@ void manejarConexionesRecibidas() {
 
 	do {
 		FD_ZERO(&tempSockets);
-
 		log_info(ptrLog, "Esperando conexiones");
 		memcpy(&tempSockets, &sockets, sizeof(sockets));
 
