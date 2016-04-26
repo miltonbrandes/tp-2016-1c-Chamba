@@ -57,9 +57,19 @@ int main() {
 			log_info(ptrLog, "Se perdio conexion con UMC. Termino proceso CPU");
 			break;
 		}
+		if(recibirMensaje(socketNucleo))
+		{
+			//aca va lo que hace cada vez que nucleo solicita algo al cpu.
+			enviarMensaje(socketUMC);
+		}
+		else if(recibirMensaje(socketUMC))
+			{
+			//aca deberia ir la logica de cada vez mas que reciba una conexion de umc pidiendo algo
+			}
+
+		return EXIT_SUCCESS;
 	}
 
-	return EXIT_SUCCESS;
 }
 
 int crearSocketCliente(char* direccion, int puerto) {
@@ -84,7 +94,7 @@ int enviarMensaje(int socket) {
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado");
-
+	return 0;
 }
 
 int recibirMensaje(int socket) {

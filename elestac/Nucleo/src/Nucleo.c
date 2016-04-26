@@ -207,9 +207,26 @@ int init() {
 	}
 }
 //Fin Metodos para Iniciar valores de la UMC
+int enviarMensajeACPU()
+{
+	char buffer[MAX_BUFFER_SIZE];
+	*buffer = "estoy recibiendo una nueva consola";
+	log_info(ptrLog, buffer);
+	int bytesEnviados = escribir(socketReceptorCPU, buffer, MAX_BUFFER_SIZE);
+	if(bytesEnviados < 0) {
+			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
+			return -1;
+		}else if(bytesEnviados == 0){
+			log_info(ptrLog, "No se envio ningun byte a CPU");
+		}else{
+			log_info(ptrLog, "Mensaje a CPU enviado");
+		}
+		return 1;
+}
+
 
 int enviarMensajeAUMC(char buffer[]) {
-	log_info(ptrLog, buffer);
+	//log_info(ptrLog, buffer);
 	int bytesEnviados = escribir(socketUMC, buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 		log_info(ptrLog, "Ocurrio un error al enviar mensajes a UMC");
@@ -260,7 +277,7 @@ void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
 				FD_CLR(socketFor, tempSockets);
 				FD_CLR(socketFor, sockets);
 				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-			}else{
+			}else if (bytesRecibidos < 0){
 				finalizarConexion(socketFor);
 				FD_CLR(socketFor, sockets);
 				log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
@@ -313,8 +330,8 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Consola");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde una Consola: ", buffer);
-		char mensajeParaConsola[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
-		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaConsola, MAX_BUFFER_SIZE);
+		*buffer = "Este es un mensaje para vos, Consola\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
 	}
 
 }
@@ -385,7 +402,7 @@ void escucharPuertos() {
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-
+				//enviarMensajeACPU();
 				FD_CLR(socketReceptorConsola, &tempSockets);
 				datosEnSocketReceptorConsola(nuevoSocketConexion);
 

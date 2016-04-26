@@ -139,19 +139,19 @@ int init() {
 //Fin Metodos para Iniciar valores de la UMC
 
 void enviarMensajeASwap() {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Nucleo o CPU me esta pidiendo una pagina\0";
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Nucleo o CPU me esta pidiendo una pagina, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Swap: ", mensajeSwap);
 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a CPU\0";
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeSwap);
 	int sendBytes = escribir(socketCPU, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a Nucleo\0";
+	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeSwap);
 	int sendBytes = escribir(socketNucleo, mensajeSwap, MAX_BUFFER_SIZE);
 }
