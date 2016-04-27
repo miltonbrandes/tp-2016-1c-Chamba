@@ -384,6 +384,8 @@ void escucharPuertos() {
 				if (nuevoSocketConexion < 0) {
 					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 				} else {
+
+					int list_add(listaSocketsCPUs, int *nuevoSocketConexion); // es *???
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
@@ -398,6 +400,7 @@ void escucharPuertos() {
 				if (nuevoSocketConexion < 0) {
 					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Consola");
 				} else {
+					int list_add(listaSocketsConsola, int *nuevoSocketConexion);
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;

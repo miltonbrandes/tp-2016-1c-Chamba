@@ -14,3 +14,18 @@
 [INFO] 17:00:20:758 Nucleo/(3709:3709): Esperando conexiones
 [INFO] 17:00:20:758 Nucleo/(3709:3709): Bytes recibidos desde UMC: 
 [INFO] 17:00:20:758 Nucleo/(3709:3709): Esperando conexiones
+[INFO] 17:51:35:611 Nucleo/(4741:4741): Se conecto con UMC
+[INFO] 17:51:35:625 Nucleo/(4741:4741): Se abrio el Socket Servidor CPU
+[INFO] 17:51:35:629 Nucleo/(4741:4741): Se abrio el Socket Servidor Consola
+[INFO] 17:51:35:631 Nucleo/(4741:4741): Mensaje desde Nucleo
+[INFO] 17:51:35:645 Nucleo/(4741:4741): Mensaje a UMC enviado
+[INFO] 17:51:35:647 Nucleo/(4741:4741): Esperando conexiones
+[INFO] 17:51:35:649 Nucleo/(4741:4741): Bytes recibidos desde UMC: 
+[INFO] 17:51:35:654 Nucleo/(4741:4741): Esperando conexiones
+[INFO] 11:50:10:709 Nucleo/(2806:2806): Se conecto con UMC
+[INFO] 11:50:10:740 Nucleo/(2806:2806): Se abrio el Socket Servidor CPU
+[INFO] 11:50:10:744 Nucleo/(2806:2806): Se abrio el Socket Servidor Consola
+[INFO] 11:50:10:759 Nucleo/(2806:2806): Mensaje a UMC enviado
+[INFO] 11:50:10:776 Nucleo/(2806:2806): Esperando conexiones
+[INFO] 11:50:10:780 Nucleo/(2806:2806): Bytes recibidos desde UMC: 
+[INFO] 11:50:10:784 Nucleo/(2806:2806): Esperando conexiones

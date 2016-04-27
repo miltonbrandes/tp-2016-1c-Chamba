@@ -1,0 +1,10 @@
+[INFO] 17:51:53:632 Consola/(4837:4837): Se conecto con el nucleo
+[INFO] 17:51:53:643 Consola/(4837:4837): Mensaje Enviado al nucleo
+[INFO] 17:51:53:666 Consola/(4837:4837): Esperando mensaje del Nucleo
+[INFO] 17:51:53:668 Consola/(4837:4837): Mensaje recibido de Nucleo: 
+[INFO] 17:51:53:675 Consola/(4837:4837): Esperando mensaje del Nucleo
+[INFO] 11:50:30:569 Consola/(2866:2866): Se conecto con el nucleo
+[INFO] 11:50:30:587 Consola/(2866:2866): Mensaje Enviado al nucleo
+[INFO] 11:50:30:590 Consola/(2866:2866): Esperando mensaje del Nucleo
+[INFO] 11:50:30:601 Consola/(2866:2866): Mensaje recibido de Nucleo: 
+[INFO] 11:50:30:603 Consola/(2866:2866): Esperando mensaje del Nucleo

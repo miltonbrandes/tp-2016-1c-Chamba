@@ -4,3 +4,17 @@
 [INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Socket creado y conectado
 [INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Mensaje Enviado
 [INFO] 16:47:54:755 ProcesoCpu/(3446:3446): Hola como estas? Soy Cpu
+[INFO] 17:51:44:328 ProcesoCpu/(4789:4789): Socket creado y conectado
+[INFO] 17:51:44:372 ProcesoCpu/(4789:4789): Mensaje Enviado
+[INFO] 17:51:44:374 ProcesoCpu/(4789:4789): [INFO] 17:51:44:367 Nucleo/(4741:4741): Bytes recibidos desde una CPU: 
+Este es un mensaje para vos, CPU
+[INFO] 17:51:44:395 ProcesoCpu/(4789:4789): Socket creado y conectado
+[INFO] 17:51:44:402 ProcesoCpu/(4789:4789): Mensaje Enviado
+[INFO] 17:51:44:409 ProcesoCpu/(4789:4789): Le contesto a CPU
+[INFO] 11:50:20:540 ProcesoCpu/(2836:2836): Socket creado y conectado
+[INFO] 11:50:20:568 ProcesoCpu/(2836:2836): Mensaje Enviado
+[INFO] 11:50:20:568 ProcesoCpu/(2836:2836): [INFO] 11:50:20:551 Nucleo/(2806:2806): Bytes recibidos desde una CPU: 
+Este es un mensaje para vos, CPU
+[INFO] 11:50:20:576 ProcesoCpu/(2836:2836): Socket creado y conectado
+[INFO] 11:50:20:580 ProcesoCpu/(2836:2836): Mensaje Enviado
+[INFO] 11:50:20:580 ProcesoCpu/(2836:2836): Le contesto a CPU, soy UMC

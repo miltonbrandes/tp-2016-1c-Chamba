@@ -30,3 +30,19 @@
 [INFO] 17:00:15:128 Swap/(3632:3632): Esperando Compactacion
 [INFO] 17:00:18:129 Swap/(3632:3632): Pagina enviada
 [INFO] 17:00:18:130 Swap/(3632:3632): Esperando recibir alguna peticion
+[INFO] 17:51:13:375 Swap/(4646:4646): Se abrio el socket Servidor Swap
+[INFO] 17:51:13:380 Swap/(4646:4646): Esperando conexiones
+[INFO] 17:51:24:220 Swap/(4646:4646): Conexion de UMC aceptada
+[INFO] 17:51:24:222 Swap/(4646:4646): Esperando recibir alguna peticion
+[INFO] 17:51:24:287 Swap/(4646:4646): Nucleo o CPU me esta pidiendo una pagina
+[INFO] 17:51:24:288 Swap/(4646:4646): Esperando Compactacion
+[INFO] 17:51:27:292 Swap/(4646:4646): Pagina enviada
+[INFO] 17:51:27:298 Swap/(4646:4646): Esperando recibir alguna peticion
+[INFO] 11:49:53:469 Swap/(2744:2744): Se abrio el socket Servidor Swap
+[INFO] 11:49:53:499 Swap/(2744:2744): Esperando conexiones
+[INFO] 11:50:02:353 Swap/(2744:2744): Conexion de UMC aceptada
+[INFO] 11:50:02:354 Swap/(2744:2744): Esperando recibir alguna peticion
+[INFO] 11:50:02:451 Swap/(2744:2744): Nucleo o CPU me esta pidiendo una pagina, soy UMC
+[INFO] 11:50:02:452 Swap/(2744:2744): Esperando Compactacion
+[INFO] 11:50:05:457 Swap/(2744:2744): Pagina enviada
+[INFO] 11:50:05:463 Swap/(2744:2744): Esperando recibir alguna peticion

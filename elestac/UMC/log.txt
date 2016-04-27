@@ -37,3 +37,33 @@
 [INFO] 17:00:20:754 UMC/(3662:3662): Esperando conexiones
 [INFO] 17:00:20:758 UMC/(3662:3662): 
 [INFO] 17:00:20:758 UMC/(3662:3662): Esperando conexiones
+[INFO] 17:51:24:259 UMC/(4694:4694): Se conecto con Swap
+[INFO] 17:51:24:274 UMC/(4694:4694): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 17:51:24:276 UMC/(4694:4694): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 17:51:24:277 UMC/(4694:4694): Envio mensaje a Swap: 
+[INFO] 17:51:24:290 UMC/(4694:4694): Esperando conexiones
+[INFO] 17:51:27:293 UMC/(4694:4694): Bytes recibidos desde Swap: 
+[INFO] 17:51:27:297 UMC/(4694:4694): Esperando conexiones
+[INFO] 17:51:35:581 UMC/(4694:4694): Envio mensaje a Nucleo: 
+[INFO] 17:51:35:584 UMC/(4694:4694): Esperando conexiones
+[INFO] 17:51:35:636 UMC/(4694:4694): Mensaje desde Nucleo
+[INFO] 17:51:35:638 UMC/(4694:4694): Esperando conexiones
+[INFO] 17:51:44:387 UMC/(4694:4694): Envio mensaje a CPU: 
+[INFO] 17:51:44:394 UMC/(4694:4694): Esperando conexiones
+[INFO] 17:51:44:397 UMC/(4694:4694): Hola como estas? Soy Cpu
+[INFO] 17:51:44:399 UMC/(4694:4694): Esperando conexiones
+[INFO] 11:50:02:363 UMC/(2774:2774): Se conecto con Swap
+[INFO] 11:50:02:426 UMC/(2774:2774): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 11:50:02:435 UMC/(2774:2774): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 11:50:02:446 UMC/(2774:2774): Envio mensaje a Swap: 
+[INFO] 11:50:02:454 UMC/(2774:2774): Esperando conexiones
+[INFO] 11:50:05:454 UMC/(2774:2774): Bytes recibidos desde Swap: 
+[INFO] 11:50:05:457 UMC/(2774:2774): Esperando conexiones
+[INFO] 11:50:10:704 UMC/(2774:2774): Envio mensaje a Nucleo: 
+[INFO] 11:50:10:706 UMC/(2774:2774): Esperando conexiones
+[INFO] 11:50:10:757 UMC/(2774:2774): Mensaje desde Nucleo
+[INFO] 11:50:10:758 UMC/(2774:2774): Esperando conexiones
+[INFO] 11:50:20:570 UMC/(2774:2774): Envio mensaje a CPU: 
+[INFO] 11:50:20:573 UMC/(2774:2774): Esperando conexiones
+[INFO] 11:50:20:578 UMC/(2774:2774): Hola como estas? Soy Cpu
+[INFO] 11:50:20:579 UMC/(2774:2774): Esperando conexiones
