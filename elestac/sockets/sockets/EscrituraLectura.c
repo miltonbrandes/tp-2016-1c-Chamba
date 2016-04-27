@@ -9,12 +9,8 @@
 #include <stdlib.h>
 #include <commons/log.h>
 #include <string.h>
-#define MAX_BUFFER_SIZE 4096
 int leer(int socket, char* buffer, int longitud);
 int escribir(int socket, char* buffer, int longitud);
-
-
-enum  { CONSOLA=1, CPU=2, NUCLEO=3, SWAP=4, UMC=5 } quien_conecto;
 
 //recibo datos de un socket pasado por parametros
 //Finaliza la conexion de un socket
@@ -23,15 +19,13 @@ int finalizarConexion(int socket) {
 	return 0;
 }
 
-int escribir(int socket, char* buf, int longitud) {
-	//char* buffer = malloc(MAX_BUFFER_SIZE);
-	//memcpy(buffer, *buf, longitud);
+int escribir(int socket, char* buffer, int longitud) {
 	int escrito = 0, aux = 0;
 	/*
 		escribimos todos los caracteres que nos hayan pasado
 	 */
 	while (escrito < longitud && escrito != -1) {
-		aux = send(socket, (void*)buf + escrito, longitud - escrito, 0);
+		aux = send(socket, buffer + escrito, longitud - escrito, 0);
 		if (aux > 0) {
 			/*
 			si funciono bien
@@ -45,7 +39,6 @@ int escribir(int socket, char* buf, int longitud) {
 				}
 		}
 	}
-	//free(buffer);
 	return escrito;
 }
 
@@ -58,9 +51,7 @@ int leer(int socket, char* buffer, int longitud) {
 	//implementar las variables con malloc y free
 	//char* buf = malloc(longitud + 1);
 	while (leido < longitud && leido != -1) {
-		aux = recv(socket, (void*)buffer + leido, longitud - leido, 0);
-		//implementar con malloc y buf
-		//free(buf);
+		aux = recv(socket, buffer + leido, longitud - leido, 0);
 		if (aux > 0) {
 			/*
 			 * Si hemos conseguido leer datos, incrementamos la variable
@@ -81,6 +72,3 @@ int leer(int socket, char* buffer, int longitud) {
 	}
 	return leido;
 }
-
-
-
