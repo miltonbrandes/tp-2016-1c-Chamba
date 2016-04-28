@@ -10,16 +10,16 @@
 #include <sockets/ServidorFunciones.h>
 #include <commons/collections/list.h>
 #include <commons/log.h>
+#include <sockets/EscrituraLectura.h>
 
 #define MAX_BUFFER_SIZE 4096
-
-//TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
-//casi finalizado el circuito
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorUMC;
 
 //Archivo de Log
 t_log* ptrLog;
+
+
 
 //Variables de configuracion
 int puertoTCPRecibirConexiones;
@@ -99,8 +99,6 @@ int init() {
 	}
 }
 //Fin Metodos para Iniciar valores de la UMC
-
-
 
 void manejarConexionesRecibidas(int socketUMC) {
 	do {

@@ -1,3 +1,5 @@
+
+
 /*
  * UMC.c
  *
@@ -150,13 +152,13 @@ void enviarMensajeASwap(char *mensajeSwap) {
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
-	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
+	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeCpu);
 	int sendBytes = escribir(socketCPU, mensajeCpu, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
-	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
+	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeNucleo);
 	int sendBytes = escribir(socketNucleo, mensajeNucleo, MAX_BUFFER_SIZE);
 }
@@ -173,7 +175,12 @@ void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
 				buffer[bytesRecibidos] = 0;
 				log_info(ptrLog, buffer);
 				//Recibimos algo
+				/*if(socketFor == socketReceptorNucleo)
+				{
 
+					enviarMensajeASwap("Llego un nuevo programa, tenes que reservar memoria");
+
+				}*/
 			} else if (bytesRecibidos == 0) {
 				//Aca estamos matando el Socket que esta fallando
 				//Ver que hay que hacer porque puede venir de CPU o de Nucleo
@@ -240,7 +247,9 @@ int obtenerSocketMaximoInicial() {
 	return socketMaximoInicial;
 }
 
+
 void manejarConexionesRecibidas() {
+	int handshakeNucleo = 0;
 	fd_set sockets, tempSockets;
 	int resultadoSelect;
 	int socketMaximo = obtenerSocketMaximoInicial();
@@ -251,7 +260,6 @@ void manejarConexionesRecibidas() {
 
 	do {
 		FD_ZERO(&tempSockets);
-
 		log_info(ptrLog, "Esperando conexiones");
 		memcpy(&tempSockets, &sockets, sizeof(sockets));
 
@@ -262,7 +270,23 @@ void manejarConexionesRecibidas() {
 			log_info(ptrLog, "Ocurrio un error");
 		} else {
 
-			if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
+			if (FD_ISSET(socketReceptorNucleo, &tempSockets)) {
+
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorNucleo);
+				if (nuevoSocketConexion < 0) {
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU o Nucleo");
+				} else {
+					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
+					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
+				}
+
+				FD_CLR(socketReceptorNucleo, &tempSockets);
+				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompan las pelotas\0");
+				//me fijo si el mensaje no es el handshake y si no es se lo tengo que pasar al swap
+
+
+			} else if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
 
 				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorCPU);
 				if (nuevoSocketConexion < 0) {
@@ -284,21 +308,8 @@ void manejarConexionesRecibidas() {
 					enviarMensajeASwap("me llego otro programa, reservame mas memoria, soy UMC");
 				}*/
 
-			} else if(FD_ISSET(socketReceptorNucleo, &tempSockets)) {
-
-				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorNucleo);
-				if (nuevoSocketConexion < 0) {
-					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Nucleo");
-				} else {
-					FD_SET(nuevoSocketConexion, &sockets);
-					FD_SET(nuevoSocketConexion, &tempSockets);
-					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
-				}
-
-				FD_CLR(socketReceptorNucleo, &tempSockets);
-				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompas las pelotas\0");
-
-			} else if(FD_ISSET(socketSwap, &tempSockets)) {
+			}
+			else if(FD_ISSET(socketSwap, &tempSockets)) {
 
 				//Ver que hacer aca, no se acepta conexion, se recibe algo de Swap.
 				int returnDeSwap = datosEnSocketSwap();
@@ -321,35 +332,35 @@ void manejarConexionesRecibidas() {
 
 int main() {
 	if (init()) {
-		listaCpus = (int *)malloc (10*sizeof(int));
-		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
-		if (socketSwap < 0) {
-			log_info(ptrLog, "No pudo conectarse con Swap");
+			listaCpus = (int *)malloc (10*sizeof(int));
+			socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
+			if (socketSwap < 0) {
+				log_info(ptrLog, "No pudo conectarse con Swap");
+				return -1;
+			}
+			log_info(ptrLog, "Se conecto con Swap");
+
+			socketReceptorNucleo = AbrirSocketServidor(puertoTCPRecibirConexionesNucleo);
+			if (socketReceptorNucleo < 0) {
+				log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de UMC");
+				return -1;
+			}
+			log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
+
+			socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
+			if (socketReceptorCPU < 0) {
+				log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de CPU");
+				return -1;
+			}
+			log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
+
+			enviarMensajeASwap("Abrimos bien, soy la umc");
+			manejarConexionesRecibidas();
+
+		} else {
+			log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 			return -1;
 		}
-		log_info(ptrLog, "Se conecto con Swap");
 
-		socketReceptorNucleo = AbrirSocketServidor(puertoTCPRecibirConexionesNucleo);
-		if (socketReceptorNucleo < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de UMC");
-			return -1;
-		}
-		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
-
-		socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
-		if (socketReceptorCPU < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de CPU");
-			return -1;
-		}
-		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
-
-		enviarMensajeASwap("Abrimos bien, soy la umc");
-		manejarConexionesRecibidas();
-
-	} else {
-		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
-		return -1;
-	}
-
-	return EXIT_SUCCESS;
+		return EXIT_SUCCESS;
 }
