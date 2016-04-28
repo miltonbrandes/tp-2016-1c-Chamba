@@ -6,6 +6,8 @@
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
 
+//TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
+//casi finalizado el circuito
 #define MAX_BUFFER_SIZE 4096
 
 t_log* ptrLog;
@@ -45,7 +47,7 @@ int iniciarConsola(t_config* config) {
 
 int enviarScriptAlNucleo() {
 	//aca lo que deberia mandar es el script, no una cosa cualquiera
-	char buff[MAX_BUFFER_SIZE] = "Hola como estas?\0";
+	char buff[MAX_BUFFER_SIZE] = "soy un nuevo programa, vas a iniciar el circuito";
 	char respuestaServidor[MAX_BUFFER_SIZE];
 	int bytesRecibidos = 0;
 	int socketConexionNucleo;

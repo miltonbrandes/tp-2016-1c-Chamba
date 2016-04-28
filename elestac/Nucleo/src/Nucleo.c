@@ -15,9 +15,12 @@
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
+#include <commons/collections/list.h>
 
 #define MAX_BUFFER_SIZE 4096
 
+//TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
+//casi finalizado el circuito
 typedef struct {
 	char *nombre;
 	int tiempoSleep;
@@ -29,16 +32,28 @@ typedef struct {
 } t_semaforo;
 
 typedef struct {
+	int socket;
+	int tipo;
+}t_socket;
+
+typedef struct {
 	char *nombre;
 	int valor;
 } t_variable_compartida;
 
+
+
 //Socket que recibe conexiones de CPU y Consola
 int socketReceptorCPU, socketReceptorConsola;
 int socketUMC;
+//no tengo que crear t_list, deberia crear listas de ints o de sockets pero no se como identificarlas
+//t_list *listaSocketsConsola;
+//t_list *listaSocketsCPUs;
+int *listaConsolas;
+int *listaCpus;
+int i = 0;
+int j = 0;
 
-t_list* listaSocketsConsola;
-t_list* listaSocketsCPUs;
 
 //Archivo de Log
 t_log* ptrLog;
@@ -207,13 +222,12 @@ int init() {
 	}
 }
 //Fin Metodos para Iniciar valores de la UMC
-int enviarMensajeACPU()
+int enviarMensajeCpu(int socket)
 {
-	char buffer[MAX_BUFFER_SIZE];
-	t_list* ultimoElementoListaSocketsCPU= list_take(listaSocketsCPUs, list_size(listaSocketsCPUs));
-	*buffer = "estoy recibiendo una nueva consola";
+	char *buffer[MAX_BUFFER_SIZE];
+	*buffer = "estoy recibiendo un nuevo programa, soy el nucleo";
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(/*socketReceptorCPU*/ultimoElementoListaSocketsCPU->head->data, buffer, MAX_BUFFER_SIZE);
+	int bytesEnviados = escribir(socket, buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
 			return -1;
@@ -316,7 +330,7 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde una CPU: ", buffer);
-		char mensajeParaCPU[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
+		char mensajeParaCPU[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU, soy el nucleo\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaCPU, MAX_BUFFER_SIZE);
 	}
 }
@@ -333,6 +347,7 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 		log_info(ptrLog, "Bytes recibidos desde una Consola: ", buffer);
 		*buffer = "Este es un mensaje para vos, Consola\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+
 	}
 
 }
@@ -357,9 +372,7 @@ int datosEnSocketUMC() {
 void escucharPuertos() {
 	fd_set sockets, tempSockets; //descriptores
 	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
-	printf('LLEGO NUCLEO');
-	listaSocketsCPUs = list_create();
-	listaSocketsConsola = list_create();
+
 
 	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketReceptorConsola, &sockets);
@@ -385,29 +398,34 @@ void escucharPuertos() {
 				if (nuevoSocketConexion < 0) {
 					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 				} else {
-
-					int list_add(listaSocketsCPUs, int *nuevoSocketConexion); // es *???
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-
+				listaCpus[i] = nuevoSocketConexion;
+				i++;
+				//list_add(listaSocketsCPUs, nuevoSocketConexion);
 				FD_CLR(socketReceptorCPU, &tempSockets);
 				datosEnSocketReceptorCPU(nuevoSocketConexion);
 
 			} else if(FD_ISSET(socketReceptorConsola, &tempSockets)) {
+
 				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorConsola);
+
 				if (nuevoSocketConexion < 0) {
 					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Consola");
 				} else {
-					int list_add(listaSocketsConsola, int *nuevoSocketConexion);
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-				enviarMensajeACPU();
+				//aca es donde tengo que enviar un mensaje al cpu!!!!! completar
+				//list_add(listaSocketsConsola, (int)nuevoSocketConexion);
+				listaConsolas[j] = nuevoSocketConexion;
+				j++;
 				FD_CLR(socketReceptorConsola, &tempSockets);
 				datosEnSocketReceptorConsola(nuevoSocketConexion);
+				enviarMensajeCpu(listaCpus[i-1]);
 
 			} else if(FD_ISSET(socketUMC, &tempSockets)) {
 
@@ -430,9 +448,7 @@ void escucharPuertos() {
 
 int main() {
 	int returnInt = EXIT_SUCCESS;
-
 	if (init()) {
-
 		socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);
 		if (socketUMC < 0) {
 			log_info(ptrLog, "No pudo conectarse con UMC");
@@ -455,7 +471,10 @@ int main() {
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
 		returnInt = enviarMensajeAUMC("Mensaje desde Nucleo\0");
-
+		listaConsolas = (int *)malloc (10*sizeof(int));
+		listaCpus = (int *)malloc(10*sizeof(int));
+		//listaSocketsCPUs = list_create();
+		//listaSocketsConsola = list_create();
 		escucharPuertos();
 
 

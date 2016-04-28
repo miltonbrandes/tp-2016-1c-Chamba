@@ -14,7 +14,12 @@
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
 
+
+//TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
+//casi finalizado el circuito
 #define MAX_BUFFER_SIZE 4096
+
+
 
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorNucleo;
@@ -29,7 +34,8 @@ int puertoTCPRecibirConexionesCPU;
 int puertoTCPRecibirConexionesNucleo;
 int puertoReceptorSwap;
 char *ipSwap;
-
+int *listaCpus;
+int i = 0;
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
 	ptrLog = log_create("../UMC/log.txt", "UMC", 1, 0);
@@ -138,22 +144,21 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
-void enviarMensajeASwap() {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Nucleo o CPU me esta pidiendo una pagina, soy UMC\0";
+void enviarMensajeASwap(char *mensajeSwap) {
 	log_info(ptrLog, "Envio mensaje a Swap: ", mensajeSwap);
 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
-	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeSwap);
-	int sendBytes = escribir(socketCPU, mensajeSwap, MAX_BUFFER_SIZE);
+	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
+	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeCpu);
+	int sendBytes = escribir(socketCPU, mensajeCpu, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
-	char mensajeSwap[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
-	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeSwap);
-	int sendBytes = escribir(socketNucleo, mensajeSwap, MAX_BUFFER_SIZE);
+	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
+	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeNucleo);
+	int sendBytes = escribir(socketNucleo, mensajeNucleo, MAX_BUFFER_SIZE);
 }
 
 void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
@@ -196,7 +201,7 @@ void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Nucleo o CPU");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde Nucleo o CPU: ", buffer);
-		enviarMensajeASwap();
+		enviarMensajeASwap("Necesito que me reserves paginas, Soy la umc");
 	}
 }
 
@@ -267,9 +272,17 @@ void manejarConexionesRecibidas() {
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-
+				//aca deberia ir un mensaje hacia swap diciendo que cpu me esta pidiendo espacio, = que con el nucleo usar una lista para cpus!!!
+				//agrego las cpus a una nueva lista
+				listaCpus[i] = nuevoSocketConexion;
+				i++;
 				FD_CLR(socketReceptorCPU, &tempSockets);
 				enviarMensajeACPU(nuevoSocketConexion, "CPU no me rompas las pelotas\0");
+				//esta es una solucion provisional, solo sirve cuando tengo una cpu
+				/*if(i > 1)
+				{
+					enviarMensajeASwap("me llego otro programa, reservame mas memoria, soy UMC");
+				}*/
 
 			} else if(FD_ISSET(socketReceptorNucleo, &tempSockets)) {
 
@@ -308,7 +321,7 @@ void manejarConexionesRecibidas() {
 
 int main() {
 	if (init()) {
-
+		listaCpus = (int *)malloc (10*sizeof(int));
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
 		if (socketSwap < 0) {
 			log_info(ptrLog, "No pudo conectarse con Swap");
@@ -330,7 +343,7 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 
-		enviarMensajeASwap();
+		enviarMensajeASwap("Abrimos bien, soy la umc");
 		manejarConexionesRecibidas();
 
 	} else {

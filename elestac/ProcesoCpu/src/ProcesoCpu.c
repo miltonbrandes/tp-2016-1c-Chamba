@@ -14,6 +14,10 @@
 
 #define MAX_BUFFER_SIZE 4096
 
+
+//TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
+//casi finalizado el circuito
+
 t_log* ptrLog;
 t_config* config;
 
@@ -57,20 +61,29 @@ int main() {
 			log_info(ptrLog, "Se perdio conexion con UMC. Termino proceso CPU");
 			break;
 		}
-		if(recibirMensaje(socketNucleo))
+		controlarConexiones();
+	}
+	return EXIT_SUCCESS;
+}
+
+void controlarConexiones()
+{	while(1)
+	{
+		if(recibirMensaje(socketNucleo) == 0)
 		{
 			//aca va lo que hace cada vez que nucleo solicita algo al cpu.
 			enviarMensaje(socketUMC);
+			break;
 		}
 		else if(recibirMensaje(socketUMC))
-			{
+		{
 			//aca deberia ir la logica de cada vez mas que reciba una conexion de umc pidiendo algo
-			}
+		}
 
-		return EXIT_SUCCESS;
 	}
-
 }
+
+
 
 int crearSocketCliente(char* direccion, int puerto) {
 
@@ -93,7 +106,7 @@ int enviarMensaje(int socket) {
 		//error, no pudo escribir
 		return -1;
 	}
-	log_info(ptrLog, "Mensaje Enviado");
+	//log_info(ptrLog, "Mensaje Enviado");
 	return 0;
 }
 
@@ -120,6 +133,8 @@ int recibirMensaje(int socket) {
 	} else {
 		log_info(ptrLog, respuestaServidor);
 	}
+
+
 
 	return 0;
 }
