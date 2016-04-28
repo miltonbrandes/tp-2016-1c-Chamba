@@ -67,3 +67,203 @@
 [INFO] 11:50:20:573 UMC/(2774:2774): Esperando conexiones
 [INFO] 11:50:20:578 UMC/(2774:2774): Hola como estas? Soy Cpu
 [INFO] 11:50:20:579 UMC/(2774:2774): Esperando conexiones
+[INFO] 19:04:19:628 UMC/(3260:3260): No pudo conectarse con Swap
+[INFO] 19:04:35:400 UMC/(3305:3305): No pudo conectarse con Swap
+[INFO] 19:51:04:536 UMC/(3922:3922): Se conecto con Swap
+[INFO] 19:51:04:539 UMC/(3922:3922): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 19:51:04:540 UMC/(3922:3922): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 19:51:04:540 UMC/(3922:3922): Envio mensaje a Swap: 
+[INFO] 19:51:04:541 UMC/(3922:3922): Esperando conexiones
+[INFO] 19:51:07:541 UMC/(3922:3922): Bytes recibidos desde Swap: 
+[INFO] 19:51:07:543 UMC/(3922:3922): Esperando conexiones
+[INFO] 19:51:15:828 UMC/(3922:3922): Envio mensaje a Nucleo: 
+[INFO] 19:51:15:831 UMC/(3922:3922): Esperando conexiones
+[INFO] 19:51:15:846 UMC/(3922:3922): Mensaje desde Nucleo
+[INFO] 19:51:15:846 UMC/(3922:3922): Esperando conexiones
+[INFO] 19:51:38:906 UMC/(3922:3922): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 19:51:38:906 UMC/(3922:3922): Esperando conexiones
+[INFO] 19:52:23:743 UMC/(3982:3982): Se conecto con Swap
+[INFO] 19:52:23:743 UMC/(3982:3982): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 19:52:23:744 UMC/(3982:3982): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 19:52:23:744 UMC/(3982:3982): Envio mensaje a Swap: 
+[INFO] 19:52:23:745 UMC/(3982:3982): Esperando conexiones
+[INFO] 19:52:26:746 UMC/(3982:3982): Bytes recibidos desde Swap: 
+[INFO] 19:52:26:748 UMC/(3982:3982): Esperando conexiones
+[INFO] 19:52:36:937 UMC/(3982:3982): Envio mensaje a Nucleo: 
+[INFO] 19:52:36:940 UMC/(3982:3982): Esperando conexiones
+[INFO] 19:52:36:946 UMC/(3982:3982): Mensaje desde Nucleo
+[INFO] 19:52:36:946 UMC/(3982:3982): Esperando conexiones
+[INFO] 19:53:50:107 UMC/(3982:3982): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 19:53:50:108 UMC/(3982:3982): Esperando conexiones
+[INFO] 19:59:37:217 UMC/(4087:4087): Se conecto con Swap
+[INFO] 19:59:37:218 UMC/(4087:4087): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 19:59:37:218 UMC/(4087:4087): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 19:59:37:218 UMC/(4087:4087): Envio mensaje a Swap: 
+[INFO] 19:59:37:219 UMC/(4087:4087): Esperando conexiones
+[INFO] 19:59:40:220 UMC/(4087:4087): Bytes recibidos desde Swap: 
+[INFO] 19:59:40:220 UMC/(4087:4087): Esperando conexiones
+[INFO] 19:59:47:591 UMC/(4087:4087): Envio mensaje a Nucleo: 
+[INFO] 19:59:47:591 UMC/(4087:4087): Esperando conexiones
+[INFO] 19:59:47:598 UMC/(4087:4087): Mensaje desde Nucleo
+[INFO] 19:59:47:598 UMC/(4087:4087): Esperando conexiones
+[INFO] 19:59:54:400 UMC/(4087:4087): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 19:59:54:400 UMC/(4087:4087): Esperando conexiones
+[INFO] 20:05:12:501 UMC/(4199:4199): Se conecto con Swap
+[INFO] 20:05:12:502 UMC/(4199:4199): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:05:12:502 UMC/(4199:4199): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:05:12:502 UMC/(4199:4199): Envio mensaje a Swap: 
+[INFO] 20:05:12:503 UMC/(4199:4199): Esperando conexiones
+[INFO] 20:05:15:504 UMC/(4199:4199): Bytes recibidos desde Swap: 
+[INFO] 20:05:15:505 UMC/(4199:4199): Esperando conexiones
+[INFO] 20:05:38:648 UMC/(4199:4199): Envio mensaje a Nucleo: 
+[INFO] 20:05:38:648 UMC/(4199:4199): Esperando conexiones
+[INFO] 20:05:38:667 UMC/(4199:4199): Mensaje desde Nucleo
+[INFO] 20:05:38:668 UMC/(4199:4199): Esperando conexiones
+[INFO] 20:05:44:94 UMC/(4199:4199): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:05:44:95 UMC/(4199:4199): Esperando conexiones
+[INFO] 20:14:55:237 UMC/(4443:4443): Se conecto con Swap
+[INFO] 20:14:55:238 UMC/(4443:4443): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:14:55:238 UMC/(4443:4443): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:14:55:238 UMC/(4443:4443): Envio mensaje a Swap: 
+[INFO] 20:14:55:240 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:14:58:240 UMC/(4443:4443): Bytes recibidos desde Swap: 
+[INFO] 20:14:58:240 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:15:03:875 UMC/(4443:4443): Envio mensaje a Nucleo: 
+[INFO] 20:15:03:876 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:15:03:879 UMC/(4443:4443): Mensaje desde Nucleo
+[INFO] 20:15:03:879 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:15:20:117 UMC/(4443:4443): Envio mensaje a CPU: 
+[INFO] 20:15:20:117 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:15:20:118 UMC/(4443:4443): Hola como estas? Soy Cpu
+[INFO] 20:15:20:118 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:17:38:513 UMC/(4443:4443): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:17:38:514 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:17:42:806 UMC/(4443:4443): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:17:42:806 UMC/(4443:4443): Esperando conexiones
+[INFO] 20:18:00:444 UMC/(4578:4578): Se conecto con Swap
+[INFO] 20:18:00:445 UMC/(4578:4578): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:18:00:445 UMC/(4578:4578): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:18:00:445 UMC/(4578:4578): Envio mensaje a Swap: 
+[INFO] 20:18:00:445 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:18:03:447 UMC/(4578:4578): Bytes recibidos desde Swap: 
+[INFO] 20:18:03:448 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:18:07:707 UMC/(4578:4578): Envio mensaje a Nucleo: 
+[INFO] 20:18:07:709 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:18:07:731 UMC/(4578:4578): Mensaje desde Nucleo
+[INFO] 20:18:07:732 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:18:19:175 UMC/(4578:4578): Envio mensaje a CPU: 
+[INFO] 20:18:19:176 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:18:19:177 UMC/(4578:4578): Hola como estas? Soy Cpu
+[INFO] 20:18:19:177 UMC/(4578:4578): Esperando conexiones
+[INFO] 20:25:57:485 UMC/(4726:4726): Se conecto con Swap
+[INFO] 20:25:57:490 UMC/(4726:4726): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:25:57:491 UMC/(4726:4726): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:25:57:491 UMC/(4726:4726): Envio mensaje a Swap: 
+[INFO] 20:25:57:492 UMC/(4726:4726): Esperando conexiones
+[INFO] 20:26:00:493 UMC/(4726:4726): Bytes recibidos desde Swap: 
+[INFO] 20:26:00:494 UMC/(4726:4726): Esperando conexiones
+[INFO] 20:26:05:140 UMC/(4726:4726): Envio mensaje a Nucleo: 
+[INFO] 20:26:05:142 UMC/(4726:4726): Esperando conexiones
+[INFO] 20:26:05:158 UMC/(4726:4726): Mensaje desde Nucleo
+[INFO] 20:26:05:158 UMC/(4726:4726): Esperando conexiones
+[INFO] 20:28:41:905 UMC/(4726:4726): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:28:41:905 UMC/(4726:4726): Esperando conexiones
+[INFO] 20:28:57:421 UMC/(4831:4831): Se conecto con Swap
+[INFO] 20:28:57:421 UMC/(4831:4831): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:28:57:421 UMC/(4831:4831): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:28:57:421 UMC/(4831:4831): Envio mensaje a Swap: 
+[INFO] 20:28:57:421 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:29:00:423 UMC/(4831:4831): Bytes recibidos desde Swap: 
+[INFO] 20:29:00:425 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:29:03:693 UMC/(4831:4831): Envio mensaje a Nucleo: 
+[INFO] 20:29:03:694 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:29:03:701 UMC/(4831:4831): Mensaje desde Nucleo
+[INFO] 20:29:03:701 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:31:17:814 UMC/(4831:4831): Envio mensaje a CPU: 
+[INFO] 20:31:17:814 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:31:17:815 UMC/(4831:4831): Hola como estas? Soy Cpu
+[INFO] 20:31:17:815 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:34:56:536 UMC/(4831:4831): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:34:56:536 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:35:00:851 UMC/(4831:4831): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:35:00:851 UMC/(4831:4831): Esperando conexiones
+[INFO] 20:35:16:921 UMC/(4979:4979): Se conecto con Swap
+[INFO] 20:35:16:929 UMC/(4979:4979): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:35:16:929 UMC/(4979:4979): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:35:16:929 UMC/(4979:4979): Envio mensaje a Swap: 
+[INFO] 20:35:16:930 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:35:19:931 UMC/(4979:4979): Bytes recibidos desde Swap: 
+[INFO] 20:35:19:932 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:35:24:511 UMC/(4979:4979): Envio mensaje a Nucleo: 
+[INFO] 20:35:24:513 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:35:24:526 UMC/(4979:4979): Mensaje desde Nucleo
+[INFO] 20:35:24:526 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:35:32:827 UMC/(4979:4979): Envio mensaje a CPU: 
+[INFO] 20:35:32:827 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:35:32:828 UMC/(4979:4979): Hola como estas? Soy Cpu
+[INFO] 20:35:32:828 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:38:04:915 UMC/(4979:4979): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:38:04:915 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:38:13:663 UMC/(4979:4979): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:38:13:664 UMC/(4979:4979): Esperando conexiones
+[INFO] 20:38:29:212 UMC/(5118:5118): Se conecto con Swap
+[INFO] 20:38:29:216 UMC/(5118:5118): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:38:29:216 UMC/(5118:5118): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:38:29:216 UMC/(5118:5118): Envio mensaje a Swap: 
+[INFO] 20:38:29:217 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:38:32:217 UMC/(5118:5118): Bytes recibidos desde Swap: 
+[INFO] 20:38:32:220 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:38:36:248 UMC/(5118:5118): Envio mensaje a Nucleo: 
+[INFO] 20:38:36:248 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:38:36:251 UMC/(5118:5118): Mensaje desde Nucleo
+[INFO] 20:38:36:251 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:38:47:133 UMC/(5118:5118): Envio mensaje a CPU: 
+[INFO] 20:38:47:133 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:38:47:133 UMC/(5118:5118): Hola como estas? Soy Cpu
+[INFO] 20:38:47:133 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:39:00:111 UMC/(5118:5118): Envio mensaje a Nucleo: 
+[INFO] 20:39:00:112 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:39:00:122 UMC/(5118:5118): Ocurrio un error al recibir los bytes de un socket
+[INFO] 20:39:00:122 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:39:41:234 UMC/(5118:5118): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:39:41:234 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:39:45:442 UMC/(5118:5118): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:39:45:442 UMC/(5118:5118): Esperando conexiones
+[INFO] 20:40:02:236 UMC/(5243:5243): Se conecto con Swap
+[INFO] 20:40:02:239 UMC/(5243:5243): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:40:02:239 UMC/(5243:5243): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:40:02:239 UMC/(5243:5243): Envio mensaje a Swap: 
+[INFO] 20:40:02:239 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:40:05:241 UMC/(5243:5243): Bytes recibidos desde Swap: 
+[INFO] 20:40:05:242 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:40:08:871 UMC/(5243:5243): Envio mensaje a Nucleo: 
+[INFO] 20:40:08:872 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:40:08:878 UMC/(5243:5243): Mensaje desde Nucleo
+[INFO] 20:40:08:878 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:40:16:77 UMC/(5243:5243): Envio mensaje a CPU: 
+[INFO] 20:40:16:77 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:40:16:78 UMC/(5243:5243): Hola como estas? Soy Cpu
+[INFO] 20:40:16:78 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:41:17:192 UMC/(5243:5243): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:41:17:192 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:41:21:947 UMC/(5243:5243): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:41:21:947 UMC/(5243:5243): Esperando conexiones
+[INFO] 20:41:49:71 UMC/(5428:5428): Se conecto con Swap
+[INFO] 20:41:49:72 UMC/(5428:5428): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 20:41:49:72 UMC/(5428:5428): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 20:41:49:72 UMC/(5428:5428): Envio mensaje a Swap: 
+[INFO] 20:41:49:74 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:41:52:74 UMC/(5428:5428): Bytes recibidos desde Swap: 
+[INFO] 20:41:52:75 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:41:56:680 UMC/(5428:5428): Envio mensaje a Nucleo: 
+[INFO] 20:41:56:681 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:41:56:694 UMC/(5428:5428): Mensaje desde Nucleo
+[INFO] 20:41:56:694 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:42:06:143 UMC/(5428:5428): Envio mensaje a CPU: 
+[INFO] 20:42:06:144 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:42:06:144 UMC/(5428:5428): Hola como estas? Soy Cpu
+[INFO] 20:42:06:144 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:42:39:229 UMC/(5428:5428): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:42:39:229 UMC/(5428:5428): Esperando conexiones
+[INFO] 20:42:43:271 UMC/(5428:5428): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 20:42:43:272 UMC/(5428:5428): Esperando conexiones

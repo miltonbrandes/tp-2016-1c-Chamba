@@ -8,3 +8,52 @@
 [INFO] 11:50:30:590 Consola/(2866:2866): Esperando mensaje del Nucleo
 [INFO] 11:50:30:601 Consola/(2866:2866): Mensaje recibido de Nucleo: 
 [INFO] 11:50:30:603 Consola/(2866:2866): Esperando mensaje del Nucleo
+[INFO] 19:01:10:223 Consola/(3148:3148): Error en la conexion con el nucleo
+[INFO] 19:02:26:436 Consola/(3184:3184): Error en la conexion con el nucleo
+[INFO] 20:15:33:118 Consola/(4518:4518): Se conecto con el nucleo
+[INFO] 20:15:33:121 Consola/(4518:4518): Mensaje Enviado al nucleo
+[INFO] 20:15:33:121 Consola/(4518:4518): Esperando mensaje del Nucleo
+[INFO] 20:15:33:121 Consola/(4518:4518): Mensaje recibido de Nucleo: 
+[INFO] 20:15:33:122 Consola/(4518:4518): Esperando mensaje del Nucleo
+[INFO] 20:17:38:514 Consola/(4518:4518): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:17:38:514 Consola/(4518:4518): こ como estas?
+[INFO] 20:18:25:164 Consola/(4638:4638): Se conecto con el nucleo
+[INFO] 20:18:25:168 Consola/(4638:4638): Mensaje Enviado al nucleo
+[INFO] 20:18:25:168 Consola/(4638:4638): Esperando mensaje del Nucleo
+[INFO] 20:18:25:168 Consola/(4638:4638): Mensaje recibido de Nucleo: 
+[INFO] 20:18:25:168 Consola/(4638:4638): Esperando mensaje del Nucleo
+[INFO] 20:31:47:498 Consola/(4896:4896): Se conecto con el nucleo
+[INFO] 20:31:47:504 Consola/(4896:4896): Mensaje Enviado al nucleo
+[INFO] 20:31:47:504 Consola/(4896:4896): Esperando mensaje del Nucleo
+[INFO] 20:31:47:505 Consola/(4896:4896): Mensaje recibido de Nucleo: 
+[INFO] 20:31:47:505 Consola/(4896:4896): Esperando mensaje del Nucleo
+[INFO] 20:34:56:536 Consola/(4896:4896): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:34:56:536 Consola/(4896:4896): こ como estas?
+[INFO] 20:36:02:636 Consola/(5053:5053): Se conecto con el nucleo
+[INFO] 20:36:02:641 Consola/(5053:5053): Mensaje Enviado al nucleo
+[INFO] 20:36:02:642 Consola/(5053:5053): Esperando mensaje del Nucleo
+[INFO] 20:36:02:642 Consola/(5053:5053): Mensaje recibido de Nucleo: 
+[INFO] 20:36:02:642 Consola/(5053:5053): Esperando mensaje del Nucleo
+[INFO] 20:38:04:915 Consola/(5053:5053): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:38:04:915 Consola/(5053:5053): こ como estas?
+[INFO] 20:38:55:440 Consola/(5177:5177): Se conecto con el nucleo
+[INFO] 20:38:55:442 Consola/(5177:5177): Mensaje Enviado al nucleo
+[INFO] 20:38:55:442 Consola/(5177:5177): Esperando mensaje del Nucleo
+[INFO] 20:38:55:443 Consola/(5177:5177): Mensaje recibido de Nucleo: 
+[INFO] 20:38:55:443 Consola/(5177:5177): Esperando mensaje del Nucleo
+[INFO] 20:39:41:234 Consola/(5177:5177): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:39:41:234 Consola/(5177:5177): こ como estas?
+[INFO] 20:40:21:138 Consola/(5302:5302): Se conecto con el nucleo
+[INFO] 20:40:21:139 Consola/(5302:5302): Mensaje Enviado al nucleo
+[INFO] 20:40:21:140 Consola/(5302:5302): Esperando mensaje del Nucleo
+[INFO] 20:40:21:140 Consola/(5302:5302): Mensaje recibido de Nucleo: 
+[INFO] 20:40:21:141 Consola/(5302:5302): Esperando mensaje del Nucleo
+[INFO] 20:41:17:192 Consola/(5302:5302): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:41:17:193 Consola/(5302:5302): こ como estas?
+[INFO] 20:42:13:736 Consola/(5504:5504): Se conecto con el nucleo
+[INFO] 20:42:13:737 Consola/(5504:5504): Mensaje Enviado al nucleo
+[INFO] 20:42:13:738 Consola/(5504:5504): Esperando mensaje del Nucleo
+[INFO] 20:42:13:738 Consola/(5504:5504): Mensaje recibido de Nucleo: 
+[INFO] 20:42:13:738 Consola/(5504:5504): Esperando mensaje del Nucleo
+[INFO] 20:42:39:229 Consola/(5504:5504): No se recibio nada de Nucleo. Cerramos conexion
+[INFO] 20:42:39:229 Consola/(5504:5504): こ como estas?

@@ -210,9 +210,10 @@ int init() {
 int enviarMensajeACPU()
 {
 	char buffer[MAX_BUFFER_SIZE];
+	t_list* ultimoElementoListaSocketsCPU= list_take(listaSocketsCPUs, list_size(listaSocketsCPUs));
 	*buffer = "estoy recibiendo una nueva consola";
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socketReceptorCPU, buffer, MAX_BUFFER_SIZE);
+	int bytesEnviados = escribir(/*socketReceptorCPU*/ultimoElementoListaSocketsCPU->head->data, buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
 			return -1;
@@ -356,7 +357,7 @@ int datosEnSocketUMC() {
 void escucharPuertos() {
 	fd_set sockets, tempSockets; //descriptores
 	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
-
+	printf('LLEGO NUCLEO');
 	listaSocketsCPUs = list_create();
 	listaSocketsConsola = list_create();
 
@@ -395,7 +396,6 @@ void escucharPuertos() {
 				datosEnSocketReceptorCPU(nuevoSocketConexion);
 
 			} else if(FD_ISSET(socketReceptorConsola, &tempSockets)) {
-
 				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorConsola);
 				if (nuevoSocketConexion < 0) {
 					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Consola");
@@ -405,7 +405,7 @@ void escucharPuertos() {
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-				//enviarMensajeACPU();
+				enviarMensajeACPU();
 				FD_CLR(socketReceptorConsola, &tempSockets);
 				datosEnSocketReceptorConsola(nuevoSocketConexion);
 
