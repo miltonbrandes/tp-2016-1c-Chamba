@@ -152,13 +152,13 @@ void enviarMensajeASwap(char *mensajeSwap) {
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
-	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
+	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a Cpu, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeCpu);
 	int sendBytes = escribir(socketCPU, mensajeCpu, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
-	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a CPU, soy UMC\0";
+	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeNucleo);
 	int sendBytes = escribir(socketNucleo, mensajeNucleo, MAX_BUFFER_SIZE);
 }

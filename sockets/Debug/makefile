@@ -4,11 +4,11 @@
 
 -include ../makefile.init
 
-RM := rm -rf
+RM := rm
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include src/subdir.mk
+-include sockets/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -23,28 +23,26 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: UMC
+all: sockets
 
 dependents:
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
 
 # Tool invocations
-UMC: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so
+sockets: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "UMC" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/commons/Debug" -o "sockets" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) UMC
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) sockets
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/workspace/sockets/Debug/libsockets.so:
 /home/utnso/workspace/commons/Debug/libcommons.so:
 
 -include ../makefile.targets

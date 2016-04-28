@@ -26,8 +26,8 @@ endif
 all: Swap
 
 dependents:
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
 
 # Tool invocations
 Swap: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so

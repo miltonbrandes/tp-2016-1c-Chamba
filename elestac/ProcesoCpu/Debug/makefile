@@ -23,23 +23,23 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: ProcesoCpu
+all: CPU
 
 dependents:
 	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
 	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
 
 # Tool invocations
-ProcesoCpu: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so
+CPU: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "ProcesoCpu" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) ProcesoCpu
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) CPU
 	-@echo ' '
 
 .PHONY: all clean dependents

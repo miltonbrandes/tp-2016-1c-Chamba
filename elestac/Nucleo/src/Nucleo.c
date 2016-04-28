@@ -340,7 +340,7 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 }
 
 int datosEnSocketUMC() {
-	char *buffer[MAX_BUFFER_SIZE];
+	char buffer[MAX_BUFFER_SIZE];
 	int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
 
 	if(bytesRecibidos < 0) {
@@ -421,7 +421,7 @@ void escucharPuertos() {
 					FD_CLR(socketUMC, &sockets);
 				}
 
-			} else {
+			} else{
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
 				recibirDatos(&tempSockets, &sockets, socketMaximo);
