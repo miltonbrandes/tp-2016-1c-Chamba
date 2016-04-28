@@ -254,6 +254,8 @@ void manejarConexionesRecibidas() {
 	int resultadoSelect;
 	int socketMaximo = obtenerSocketMaximoInicial();
 
+	int socketCPUPosta = -121211;
+
 	FD_SET(socketReceptorNucleo, &sockets);
 	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketSwap, &sockets);
@@ -299,14 +301,10 @@ void manejarConexionesRecibidas() {
 				//aca deberia ir un mensaje hacia swap diciendo que cpu me esta pidiendo espacio, = que con el nucleo usar una lista para cpus!!!
 				//agrego las cpus a una nueva lista
 				listaCpus[i] = nuevoSocketConexion;
+				socketCPUPosta = nuevoSocketConexion;
 				i++;
 				FD_CLR(socketReceptorCPU, &tempSockets);
 				enviarMensajeACPU(nuevoSocketConexion, "CPU no me rompas las pelotas\0");
-				//esta es una solucion provisional, solo sirve cuando tengo una cpu
-				/*if(i > 1)
-				{
-					enviarMensajeASwap("me llego otro programa, reservame mas memoria, soy UMC");
-				}*/
 
 			}
 			else if(FD_ISSET(socketSwap, &tempSockets)) {
@@ -322,7 +320,9 @@ void manejarConexionesRecibidas() {
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
 				recibirDatos(&tempSockets, &sockets, socketMaximo);
-
+				if(socketCPUPosta>0) {
+					enviarMensajeASwap("Se abrio un nuevo programa por favor reservame memoria");
+				}
 			}
 
 		}

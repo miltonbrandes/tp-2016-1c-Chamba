@@ -49,7 +49,7 @@ int main() {
 	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
 	socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
 
-	enviarMensaje(socketUMC);
+	//enviarMensaje(socketUMC);
 	while (1) {
 		int bytesRecibidosOk = recibirMensaje(socketUMC);
 		if(bytesRecibidosOk == -1) {

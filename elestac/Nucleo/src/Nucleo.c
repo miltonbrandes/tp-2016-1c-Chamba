@@ -214,8 +214,8 @@ int enviarMensajeACpu(socket)
 {
 	char *buffer[MAX_BUFFER_SIZE];
 	*buffer = "estoy recibiendo una nueva consola";
-	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socket, buffer, MAX_BUFFER_SIZE);
+	//log_info(ptrLog, buffe);
+	int bytesEnviados = escribir(socket, *buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
 			return -1;
@@ -258,36 +258,7 @@ int enviarMensajeAConsola(int socket) {
 }
 
 void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
-	char *buffer[MAX_BUFFER_SIZE];
-	int bytesRecibidos;
-	int socketFor;
-	for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
-		if (FD_ISSET(socketFor, tempSockets)) {
-			bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
 
-			if (bytesRecibidos > 0) {
-				buffer[bytesRecibidos] = 0;
-				log_info(ptrLog, "Mensaje recibido: ", buffer);
-
-				//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
-				//Hay que ver bien que hacer cuando se recibe un paquete
-
-				//Fin
-
-			} else if (bytesRecibidos == 0) {
-				//Ver que hay que hacer porque puede venir de CPU, de Consola, o de UMC
-				finalizarConexion(socketFor);
-				FD_CLR(socketFor, tempSockets);
-				FD_CLR(socketFor, sockets);
-				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-			}else if (bytesRecibidos < 0){
-				finalizarConexion(socketFor);
-				FD_CLR(socketFor, sockets);
-				log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
-			}
-
-		}
-	}
 }
 
 int obtenerSocketMaximoInicial() {
@@ -325,6 +296,7 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 
 void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 	char *buffer[MAX_BUFFER_SIZE];
+
 	int bytesRecibidos = leer(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
 
 	if(bytesRecibidos < 0) {
@@ -332,7 +304,9 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 	} else if(bytesRecibidos == 0) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Consola");
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde una Consola: ", buffer);
+
+		log_info(ptrLog, "Recibi lo siguiente de consola:", buffer);
+		//log_info(ptrLog, strcat(msj, buffer));
 		*buffer = "Este es un mensaje para vos, Consola\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
 	}
@@ -359,10 +333,6 @@ int datosEnSocketUMC() {
 void escucharPuertos() {
 	fd_set sockets, tempSockets; //descriptores
 	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
-
-	//listaSocketsCPUs = list_create();
-	//listaSocketsConsola = list_create();
-
 	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketReceptorConsola, &sockets);
 	FD_SET(socketUMC, &sockets);
@@ -370,8 +340,8 @@ void escucharPuertos() {
 	while(1)
 	{
 		FD_ZERO(&tempSockets);
-		memcpy(&tempSockets, &sockets, sizeof(sockets));
-
+		//memcpy(&tempSockets, &sockets, sizeof(sockets));
+		tempSockets = sockets;
 		log_info(ptrLog, "Esperando conexiones");
 
 		int resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
@@ -406,26 +376,55 @@ void escucharPuertos() {
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-				listaConsolas[j] = nuevoSocketConexion; j++;
-
+				listaConsolas[j] = nuevoSocketConexion;
+				j++;
 				FD_CLR(socketReceptorConsola, &tempSockets);
 				datosEnSocketReceptorConsola(nuevoSocketConexion);
 				enviarMensajeACpu(listaCpus[i-1]);
 
 			} else if(FD_ISSET(socketUMC, &tempSockets)) {
-
 				//Ver como es aca porque no estamos aceptando una conexion cliente, sino recibiendo algo de UMC
 				int returnDeUMC = datosEnSocketUMC();
 				if(returnDeUMC == -1) {
 					//Aca matamos Socket UMC
 					FD_CLR(socketUMC, &sockets);
+
 				}
 
 			} else{
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				recibirDatos(&tempSockets, &sockets, socketMaximo);
+				//recibirDatos(&tempSockets, &sockets, socketMaximo);
+				char buffer[MAX_BUFFER_SIZE];
+					int bytesRecibidos;
+					int socketFor;
+					for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
+						if (FD_ISSET(socketFor, &tempSockets)) {
+							bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
 
+							if (bytesRecibidos > 0) {
+								buffer[bytesRecibidos] = 0;
+								log_info(ptrLog, "Mensaje recibido: ", buffer);
+
+								//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
+								//Hay que ver bien que hacer cuando se recibe un paquete
+
+								//Fin
+
+							} else if (bytesRecibidos == 0) {
+								//Ver que hay que hacer porque puede venir de CPU, de Consola, o de UMC
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &tempSockets);
+								FD_CLR(socketFor, &sockets);
+								log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+							}else if (bytesRecibidos < 0){
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &sockets);
+								log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
+							}
+
+						}
+					}
 			}
 		}
 	}

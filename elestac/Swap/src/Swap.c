@@ -117,12 +117,11 @@ void manejarConexionesRecibidas(int socketUMC) {
 			return;
 		}else{
 			log_info(ptrLog, buffer);
-
 			//Envio algo a UMC esperando con un retardo de compactacion
 			log_info(ptrLog, "Esperando Compactacion");
 			sleep(retardoCompactacion);
 			char mensajeUMC[MAX_BUFFER_SIZE] = "Toma la pagina que te pidio nucleo\0";
-			int sendBytes = escribir(socketUMC, mensajeUMC, sizeof(mensajeUMC));
+			int sendBytes = escribir(socketUMC, mensajeUMC, MAX_BUFFER_SIZE);
 			log_info(ptrLog, "Pagina enviada");
 		}
 
