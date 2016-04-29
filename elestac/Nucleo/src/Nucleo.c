@@ -213,8 +213,8 @@ int init() {
 int enviarMensajeACpu(socket)
 {
 	char *buffer[MAX_BUFFER_SIZE];
-	*buffer = "estoy recibiendo una nueva consola";
-	//log_info(ptrLog, buffe);
+	*buffer = "Estoy recibiendo una nueva consola";
+	//log_info(ptrLog, buffer);
 	int bytesEnviados = escribir(socket, *buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
@@ -243,7 +243,7 @@ int enviarMensajeAUMC(char buffer[]) {
 }
 
 int enviarMensajeAConsola(int socket) {
-	char buffer[MAX_BUFFER_SIZE] = "consola aca terminas papa";
+	char buffer[MAX_BUFFER_SIZE] = "Consola aca terminas papa";
 	log_info(ptrLog, buffer);
 	int bytesEnviados = escribir(socket, buffer, sizeof(buffer));
 	if(bytesEnviados < 0) {
@@ -288,7 +288,7 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 	} else if(bytesRecibidos == 0) {
 		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde una CPU: ", buffer);
+		log_info(ptrLog, "Bytes recibidos desde una CPU: %s", buffer);
 		char mensajeParaCPU[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaCPU, MAX_BUFFER_SIZE);
 	}
@@ -305,8 +305,7 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Consola");
 	} else {
 
-		log_info(ptrLog, "Recibi lo siguiente de consola:", buffer);
-		//log_info(ptrLog, strcat(msj, buffer));
+		log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
 		*buffer = "Este es un mensaje para vos, Consola\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
 	}
@@ -324,7 +323,7 @@ int datosEnSocketUMC() {
 		finalizarConexion(socketUMC);
 		return -1;
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde UMC: ", buffer);
+		log_info(ptrLog, "Bytes recibidos desde UMC: %s", buffer);
 	}
 
 	return 0;
@@ -404,7 +403,7 @@ void escucharPuertos() {
 
 							if (bytesRecibidos > 0) {
 								buffer[bytesRecibidos] = 0;
-								log_info(ptrLog, "Mensaje recibido: ", buffer);
+								log_info(ptrLog, "Mensaje recibido: %s", buffer);
 
 								//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
 								//Hay que ver bien que hacer cuando se recibe un paquete
@@ -456,7 +455,7 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
-		returnInt = enviarMensajeAUMC("Mensaje desde Nucleo\0");
+		returnInt = enviarMensajeAUMC("Hola, soy el Nucleo\0");
 		listaConsolas = (int *)malloc(10*sizeof(int));
 		listaCpus = (int *)malloc(10*sizeof(int));
 		escucharPuertos();

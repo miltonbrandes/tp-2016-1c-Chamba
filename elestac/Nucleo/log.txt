@@ -1,0 +1,30 @@
+[INFO] 21:13:56:331 Nucleo/(5161:5161): Se conecto con UMC
+[INFO] 21:13:56:363 Nucleo/(5161:5161): Se abrio el Socket Servidor CPU
+[INFO] 21:13:56:371 Nucleo/(5161:5161): Se abrio el Socket Servidor Consola
+[INFO] 21:13:56:374 Nucleo/(5161:5161): Mensaje desde Nucleo
+[INFO] 21:13:56:384 Nucleo/(5161:5161): Mensaje a UMC enviado
+[INFO] 21:13:56:385 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:13:56:397 Nucleo/(5161:5161): Bytes recibidos desde UMC: 
+[INFO] 21:13:56:399 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:14:04:726 Nucleo/(5161:5161): Bytes recibidos desde una CPU: 
+[INFO] 21:14:04:727 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:14:13:297 Nucleo/(5161:5161): Recibi lo siguiente de consola:
+[INFO] 21:14:13:302 Nucleo/(5161:5161): Mensaje a CPU enviado
+[INFO] 21:14:13:308 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:14:58:377 Nucleo/(5161:5161): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 21:14:58:378 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:15:01:870 Nucleo/(5161:5161): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 21:15:01:871 Nucleo/(5161:5161): Esperando conexiones
+[INFO] 21:34:57:438 Nucleo/(5656:5656): Se conecto con UMC
+[INFO] 21:34:57:444 Nucleo/(5656:5656): Se abrio el Socket Servidor CPU
+[INFO] 21:34:57:446 Nucleo/(5656:5656): Se abrio el Socket Servidor Consola
+[INFO] 21:34:57:446 Nucleo/(5656:5656): Mensaje desde Nucleo
+[INFO] 21:34:57:452 Nucleo/(5656:5656): Mensaje a UMC enviado
+[INFO] 21:34:57:453 Nucleo/(5656:5656): Esperando conexiones
+[INFO] 21:34:57:453 Nucleo/(5656:5656): Bytes recibidos desde UMC: Le contesto a Nucleo, soy UMC
+[INFO] 21:34:57:454 Nucleo/(5656:5656): Esperando conexiones
+[INFO] 21:35:04:400 Nucleo/(5656:5656): Bytes recibidos desde una CPU: Hola como estas? Soy Cpu
+[INFO] 21:35:04:403 Nucleo/(5656:5656): Esperando conexiones
+[INFO] 21:35:13:512 Nucleo/(5656:5656): Recibi lo siguiente de consola: Soy un nuevo programa, vas a iniciar el circuito
+[INFO] 21:35:13:524 Nucleo/(5656:5656): Mensaje a CPU enviado
+[INFO] 21:35:13:527 Nucleo/(5656:5656): Esperando conexiones

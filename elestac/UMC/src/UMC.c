@@ -147,19 +147,19 @@ int init() {
 //Fin Metodos para Iniciar valores de la UMC
 
 void enviarMensajeASwap(char *mensajeSwap) {
-	log_info(ptrLog, "Envio mensaje a Swap: ", mensajeSwap);
+	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
 	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a Cpu, soy UMC\0";
-	log_info(ptrLog, "Envio mensaje a CPU: ", mensajeCpu);
+	log_info(ptrLog, "Envio mensaje a CPU: %s", mensajeCpu);
 	int sendBytes = escribir(socketCPU, mensajeCpu, MAX_BUFFER_SIZE);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
 	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
-	log_info(ptrLog, "Envio mensaje a Nucleo: ", mensajeNucleo);
+	log_info(ptrLog, "Envio mensaje a Nucleo: %s", mensajeNucleo);
 	int sendBytes = escribir(socketNucleo, mensajeNucleo, MAX_BUFFER_SIZE);
 }
 
@@ -207,7 +207,7 @@ void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
 	} else if(bytesRecibidos == 0) {
 		log_info(ptrLog, "No se recibieron datos en el Socket Nucleo o CPU");
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde Nucleo o CPU: ", buffer);
+		log_info(ptrLog, "Bytes recibidos desde Nucleo o CPU: %s", buffer);
 		enviarMensajeASwap("Necesito que me reserves paginas, Soy la umc");
 	}
 }
@@ -223,7 +223,7 @@ int datosEnSocketSwap() {
 		finalizarConexion(socketSwap);
 		return -1;
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde Swap: ", buffer);
+		log_info(ptrLog, "Bytes recibidos desde Swap: %s", buffer);
 	}
 
 	return 0;
@@ -284,7 +284,7 @@ void manejarConexionesRecibidas() {
 				}
 
 				FD_CLR(socketReceptorNucleo, &tempSockets);
-				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompan las pelotas\0");
+				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompas las pelotas\0");
 				//me fijo si el mensaje no es el handshake y si no es se lo tengo que pasar al swap
 
 

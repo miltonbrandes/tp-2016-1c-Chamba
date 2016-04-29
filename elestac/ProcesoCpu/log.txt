@@ -1,0 +1,14 @@
+[INFO] 21:14:04:677 ProcesoCpu/(5208:5208): Socket creado y conectado
+[INFO] 21:14:04:728 ProcesoCpu/(5208:5208): Mensaje Enviado
+[INFO] 21:14:04:730 ProcesoCpu/(5208:5208): Este es un mensaje para vos, CPU
+[INFO] 21:14:04:751 ProcesoCpu/(5208:5208): Socket creado y conectado
+[INFO] 21:14:04:752 ProcesoCpu/(5208:5208): Le contesto a Cpu, soy UMC
+[INFO] 21:14:13:299 ProcesoCpu/(5208:5208): estoy recibiendo una nueva consola
+[INFO] 21:14:13:309 ProcesoCpu/(5208:5208): Mensaje Enviado
+[INFO] 21:35:04:389 ProcesoCpu/(5688:5688): Socket creado y conectado
+[INFO] 21:35:04:407 ProcesoCpu/(5688:5688): Mensaje Enviado
+[INFO] 21:35:04:409 ProcesoCpu/(5688:5688): Servidor dice: Este es un mensaje para vos, CPU
+[INFO] 21:35:04:417 ProcesoCpu/(5688:5688): Socket creado y conectado
+[INFO] 21:35:04:421 ProcesoCpu/(5688:5688): Servidor dice: Le contesto a Cpu, soy UMC
+[INFO] 21:35:13:515 ProcesoCpu/(5688:5688): Servidor dice: Estoy recibiendo una nueva consola
+[INFO] 21:35:13:521 ProcesoCpu/(5688:5688): Mensaje Enviado

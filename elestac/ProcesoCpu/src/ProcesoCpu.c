@@ -90,7 +90,7 @@ int crearSocketCliente(char* direccion, int puerto) {
 	socketConexion = AbrirConexion(direccion, puerto);
 	if (socketConexion < 0) {
 		//aca me deberia mostrar por log que hubo un error
-		log_info(ptrLog, "Error en la conexion con el nucleo");
+		log_info(ptrLog, "Error en la conexion con el servidor");
 		return -1;
 	}
 	log_info(ptrLog, "Socket creado y conectado");
@@ -103,6 +103,7 @@ int enviarMensaje(int socket) {
 
 	if (escribir(socket, buff, MAX_BUFFER_SIZE) < 0) {
 		//error, no pudo escribir
+		log_info(ptrLog, "Error al escribir");
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado");
@@ -130,7 +131,7 @@ int recibirMensaje(int socket) {
 		}
 		return -1;
 	} else {
-		log_info(ptrLog, respuestaServidor);
+		log_info(ptrLog, "Servidor dice: %s", respuestaServidor);
 	}
 
 	return 0;

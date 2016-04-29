@@ -1,0 +1,42 @@
+[INFO] 21:13:44:552 UMC/(5114:5114): Se conecto con Swap
+[INFO] 21:13:44:564 UMC/(5114:5114): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 21:13:44:565 UMC/(5114:5114): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 21:13:44:569 UMC/(5114:5114): Envio mensaje a Swap: 
+[INFO] 21:13:44:573 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:13:47:578 UMC/(5114:5114): Bytes recibidos desde Swap: 
+[INFO] 21:13:47:582 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:13:56:304 UMC/(5114:5114): Envio mensaje a Nucleo: 
+[INFO] 21:13:56:307 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:13:56:379 UMC/(5114:5114): Mensaje desde Nucleo
+[INFO] 21:13:56:380 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:14:04:732 UMC/(5114:5114): Envio mensaje a CPU: 
+[INFO] 21:14:04:734 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:14:13:303 UMC/(5114:5114): Hola como estas? Soy Cpu
+[INFO] 21:14:13:304 UMC/(5114:5114): Envio mensaje a Swap: 
+[INFO] 21:14:13:307 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:14:16:312 UMC/(5114:5114): Bytes recibidos desde Swap: 
+[INFO] 21:14:16:316 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:15:01:874 UMC/(5114:5114): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 21:15:01:875 UMC/(5114:5114): Envio mensaje a Swap: 
+[INFO] 21:15:01:879 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:15:02:993 UMC/(5114:5114): No se recibio ningun byte de un socket que solicito conexion.
+[INFO] 21:15:02:994 UMC/(5114:5114): Envio mensaje a Swap: 
+[INFO] 21:15:02:995 UMC/(5114:5114): Esperando conexiones
+[INFO] 21:34:45:596 UMC/(5603:5603): Se conecto con Swap
+[INFO] 21:34:45:619 UMC/(5603:5603): Se abrio el socket Servidor Nucleo de UMC
+[INFO] 21:34:45:619 UMC/(5603:5603): Se abrio el socket Servidor Nucleo de CPU
+[INFO] 21:34:45:620 UMC/(5603:5603): Envio mensaje a Swap: Abrimos bien, soy la umc
+[INFO] 21:34:45:625 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:34:48:628 UMC/(5603:5603): Bytes recibidos desde Swap: Toma la pagina que te pidio nucleo
+[INFO] 21:34:48:631 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:34:57:408 UMC/(5603:5603): Envio mensaje a Nucleo: Le contesto a Nucleo, soy UMC
+[INFO] 21:34:57:412 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:34:57:448 UMC/(5603:5603): Mensaje desde Nucleo
+[INFO] 21:34:57:449 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:35:04:411 UMC/(5603:5603): Envio mensaje a CPU: Le contesto a Cpu, soy UMC
+[INFO] 21:35:04:414 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:35:13:518 UMC/(5603:5603): Hola como estas? Soy Cpu
+[INFO] 21:35:13:525 UMC/(5603:5603): Envio mensaje a Swap: Se abrio un nuevo programa por favor reservame memoria
+[INFO] 21:35:13:535 UMC/(5603:5603): Esperando conexiones
+[INFO] 21:35:16:537 UMC/(5603:5603): Bytes recibidos desde Swap: Toma la pagina que te pidio nucleo
+[INFO] 21:35:16:542 UMC/(5603:5603): Esperando conexiones

@@ -1,0 +1,10 @@
+[INFO] 21:14:13:280 Consola/(5255:5255): Se conecto con el nucleo
+[INFO] 21:14:13:310 Consola/(5255:5255): Mensaje Enviado al nucleo
+[INFO] 21:14:13:311 Consola/(5255:5255): Esperando mensaje del Nucleo
+[INFO] 21:14:13:312 Consola/(5255:5255): Mensaje recibido de Nucleo: À³un nuevo programa, vas a iniciar el circuito
+[INFO] 21:14:13:314 Consola/(5255:5255): Esperando mensaje del Nucleo
+[INFO] 21:35:13:499 Consola/(5735:5735): Se conecto con el nucleo
+[INFO] 21:35:13:536 Consola/(5735:5735): Mensaje Enviado al nucleo
+[INFO] 21:35:13:540 Consola/(5735:5735): Esperando mensaje del Nucleo
+[INFO] 21:35:13:541 Consola/(5735:5735): Mensaje recibido de Nucleo: Ì³un nuevo programa, vas a iniciar el circuito
+[INFO] 21:35:13:543 Consola/(5735:5735): Esperando mensaje del Nucleo

@@ -48,7 +48,7 @@ int iniciarConsola(t_config* config) {
 
 int enviarScriptAlNucleo() {
 	//aca lo que deberia mandar es el script, no una cosa cualquiera
-	char buff[MAX_BUFFER_SIZE] = "soy un nuevo programa, vas a iniciar el circuito";
+	char buff[MAX_BUFFER_SIZE] = "Soy un nuevo programa, vas a iniciar el circuito";
 		char respuestaServidor[MAX_BUFFER_SIZE];
 		int bytesRecibidos = 0;
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
@@ -75,7 +75,7 @@ int enviarScriptAlNucleo() {
 				log_info(ptrLog, "Error en la lectura del nucleo");
 				return -1;
 			}else if(bytesRecibidos > 0) {
-				log_info(ptrLog, "Mensaje recibido de Nucleo: ", respuestaServidor);
+				log_info(ptrLog, "Mensaje recibido de Nucleo: %s", respuestaServidor);
 			} else {
 				//Aca matamos a Nucleo
 				finalizarConexion(socketConexionNucleo);
@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 		}
 		else
 		{
-			log_info(ptrLog, "hubo un error al abrir el archivo de configuracion de la consola.");
+			log_info(ptrLog, "Hubo un error al abrir el archivo de configuracion de la consola.");
 		}
 	} else {
 		log_info(ptrLog, "La consola no pudo iniciarse");
