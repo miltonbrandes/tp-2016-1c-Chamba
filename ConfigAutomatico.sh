@@ -18,7 +18,7 @@ sudo make all
 sudo make install
 
 
-cd /home/utnso/workspace/tp-2016-1c-Chamba/
+cd /home/utnso/tp-2016-1c-Chamba/
 git clone https://github.com/sisoputnfrba/ansisop-parser.git
 
 echo "DESCARGA DEL PARSER COMPLETA"
