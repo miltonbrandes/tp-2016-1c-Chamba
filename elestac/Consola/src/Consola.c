@@ -26,7 +26,7 @@ int crearLog() {
 	}
 }
 
-int iniciarConsola(t_config* config) {
+int iniciarConsola() {
 	config = config_create("../Consola/Consola.txt");
 	if (config) {
 		if (config_has_property(config, "PUERTO")) {
@@ -144,10 +144,23 @@ int main(int argc, char **argv) {
 	//leo del archivo de configuracion el puerto y el ip
 	//creo el log
 	if (crearLog()) {
-		if(iniciarConsola(config) == 1){
+		if(iniciarConsola() == 1){
 		//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		//programa = fopen(argv[1], "r");
 		//script = leerArchivo(programa);
+
+			char comando[100];
+			while(1) {
+				printf("Ingrese un comando: ");
+				scanf("%s", comando);
+				if(strcmp("run", comando) == 0) {
+					printf("\n");
+					break;
+				}else{
+					printf("\nComando no reconocido.\n\n");
+				}
+			}
+
 			enviarScriptAlNucleo();
 		}
 		else
