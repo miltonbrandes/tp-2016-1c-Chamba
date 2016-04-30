@@ -39,13 +39,12 @@ sudo make all
 sudo make install
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/
 sudo make clean
 sudo make all
 sudo make install
-
 
 cd /home/utnso/tp-2016-1c-Chamba/
 git clone https://github.com/sisoputnfrba/ansisop-parser.git
@@ -62,3 +61,15 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/ansisop-
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/
+
+#Muevo libs
+cd /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
+cp -i /home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
+cp -i /home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/libparser-ansisop.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
+cp -i /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
+
+#Limpio LD_LIBRARY_PATH y agrego la posta
+unset LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
+
+
