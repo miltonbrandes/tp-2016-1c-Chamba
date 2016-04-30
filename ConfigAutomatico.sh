@@ -74,4 +74,21 @@ cp -i /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so /home/ut
 unset LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
 
+#Hago los make
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
+sudo make
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
+sudo make
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
+sudo make
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
+sudo make
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
+sudo make
+
 
