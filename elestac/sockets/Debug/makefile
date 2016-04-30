@@ -41,6 +41,12 @@ clean:
 	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libsockets.so
 	-@echo ' '
 
+install: all
+	cp -u /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so /usr/lib
+
+uninstall:
+	rm -f /usr/lib/libsockets.so
+
 .PHONY: all clean dependents
 .SECONDARY:
 /home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so:
