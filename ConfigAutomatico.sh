@@ -1,3 +1,32 @@
+#Cambios en MakeFiles
+
+#Primero los borro
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
+sudo rm makefile
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
+sudo rm makefile
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
+sudo rm makefile
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
+sudo rm makefile
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
+sudo rm makefile
+
+#Ahora agrego los makefile modificados que tenemos en la otra carpeta
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
+
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Nucleo/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
+
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/ProcesoCpu/makefile /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
+
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Swap/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
+
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/makefile /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
+
 #Libraries
 cd /home/utnso/tp-2016-1c-Chamba/
 git clone https://github.com/sisoputnfrba/so-commons-library.git
