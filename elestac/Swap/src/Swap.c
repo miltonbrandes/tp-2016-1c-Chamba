@@ -31,6 +31,8 @@ int crearLog() {
 	if (ptrLog) {
 		return 1;
 	} else {
+		log_info(ptrLog,
+				"Error al crear Log");
 		return 0;
 	}
 }
@@ -85,6 +87,8 @@ int cargarValoresDeConfig() {
 			return 0;
 		}
 	} else {
+		log_info(ptrLog,
+				"Error al crear Archivo de Configuracion");
 		return 0;
 	}
 
