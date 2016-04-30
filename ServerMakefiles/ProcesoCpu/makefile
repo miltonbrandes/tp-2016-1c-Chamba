@@ -44,7 +44,7 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so
-/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so
+/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so:
+/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so:
 
 -include ../makefile.targets
