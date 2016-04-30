@@ -40,7 +40,7 @@ int *listaCpus;
 int i = 0;
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
-	ptrLog = log_create("../UMC/log.txt", "UMC", 1, 0);
+	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 1, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -96,7 +96,7 @@ int iniciarUMC(t_config* config) {
 
 int cargarValoresDeConfig() {
 	t_config* config;
-	config = config_create("../UMC/UMC.txt");
+	config = config_create(getenv("UMC_CONFIG"));
 
 	if (config) {
 		if (config_has_property(config, "PUERTO_CPU")) {

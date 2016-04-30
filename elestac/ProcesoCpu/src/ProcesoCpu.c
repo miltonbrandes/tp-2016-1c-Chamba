@@ -20,7 +20,7 @@ t_config* config;
 int socketNucleo, socketUMC;
 
 int crearLog() {
-	ptrLog = log_create("../ProcesoCpu/log.txt", "ProcesoCpu", 1, 0);
+	ptrLog = log_create(getenv("CPU_LOG"), "ProcesoCpu", 1, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -35,7 +35,7 @@ int main() {
 	crearLog();
 
 	t_config* config;
-	config = config_create("../ProcesoCpu/ProcesoCpu.txt");
+	config = config_create(getenv("CPU_CONFIG"));
 	//leo del archivo de configuracion el puerto y el ip
 
 	char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");

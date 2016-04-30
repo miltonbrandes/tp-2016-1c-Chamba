@@ -17,7 +17,7 @@ char respuestaServidor[MAX_BUFFER_SIZE];
 int bytesRecibidos = 0;
 int socketConexionNucleo;
 int crearLog() {
-	ptrLog = log_create("../Consola/log.txt", "Consola", 1, 0);
+	ptrLog = log_create(getenv("CONSOLA_LOG"), "Consola", 1, 0);
 	if (ptrLog) {
 		return 1;
 
@@ -27,7 +27,7 @@ int crearLog() {
 }
 
 int iniciarConsola() {
-	config = config_create("../Consola/Consola.txt");
+	config = config_create(getenv("CONSOLA_CONFIG"));
 	if (config) {
 		if (config_has_property(config, "PUERTO")) {
 			puerto = config_get_int_value(config, "PUERTO");

@@ -57,7 +57,7 @@ t_list *listaDispositivosIO, *listaSemaforos, *listaVariablesCompartidas;
 
 //Metodos para iniciar valores de Nucleo
 int crearLog() {
-	ptrLog = log_create("../Nucleo/log.txt", "Nucleo", 1, 0);
+	ptrLog = log_create(getenv("NUCLEO_LOG"), "Nucleo", 1, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -100,7 +100,7 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 
 int iniciarNucleo() {
 	t_config* config;
-	config = config_create("../Nucleo/Nucleo.txt");
+	config = config_create(getenv("NUCLEO_CONFIG"));
 
 	if (config) {
 		if (config_has_property(config, "PUERTO_SERVIDOR_UMC")) {
