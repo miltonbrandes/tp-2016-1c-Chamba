@@ -63,6 +63,8 @@ cd /home/utnso/tp-2016-1c-Chamba/elestac/
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/
 
 #Muevo libs
+cd /home/utnso/tp-2016-1c-Chamba/elestac/
+mkdir LIBRERIAS
 cd /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
 cp -i /home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
 cp -i /home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/libparser-ansisop.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/
