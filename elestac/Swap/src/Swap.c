@@ -27,7 +27,7 @@ int retardoCompactacion;
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
-	ptrLog = log_create("../Swap/log.txt", "Swap", 1, 0);
+	ptrLog = log_create(getenv("SWAP_LOG"), "Swap", 1, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -37,7 +37,7 @@ int crearLog() {
 
 int cargarValoresDeConfig() {
 	t_config* config;
-	config = config_create("../Swap/Swap.txt");
+	config = config_create(getenv("SWAP_CONFIG"));
 
 	int tamanoPagina, cantidadPaginas;
 

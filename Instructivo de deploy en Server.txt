@@ -1,0 +1,4 @@
+1- El proyecto tiene que estar descargado en el directorio /home/utnso/
+2- Una vez descargado, entras al directorio que bajaste (tp-2016-1c-Chamba) y ejecutas el comando: sudo bash ConfigAutomatico.sh
+3- Esperas que termine de ejecutar, tira muchas cosas en Consola.
+4- Listo. Si entras a cada carpeta de proyecto, en la carpeta "Debug" vas a tener el archivo, por ejemplo, "Swap", y para ejecutarlo tenes que usar el comando: sudo ./Swap

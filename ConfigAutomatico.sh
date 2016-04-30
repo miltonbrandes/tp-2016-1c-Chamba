@@ -107,4 +107,7 @@ sudo make
 cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
 sudo make
 
+#Agrego variables de entorno necesarias
+export SWAP_LOG=/home/utnso/tp-2016-1c-Chamba/elestac/Swap/log.txt
+export SWAP_CONFIG=/home/utnso/tp-2016-1c-Chamba/elestac/Swap/Swap.txt
 
