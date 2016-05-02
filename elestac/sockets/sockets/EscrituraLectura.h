@@ -19,27 +19,19 @@ enum  {ENVIAR_MENSAJE_UMC=1} operaciones_umc;
 enum  {ENVIAR_MENSAJE_SWAP=1} operaciones_swap;
 
 typedef struct {
-	char* mensaje;
-} t_paquete_mensaje;
-
-typedef struct {
 	int quienConecto;
 	int operacion;
 	int longitudPayload;
 } t_header;
 
 typedef struct {
-	void *datos;
-} t_payload;
-
-typedef struct {
 	t_header* header;
-	t_payload* payload;
+	char* payload;
 } t_paquete;
 
 
-int leer(int socket, t_paquete* paquete, int longitud);
-int escribir(int socket, t_paquete* paquete, int longitud);
+int escribir(int socket, int id, int longitud, int operacion, void* payload);
+int leer(int socket, int* id, char** payload);
 
 int finalizarConexion(int socket);
 

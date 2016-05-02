@@ -148,28 +148,38 @@ int init() {
 
 void enviarMensajeASwap(char *mensajeSwap) {
 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
-	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
+	int id= 5;
+	int longitud = strlen(mensajeSwap);
+	int operacion = 1;
+	int sendBytes = escribir(socketSwap, id,longitud,operacion,mensajeSwap);
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
-	char mensajeCpu[MAX_BUFFER_SIZE] = "Le contesto a Cpu, soy UMC\0";
+	char *mensajeCpu = "Le contesto a Cpu, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a CPU: %s", mensajeCpu);
-	int sendBytes = escribir(socketCPU, mensajeCpu, MAX_BUFFER_SIZE);
+	int id= 5;
+	int longitud = strlen(mensajeCpu);
+	int operacion = 1;
+	int sendBytes = escribir(socketCPU,id,longitud,operacion, mensajeCpu);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
-	char mensajeNucleo[MAX_BUFFER_SIZE] = "Le contesto a Nucleo, soy UMC\0";
+	char *mensajeNucleo = "Le contesto a Nucleo, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Nucleo: %s", mensajeNucleo);
-	int sendBytes = escribir(socketNucleo, mensajeNucleo, MAX_BUFFER_SIZE);
+	int id= 5;
+	int longitud = strlen(mensajeNucleo);
+	int operacion = 1;
+	int sendBytes = escribir(socketNucleo,id,longitud,operacion,mensajeNucleo);
 }
 
 void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
-	char *buffer[MAX_BUFFER_SIZE];
+	char* buffer;
+	int* id;
 	int bytesRecibidos;
 	int socketFor;
 	for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 		if (FD_ISSET(socketFor, tempSockets)) {
-			bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
+			bytesRecibidos = leer(socketFor, &id, &buffer);
 
 			if (bytesRecibidos > 0) {
 				buffer[bytesRecibidos] = 0;
@@ -213,8 +223,9 @@ void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
 }
 
 int datosEnSocketSwap() {
-	char buffer[MAX_BUFFER_SIZE];
-	int bytesRecibidos = leer(socketSwap, buffer, MAX_BUFFER_SIZE);
+	char* buffer;
+	int* id;
+	int bytesRecibidos = leer(socketSwap, &id, &buffer);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos de Swap");

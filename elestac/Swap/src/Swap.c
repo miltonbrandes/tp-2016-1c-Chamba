@@ -107,8 +107,9 @@ int init() {
 void manejarConexionesRecibidas(int socketUMC) {
 	do {
 		log_info(ptrLog, "Esperando recibir alguna peticion");
-		char buffer[MAX_BUFFER_SIZE];
-		int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
+		char* buffer;
+		int* id;
+		int bytesRecibidos = leer(socketUMC, &id, &buffer);
 
 		if(bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC\0");
@@ -124,8 +125,11 @@ void manejarConexionesRecibidas(int socketUMC) {
 			//Envio algo a UMC esperando con un retardo de compactacion
 			log_info(ptrLog, "Esperando Compactacion");
 			sleep(retardoCompactacion);
-			char mensajeUMC[MAX_BUFFER_SIZE] = "Toma la pagina que te pidio nucleo\0";
-			int sendBytes = escribir(socketUMC, mensajeUMC, MAX_BUFFER_SIZE);
+			char *mensajeUMC = "Toma la pagina que te pidio nucleo\0";
+			int id = 4;
+			int longitud = strlen(mensajeUMC);
+			int operacion = 1;
+			int sendBytes = escribir(socketUMC,id,longitud,operacion, mensajeUMC);
 			log_info(ptrLog, "Pagina enviada");
 		}
 
