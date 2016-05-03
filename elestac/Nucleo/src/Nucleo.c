@@ -214,8 +214,8 @@ int enviarMensajeACpu(socket)
 {
 
 	char *buffer;
-	*buffer = "Estoy recibiendo una nueva consola/0";
-	//log_info(ptrLog, buffer);
+	buffer = "Estoy recibiendo una nueva consola/0";
+	log_info(ptrLog, buffer);
 	int longitud = strlen(buffer);
 	int bytesEnviados = escribir(socket,3 ,longitud ,1,buffer);
 	if(bytesEnviados < 0) {
@@ -294,6 +294,10 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 		log_info(ptrLog, "Bytes recibidos desde una CPU: %s", buffer);
 		char *mensajeParaCPU = "Este es un mensaje para vos, CPU\0";
 		int bytesEnviados = escribir(nuevoSocketConexion, 3, strlen(mensajeParaCPU),1, mensajeParaCPU);
+		if(bytesEnviados < 0)
+		{
+			log_error(ptrLog, "Error al enviar datos a cpu");
+		}
 	}
 }
 
@@ -316,7 +320,6 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 			log_error(ptrLog, "Error al enviar los datos");
 		}
 	}
-
 }
 
 int datosEnSocketUMC() {
@@ -347,15 +350,15 @@ void escucharPuertos() {
 	while(1)
 	{
 		FD_ZERO(&tempSockets);
-		memcpy(&tempSockets, &sockets, sizeof(sockets));
-		//tempSockets = sockets;
+		tempSockets = sockets;
 		log_info(ptrLog, "Esperando conexiones");
 
 		int resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
 		if (resultadoSelect == 0) {
 			log_info(ptrLog, "Time out. Volviendo a esperar conexiones");
 		} else if (resultadoSelect < 0) {
-			log_info(ptrLog, "Ocurrio un error");
+			log_info(ptrLog, "Ocurrio un error en el select de nucleo");
+			break;
 		} else {
 
 			if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
@@ -388,7 +391,6 @@ void escucharPuertos() {
 				FD_CLR(socketReceptorConsola, &tempSockets);
 				datosEnSocketReceptorConsola(nuevoSocketConexion);
 				enviarMensajeACpu(listaCpus[i-1]);
-
 			} else if(FD_ISSET(socketUMC, &tempSockets)) {
 				//Ver como es aca porque no estamos aceptando una conexion cliente, sino recibiendo algo de UMC
 				int returnDeUMC = datosEnSocketUMC();
@@ -398,42 +400,48 @@ void escucharPuertos() {
 
 				}
 
-			} else{
+			} else
+			{
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				char* buffer[MAX_BUFFER_SIZE];
-					int bytesRecibidos;
-					int *id;
-					int socketFor;
-					for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
-						if (FD_ISSET(socketFor, &tempSockets)) {
-							bytesRecibidos = leer(socketFor, &id, &buffer);
-							if (bytesRecibidos > 0) {
-								buffer[bytesRecibidos] = 0;
-								log_info(ptrLog, "Mensaje recibido: %s", buffer);
-
-								//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
-							} else if (bytesRecibidos == 0) {
-								finalizarConexion(socketFor);
-								FD_CLR(socketFor, &tempSockets);
-								FD_CLR(socketFor, &sockets);
-								log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-							}else if (bytesRecibidos < 0){
-								finalizarConexion(socketFor);
-								FD_CLR(socketFor, &sockets);
-								log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
-							}
-
+				char* buffer;
+				int bytesRecibidos;
+				int *id;
+				int socketFor;
+				for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++)
+				{
+					if (FD_ISSET(socketFor, &tempSockets))
+					{
+						bytesRecibidos = leer(socketFor, &id, &buffer);
+						if (bytesRecibidos > 0)
+						{
+							buffer[bytesRecibidos] = 0;
+							log_info(ptrLog, "Mensaje recibido: %s", buffer);
+							//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
+						}
+						else if (bytesRecibidos == 0)
+						{
+							finalizarConexion(socketFor);
+							FD_CLR(socketFor, &tempSockets);
+							FD_CLR(socketFor, &sockets);
+							log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+						}
+						else if (bytesRecibidos < 0)
+						{
+							finalizarConexion(socketFor);
+							FD_CLR(socketFor, &sockets);
+							log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
 						}
 					}
+				}
 			}
 		}
 	}
 }
 
+
 int main() {
 	int returnInt = EXIT_SUCCESS;
-
 	if (init()) {
 
 		socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);

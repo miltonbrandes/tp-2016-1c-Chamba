@@ -46,31 +46,30 @@ int iniciarConsola() {
 	return 1;
 }
 
-int enviarScriptAlNucleo() {
-	//aca lo que deberia mandar es el script, no una cosa cualquiera
-	char buff[MAX_BUFFER_SIZE] = "Soy un nuevo programa, vas a iniciar el circuito";
-		char respuestaServidor[MAX_BUFFER_SIZE];
-		int bytesRecibidos = 0;
+int enviarScriptAlNucleo(char *script) {
+	char *buff = "Soy un nuevo programa, vas a iniciar el circuito";
+	char *respuestaServidor;
+	int bytesRecibidos = 0;
+	int id = 1;
+	int longitud = strlen(buff);
+	int operacion = 1;
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
 	if (socketConexionNucleo < 0) {
-		//aca me deberia mostrar por log que hubo un error
 		log_info(ptrLog, "Error en la conexion con el nucleo");
 		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Se conecto con el nucleo");
-	//aca se conecto con el nucleo
-	if (escribir(socketConexionNucleo, buff, MAX_BUFFER_SIZE) < 0) {
-		//error, no encontro el servidor
+	bytesRecibidos = escribir(socketConexionNucleo, id, longitud, operacion, buff);
+	if (bytesRecibidos< 0) {
 		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	while (1) {
 			log_info(ptrLog, "Esperando mensaje del Nucleo");
-			bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, MAX_BUFFER_SIZE);
+			bytesRecibidos = leer(socketConexionNucleo, &id, &buff);
 			if (bytesRecibidos < 0) {
-				//no pude recibir nada del nucleo
 				finalizarConexion(socketConexionNucleo);
 				log_info(ptrLog, "Error en la lectura del nucleo");
 				return -1;
@@ -83,41 +82,12 @@ int enviarScriptAlNucleo() {
 				break;
 			}
 		}
-	log_info(ptrLog, respuestaServidor);
+	//log_info(ptrLog, respuestaServidor);
 	finalizarConexion(socketConexionNucleo);
 	return 0;
 
 }
 
-/*int recibirRespuestaNucleo()
-{
-	//si pasa este if se conecta correctamente al socket servidor
-		//Respuesta del socket servidor
-
-		while (1) {
-			log_info(ptrLog, "Esperando mensaje del Nucleo");
-			bytesRecibidos = leer(socketConexionNucleo, respuestaServidor, MAX_BUFFER_SIZE);
-			if (bytesRecibidos < 0) {
-				//no pude recibir nada del nucleo
-				finalizarConexion(socketConexionNucleo);
-				log_info(ptrLog, "Error en la lectura del nucleo");
-				return -1;
-			}else if(bytesRecibidos > 0) {
-				log_info(ptrLog, "Mensaje recibido de Nucleo: ", respuestaServidor);
-			} else {
-				//Aca matamos a Nucleo
-				finalizarConexion(socketConexionNucleo);
-				log_info(ptrLog, "No se recibio nada de Nucleo. Cerramos conexion");
-				//return -1;
-				break;
-			}
-		}
-		log_info(ptrLog, respuestaServidor);
-		//free(respuestaServidor); ES NECESARIO???
-		finalizarConexion(socketConexionNucleo);
-		return 0;
-}
-*/
 //creo la funcion leer archivo para poder asignarle al script ansisop lo que dice el archivo
 char* leerArchivo(FILE *archivo) {
 	//busco el final del archivo
@@ -139,16 +109,23 @@ char* leerArchivo(FILE *archivo) {
 
 int main(int argc, char **argv) {
 	//creo la variable que me va a leer el script mediante el archivo que me llegue.
-	//char* script;
-	//FILE *programa;
+	char* script;
+	FILE *programa;
 	//leo del archivo de configuracion el puerto y el ip
 	//creo el log
 	if (crearLog()) {
 		if(iniciarConsola() == 1){
 		//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
-		//programa = fopen(argv[1], "r");
+		log_info(ptrLog, "Inicio del Programa");
+		log_debug(ptrLog, "Abriendo el script..");
+		/*if ((programa = fopen(argv[1], "r")) == NULL)
+		{
+				log_error(ptrLog, "No se ha podido abrir el script. Favor, verificar si existe.");
+				return EXIT_FAILURE;
+		}*/
 		//script = leerArchivo(programa);
-
+		//fclose(programa);
+		//log_debug(ptrLog, "Se abrio el script con exito");
 			char comando[100];
 			while(1) {
 				printf("Ingrese un comando: ");
@@ -161,7 +138,7 @@ int main(int argc, char **argv) {
 				}
 			}
 
-			enviarScriptAlNucleo();
+			enviarScriptAlNucleo(script);
 		}
 		else
 		{
@@ -172,6 +149,8 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+	free(script);
+	log_destroy(ptrLog);
+	config_destroy(config);
 	return EXIT_SUCCESS;
 }
-

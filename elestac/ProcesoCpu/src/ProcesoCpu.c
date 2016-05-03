@@ -42,7 +42,7 @@ int main() {
 	int puertoNucleo = config_get_int_value(config, "PUERTO_NUCLEO");
 	socketNucleo = crearSocketCliente(direccionNucleo, puertoNucleo);
 
-	enviarMensaje(socketNucleo);
+	enviarMensaje(socketNucleo, "Hola nucleo, soy una nueva cpu");
 	recibirMensaje(socketNucleo);
 
 	char *direccionUmc = config_get_string_value(config, "IP_UMC");
@@ -69,11 +69,10 @@ int controlarConexiones()
 		{
 			if(recibirMensaje(socketNucleo) == 0)
 			{
-				//aca va lo que hace cada vez que nucleo solicita algo al cpu.
+				//aca va lo que hace cada vez que nucleo solicita algo a la umc (cada vez que reciba un nuevo programa le tengo que pedir paginas)
 
-				enviarMensaje(socketUMC);
+				enviarMensaje(socketUMC, "Hola umc, soy una nueva cpu");
 				break;
-
 			}else if(recibirMensaje(socketUMC))
 			{
 				//aca deberia ir la logica de cada vez mas que reciba una conexion de umc pidiendo algo
@@ -97,11 +96,12 @@ int crearSocketCliente(char* direccion, int puerto) {
 	return socketConexion;
 }
 
-int enviarMensaje(int socket) {
-	char buff[MAX_BUFFER_SIZE] = "Hola como estas? Soy Cpu\0";
-	//aca se conecto con el nucleo/Umc
-
-	if (escribir(socket, buff, MAX_BUFFER_SIZE) < 0) {
+int enviarMensaje(int socket, char *mensaje) {
+	int id = 2;
+	int longitud = strlen(mensaje);
+	int operacion = 1;
+	int sendBytes = escribir(socket, id, longitud, operacion, mensaje);
+	if (sendBytes< 0) {
 		//error, no pudo escribir
 		log_info(ptrLog, "Error al escribir");
 		return -1;
@@ -111,9 +111,10 @@ int enviarMensaje(int socket) {
 }
 
 int recibirMensaje(int socket) {
-	char respuestaServidor[MAX_BUFFER_SIZE];
+	char *respuestaServidor;
+	int *id;
 	//Respuesta del socket servidor
-	int bytesRecibidos = leer(socket, respuestaServidor, MAX_BUFFER_SIZE);
+	int bytesRecibidos = leer(socket, &id, &respuestaServidor);
 	if (bytesRecibidos < 0) {
 		log_info(ptrLog, "Error en al lectura del mensaje del servidor");
 		//no pude recibir nada del nucleo/umc
