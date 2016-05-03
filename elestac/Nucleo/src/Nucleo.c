@@ -212,10 +212,12 @@ int init() {
 //Fin Metodos para Iniciar valores de la UMC
 int enviarMensajeACpu(socket)
 {
-	char *buffer[MAX_BUFFER_SIZE];
-	*buffer = "Estoy recibiendo una nueva consola";
+
+	char *buffer;
+	*buffer = "Estoy recibiendo una nueva consola/0";
 	//log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socket, *buffer, MAX_BUFFER_SIZE);
+	int longitud = strlen(buffer);
+	int bytesEnviados = escribir(socket,3 ,longitud ,1,buffer);
 	if(bytesEnviados < 0) {
 			log_info(ptrLog, "Ocurrio un error al enviar mensajes a CPU");
 			return -1;
@@ -228,24 +230,29 @@ int enviarMensajeACpu(socket)
 }
 
 
-int enviarMensajeAUMC(char buffer[]) {
+int enviarMensajeAUMC(char* msj) {
+	char *buffer[MAX_BUFFER_SIZE];
+	*buffer = msj;
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socketUMC, buffer, MAX_BUFFER_SIZE);
+	int longitud = strlen(buffer);
+	int bytesEnviados = escribir(socketUMC, 3, longitud, 1, buffer);
+	//int bytesEnviados = escribir(socketUMC, buffer, MAX_BUFFER_SIZE);
 	if(bytesEnviados < 0) {
 		log_info(ptrLog, "Ocurrio un error al enviar mensajes a UMC");
 		return -1;
 	}else if(bytesEnviados == 0){
 		log_info(ptrLog, "No se envio ningun byte a UMC");
 	}else{
-		log_info(ptrLog, "Mensaje a UMC enviado");
+		log_info(ptrLog, "Mensaje a UMC enviado: %s", buffer);
 	}
 	return 1;
 }
 
 int enviarMensajeAConsola(int socket) {
-	char buffer[MAX_BUFFER_SIZE] = "Consola aca terminas papa";
+	char* buffer = "Consola aca terminas papa";
 	log_info(ptrLog, buffer);
-	int bytesEnviados = escribir(socket, buffer, sizeof(buffer));
+	int longitud = strlen(buffer);
+	int bytesEnviados = escribir(socket, 3,longitud, 1, *buffer);
 	if(bytesEnviados < 0) {
 		log_info(ptrLog, "Ocurrio un error al enviar mensajes a la consola");
 		return -1;
@@ -256,11 +263,6 @@ int enviarMensajeAConsola(int socket) {
 	}
 	return 1;
 }
-
-void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
-
-}
-
 int obtenerSocketMaximoInicial() {
 	int socketMaximoInicial = 0;
 
@@ -280,8 +282,9 @@ int obtenerSocketMaximoInicial() {
 }
 
 void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
-	char *buffer[MAX_BUFFER_SIZE];
-	int bytesRecibidos = leer(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+	char *buffer;
+	int *id;
+	int bytesRecibidos = leer(nuevoSocketConexion, &id, &buffer);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket CPU");
@@ -289,15 +292,15 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
 	} else {
 		log_info(ptrLog, "Bytes recibidos desde una CPU: %s", buffer);
-		char mensajeParaCPU[MAX_BUFFER_SIZE] = "Este es un mensaje para vos, CPU\0";
-		int bytesEnviados = escribir(nuevoSocketConexion, mensajeParaCPU, MAX_BUFFER_SIZE);
+		char *mensajeParaCPU = "Este es un mensaje para vos, CPU\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, 3, strlen(mensajeParaCPU),1, mensajeParaCPU);
 	}
 }
 
 void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
-	char *buffer[MAX_BUFFER_SIZE];
-
-	int bytesRecibidos = leer(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+	char *buffer;
+	int *id;
+	int bytesRecibidos = leer(nuevoSocketConexion, &id, &buffer);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Consola");
@@ -306,15 +309,20 @@ void datosEnSocketReceptorConsola(int nuevoSocketConexion) {
 	} else {
 
 		log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
-		*buffer = "Este es un mensaje para vos, Consola\0";
-		int bytesEnviados = escribir(nuevoSocketConexion, buffer, MAX_BUFFER_SIZE);
+		buffer = "Este es un mensaje para vos, Consola\0";
+		int bytesEnviados = escribir(nuevoSocketConexion, 3, strlen(buffer), 1, buffer);
+		if(bytesEnviados<0)
+		{
+			log_error(ptrLog, "Error al enviar los datos");
+		}
 	}
 
 }
 
 int datosEnSocketUMC() {
-	char buffer[MAX_BUFFER_SIZE];
-	int bytesRecibidos = leer(socketUMC, buffer, MAX_BUFFER_SIZE);
+	char *buffer;
+	int *id;
+	int bytesRecibidos = leer(socketUMC, &id, &buffer);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
@@ -339,8 +347,8 @@ void escucharPuertos() {
 	while(1)
 	{
 		FD_ZERO(&tempSockets);
-		//memcpy(&tempSockets, &sockets, sizeof(sockets));
-		tempSockets = sockets;
+		memcpy(&tempSockets, &sockets, sizeof(sockets));
+		//tempSockets = sockets;
 		log_info(ptrLog, "Esperando conexiones");
 
 		int resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
@@ -393,25 +401,19 @@ void escucharPuertos() {
 			} else{
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				//recibirDatos(&tempSockets, &sockets, socketMaximo);
-				char buffer[MAX_BUFFER_SIZE];
+				char* buffer[MAX_BUFFER_SIZE];
 					int bytesRecibidos;
+					int *id;
 					int socketFor;
 					for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 						if (FD_ISSET(socketFor, &tempSockets)) {
-							bytesRecibidos = leer(socketFor, buffer, MAX_BUFFER_SIZE);
-
+							bytesRecibidos = leer(socketFor, &id, &buffer);
 							if (bytesRecibidos > 0) {
 								buffer[bytesRecibidos] = 0;
 								log_info(ptrLog, "Mensaje recibido: %s", buffer);
 
 								//Esta parte esta para que UMC mande mensaje a Swap, solo para probar la funcionalidad.
-								//Hay que ver bien que hacer cuando se recibe un paquete
-
-								//Fin
-
 							} else if (bytesRecibidos == 0) {
-								//Ver que hay que hacer porque puede venir de CPU, de Consola, o de UMC
 								finalizarConexion(socketFor);
 								FD_CLR(socketFor, &tempSockets);
 								FD_CLR(socketFor, &sockets);
@@ -455,7 +457,7 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
-		returnInt = enviarMensajeAUMC("Hola, soy el Nucleo\0");
+		returnInt = enviarMensajeAUMC("Hola, soy el Nucleo/0");
 		listaConsolas = (int *)malloc(10*sizeof(int));
 		listaCpus = (int *)malloc(10*sizeof(int));
 		escucharPuertos();

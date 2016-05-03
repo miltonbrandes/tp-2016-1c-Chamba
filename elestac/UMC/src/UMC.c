@@ -172,45 +172,10 @@ void enviarMensajeANucleo(int socketNucleo, char* buffer) {
 	int sendBytes = escribir(socketNucleo,id,longitud,operacion,mensajeNucleo);
 }
 
-void recibirDatos(fd_set* tempSockets, fd_set* sockets, int socketMaximo) {
-	char* buffer;
-	int* id;
-	int bytesRecibidos;
-	int socketFor;
-	for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
-		if (FD_ISSET(socketFor, tempSockets)) {
-			bytesRecibidos = leer(socketFor, &id, &buffer);
-
-			if (bytesRecibidos > 0) {
-				buffer[bytesRecibidos] = 0;
-				log_info(ptrLog, buffer);
-				//Recibimos algo
-				/*if(socketFor == socketReceptorNucleo)
-				{
-
-					enviarMensajeASwap("Llego un nuevo programa, tenes que reservar memoria");
-
-				}*/
-			} else if (bytesRecibidos == 0) {
-				//Aca estamos matando el Socket que esta fallando
-				//Ver que hay que hacer porque puede venir de CPU o de Nucleo
-				finalizarConexion(socketFor);
-				FD_CLR(socketFor, tempSockets);
-				FD_CLR(socketFor, sockets);
-				log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-			}else{
-				finalizarConexion(socketFor);
-				FD_CLR(socketFor, sockets);
-				log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
-			}
-
-		}
-	}
-}
-
 void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
-	char buffer[MAX_BUFFER_SIZE];
-	int bytesRecibidos = leer(socketNuevaConexion, buffer, MAX_BUFFER_SIZE);
+	char *buffer[MAX_BUFFER_SIZE];
+	int *id;
+	int bytesRecibidos = leer(socketNuevaConexion, &id, &buffer);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Nucleo o CPU");
@@ -260,9 +225,9 @@ int obtenerSocketMaximoInicial() {
 
 
 void manejarConexionesRecibidas() {
-	int handshakeNucleo = 0;
+	//int handshakeNucleo = 0;
 	fd_set sockets, tempSockets;
-	int resultadoSelect;
+	//int resultadoSelect;
 	int socketMaximo = obtenerSocketMaximoInicial();
 
 	int socketCPUPosta = -121211;
@@ -271,12 +236,11 @@ void manejarConexionesRecibidas() {
 	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketSwap, &sockets);
 
-	do {
+	while(1) {
 		FD_ZERO(&tempSockets);
 		log_info(ptrLog, "Esperando conexiones");
-		memcpy(&tempSockets, &sockets, sizeof(sockets));
-
-		resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
+		tempSockets = sockets;
+		int resultadoSelect = select(socketMaximo+1, &tempSockets, NULL, NULL, NULL);
 		if (resultadoSelect == 0) {
 			log_info(ptrLog, "Time out. Volviendo a esperar conexiones");
 		} else if (resultadoSelect < 0) {
@@ -293,7 +257,7 @@ void manejarConexionesRecibidas() {
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 				}
-
+				//datosEnSocketReceptorNucleoCPU(nuevoSocketConexion);
 				FD_CLR(socketReceptorNucleo, &tempSockets);
 				enviarMensajeANucleo(nuevoSocketConexion, "Nucleo no me rompas las pelotas\0");
 				//me fijo si el mensaje no es el handshake y si no es se lo tengo que pasar al swap
@@ -330,7 +294,35 @@ void manejarConexionesRecibidas() {
 			} else {
 
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				recibirDatos(&tempSockets, &sockets, socketMaximo);
+				//recibirDatos(&tempSockets, &sockets, socketMaximo);
+				char* buffer[MAX_BUFFER_SIZE];
+					int* id;
+					int bytesRecibidos;
+					int socketFor;
+					for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
+						if (FD_ISSET(socketFor, &tempSockets)) {
+							bytesRecibidos = leer(socketFor, &id, &buffer);
+
+							if (bytesRecibidos > 0) {
+								buffer[bytesRecibidos] = 0;
+								log_info(ptrLog, buffer);
+								//ACA ME DEBERIA FIJAR QUIEN ES EL QUE ME LO MANDO MEDIANTE EL ID DEL PROCESO QUE ESTA GUARDADO EN EL BUFFER
+								//Recibimos algo
+							} else if (bytesRecibidos == 0) {
+								//Aca estamos matando el Socket que esta fallando
+								//Ver que hay que hacer porque puede venir de CPU o de Nucleo
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &tempSockets);
+								FD_CLR(socketFor, &sockets);
+								log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+							}else{
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &sockets);
+								log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
+							}
+
+						}
+					}
 				if(socketCPUPosta>0) {
 					enviarMensajeASwap("Se abrio un nuevo programa por favor reservame memoria");
 				}
@@ -338,7 +330,7 @@ void manejarConexionesRecibidas() {
 
 		}
 
-	} while (1);
+	}
 }
 
 int main() {
