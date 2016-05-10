@@ -15,13 +15,44 @@
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
+#include <pthread.h>
+#include <semaphore.h>
 
+//PARA INCLUIR EN LA LIBRERIA
+typedef struct tlb_t { //Registros de la tlb
+	int indice; //Cada vez que se asigna una se le da un indice, el indice menor es el que se saca. (-1 si esta libre)
+	int pid;
+	int nPag;
+	int numMarco;
+} tlb;
+
+typedef struct tablaPag_t{
+	int valido; //0 si no esta en memoria, 1 si si esta
+	int numMarco;//marco en el que se encuentra si valido vale 1
+} tablaPag;
+
+typedef struct tMarco_t { //Registro de la tabla de marcos
+	int pid;
+	int nPag;
+	int indice; //-1 si esta libre
+	int modif; // 0 no, 1 si
+} tMarco;
+
+typedef struct nodoListaTP_t{ //Nodos de la lista de tablas de paginas del adm
+	struct nodoListaTP_t* ant;
+	struct nodoListaTP_t* sgte;
+	int pid;
+	int cantPaginas;
+	int marcosAsignados; //Chequear si es menor al tamanio de marcos maximo.
+	int cantPaginasAcc;
+	int cantFallosPag;
+	int indiceClockM;
+	tablaPag* tabla; //aca va la tabla en si malloc(sizeof(tablaPag)*cantPaginas)
+} nodoListaTP;
 
 //TODO: falta que el umc reciba cuando hay un programa nuevo de cpu!!!!
 //casi finalizado el circuito
 #define MAX_BUFFER_SIZE 4096
-
-
 
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorNucleo;
@@ -38,6 +69,26 @@ int puertoReceptorSwap;
 char *ipSwap;
 int *listaCpus;
 int i = 0;
+
+//Variables tlb, hilos y semáforos
+int aciertosTLB;
+int fallosTLB;
+int indiceTLB;
+int indiceMarcos;
+int indiceClockM; //es el indice de lectura actual en clock m para reemplazo de paginas
+int zonaCritica;
+int flushMemoria;
+char* memoria;
+nodoListaTP* raizTP;
+tlb* TLB;
+tMarco* tMarcos;
+pthread_t hMPFlush;
+pthread_mutex_t MUTEXTLB;
+pthread_mutex_t MUTEXTM;
+pthread_mutex_t MUTEXLP;
+pthread_mutex_t MUTEXLOG;
+int marcos, marcosSize, marcoXProc, entradasTLB, retardo, tlbHabilitada;
+
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
 	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 1, 0);
@@ -49,7 +100,7 @@ int crearLog() {
 }
 
 int iniciarUMC(t_config* config) {
-	int marcos, marcosSize, marcoXProc, entradasTLB, retardo;
+	//int marcos, marcosSize, marcoXProc, entradasTLB, retardo, tlbHabilitada;
 
 	if (config_has_property(config, "MARCOS")) {
 		marcos = config_get_int_value(config, "MARCOS");
@@ -91,6 +142,14 @@ int iniciarUMC(t_config* config) {
 		return 0;
 	}
 
+	if (config_has_property(config, "TLB_HABILITADA")) {
+		tlbHabilitada = config_get_int_value(config, "TLB_HABILITADA");
+		} else {
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave TLB_HABILITADA");
+			return 0;
+		}
+
 	return 1;
 }
 
@@ -102,32 +161,28 @@ int cargarValoresDeConfig() {
 		if (config_has_property(config, "PUERTO_CPU")) {
 			puertoTCPRecibirConexionesCPU = config_get_int_value(config, "PUERTO_CPU");
 		} else {
-			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave PUERTO_CPU");
+			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_CPU");
 			return 0;
 		}
 
 		if (config_has_property(config, "PUERTO_NUCLE0")) {
 			puertoTCPRecibirConexionesNucleo = config_get_int_value(config, "PUERTO_NUCLE0");
 		} else {
-			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave PUERTO_NUCLE0");
+			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_NUCLE0");
 			return 0;
 		}
 
 		if (config_has_property(config, "IP_SWAP")) {
 			ipSwap = config_get_string_value(config, "IP_SWAP");
 		} else {
-			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave IP_SWAP");
+			log_info(ptrLog, "El archivo de configuracion no contiene la clave IP_SWAP");
 			return 0;
 		}
 
 		if (config_has_property(config, "PUERTO_SWAP")) {
 			puertoReceptorSwap = config_get_int_value(config, "PUERTO_SWAP");
 		} else {
-			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave PUERTO_SWAP");
+			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_SWAP");
 			return 0;
 		}
 
@@ -222,7 +277,6 @@ int obtenerSocketMaximoInicial() {
 
 	return socketMaximoInicial;
 }
-
 
 void manejarConexionesRecibidas() {
 	//int handshakeNucleo = 0;
@@ -320,17 +374,138 @@ void manejarConexionesRecibidas() {
 								FD_CLR(socketFor, &sockets);
 								log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
 							}
-
 						}
 					}
 				if(socketCPUPosta>0) {
 					enviarMensajeASwap("Se abrio un nuevo programa por favor reservame memoria");
 				}
 			}
-
 		}
-
 	}
+}
+
+int iniciarTablas(void){
+	int i=0;
+	int fallo=0;
+	if(tlbHabilitada==1)	{
+
+		TLB=malloc(sizeof(tlb)*(entradasTLB));
+		if(TLB==NULL) fallo=-1; //si devuelve -1 es pq fallo
+		for(i=0;i<entradasTLB;i++){
+			TLB[i].pid=-1;
+			TLB[i].indice=-1;
+			TLB[i].nPag=0;
+			TLB[i].numMarco=-1;
+		}
+	} else {
+		TLB=NULL;
+	}
+	tMarcos=malloc(sizeof(tMarco)*(marcos));
+	if(tMarcos!=NULL){
+		//Inicia los marcos con el tamanio de cada uno.
+		for(i=0;i<(marcos);i++){
+			tMarcos[i].indice=-1; //Inicializamos todos los marcos como libres
+			tMarcos[i].pid=-1;
+		}
+	} else {
+		fallo=-1;
+	}
+
+	memoria=malloc((sizeof(char)*(marcosSize))*marcos);
+	if(memoria==NULL) fallo =-1;
+	raizTP=NULL;
+	if(fallo==0) //Tablas iniciadas
+	return fallo;
+}
+
+int marcosOcupadosMP(){
+	int cuenta=0;
+	int i;
+	for(i=0;i<marcos;i++){
+		if(tMarcos[i].indice!=-1) cuenta++;
+	}
+	return cuenta;
+}
+
+int marcosLibres(void){
+	int i=0;
+	int c=0;
+	for(i=0;i<marcos;i++){
+		if(tMarcos[i].indice==-1) c++;
+	}
+	return c;
+}
+
+int entradaTLBAReemplazar(void){ //Devuelve que entrada hay que reemplazar, si devuelve -1 es porqeu no hay tlb.
+	int i=0;
+	int posMenor=0;
+	if(TLB!=NULL){
+		for(i=0;i<entradasTLB;i++){
+			if(TLB[i].indice==-1) return i;
+			if(TLB[i].indice<=TLB[posMenor].indice) posMenor=i;
+		}
+		return posMenor;
+	}
+	return -1;
+}
+
+void tlbFlush(void){
+	int i=0;
+	if(tlbHabilitada==1){
+		//pthread_mutex_lock(&MUTEXTLB);
+	for(i=0;i<entradasTLB;i++){
+		TLB[i].pid=-1;
+		TLB[i].indice=-1;
+		TLB[i].nPag=0;
+		TLB[i].numMarco=-1;
+		}
+	//pthread_mutex_unlock(&MUTEXTLB);
+	}
+	printf("TLB BORRADA\n");
+	return;
+}
+
+int estaEnTLB(int pid, int numPag){//Devuelve -1 si no esta,sino devuelve la posicion en la tlb en la que esta
+	int i;
+	if(TLB!=NULL && tlbHabilitada==1){
+		for(i=0;i<entradasTLB;i++){
+			if((TLB[i].pid)==pid && (TLB[i]).nPag==numPag){
+				return i;
+			}
+		}
+		return -1;
+	}
+	return -1;
+}
+
+void finalizarTablas(void){
+	int i=0;
+
+	if(TLB!=NULL) free(TLB);
+	TLB=NULL;
+
+	if(tMarcos!=NULL){
+		free(tMarcos);
+		tMarcos=NULL;
+	}
+
+	if(memoria!=NULL){
+		free(memoria);
+		memoria=NULL;
+	}
+
+	if(raizTP!=NULL) finalizarListaTP();
+	//printf("Tablas finalizadas\n");
+}
+
+void agregarATLB(int pid,int pagina,int marco){
+	int aAgregar;
+	aAgregar=entradaTLBAReemplazar();
+	TLB[aAgregar].nPag=pagina;
+	TLB[aAgregar].numMarco=marco;
+	TLB[aAgregar].pid=pid;
+	TLB[aAgregar].indice=indiceTLB;
+	indiceTLB++;
 }
 
 int main() {
