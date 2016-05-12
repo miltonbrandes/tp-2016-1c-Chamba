@@ -47,12 +47,13 @@ int iniciarConsola() {
 }
 
 int enviarScriptAlNucleo(char *script) {
-	char *buff = "Soy un nuevo programa, vas a iniciar el circuito";
+	char *buff;
 	char *respuestaServidor;
 	int bytesRecibidos = 0;
-	int id = 1;
-	int longitud = strlen(buff);
-	int operacion = 1;
+	uint32_t id = 1;
+	uint32_t operacion;
+	int longitud = strlen(script + 1);
+
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
 	if (socketConexionNucleo < 0) {
 		log_info(ptrLog, "Error en la conexion con el nucleo");
@@ -60,7 +61,8 @@ int enviarScriptAlNucleo(char *script) {
 		return -1;
 	}
 	log_info(ptrLog, "Se conecto con el nucleo");
-	bytesRecibidos = escribir(socketConexionNucleo, id, longitud, operacion, buff);
+	operacion = 1;
+	bytesRecibidos = enviarDatos(socketConexionNucleo, script, longitud, operacion, id);
 	if (bytesRecibidos< 0) {
 		finalizarConexion(socketConexionNucleo);
 		return -1;
@@ -68,7 +70,7 @@ int enviarScriptAlNucleo(char *script) {
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	while (1) {
 			log_info(ptrLog, "Esperando mensaje del Nucleo");
-			bytesRecibidos = leer(socketConexionNucleo, &id, &buff);
+			bytesRecibidos = recibirDatos(socketConexionNucleo, &buff, &operacion, &id);
 			if (bytesRecibidos < 0) {
 				finalizarConexion(socketConexionNucleo);
 				log_info(ptrLog, "Error en la lectura del nucleo");
@@ -118,14 +120,14 @@ int main(int argc, char **argv) {
 		//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		log_info(ptrLog, "Inicio del Programa");
 		log_debug(ptrLog, "Abriendo el script..");
-		/*if ((programa = fopen(argv[1], "r")) == NULL)
+		if ((programa = fopen("/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/facil.ansisop", "r")) == NULL)
 		{
 				log_error(ptrLog, "No se ha podido abrir el script. Favor, verificar si existe.");
 				return EXIT_FAILURE;
-		}*/
-		//script = leerArchivo(programa);
-		//fclose(programa);
-		//log_debug(ptrLog, "Se abrio el script con exito");
+		}
+		script = leerArchivo(programa);
+		fclose(programa);
+		log_debug(ptrLog, "Se abrio el script con exito");
 			char comando[100];
 			while(1) {
 				printf("Ingrese un comando: ");

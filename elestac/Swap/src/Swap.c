@@ -162,8 +162,10 @@ void manejarConexionesRecibidas(int socketUMC) {
 	do {
 		log_info(ptrLog, "Esperando recibir alguna peticion");
 		char* buffer;
-		int* id;
-		int bytesRecibidos = leer(socketUMC, &id, &buffer);
+		uint32_t id;
+		uint32_t operacion;
+		int bytesRecibidos = recibirDatos(socketUMC, &buffer, &operacion, &id);
+
 
 		if(bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC\0");
@@ -180,10 +182,10 @@ void manejarConexionesRecibidas(int socketUMC) {
 			log_info(ptrLog, "Esperando Compactacion");
 			sleep(retardoCompactacion);
 			char *mensajeUMC = "Toma la pagina que te pidio nucleo\0";
-			int id = 4;
-			int longitud = strlen(mensajeUMC);
-			int operacion = 1;
-			int sendBytes = escribir(socketUMC,id,longitud,operacion, mensajeUMC);
+			uint32_t id = 4;
+			uint32_t longitud = strlen(mensajeUMC);
+			uint32_t operacion = 1;
+			int sendBytes = enviarDatos(socketUMC, mensajeUMC, longitud, operacion, id);
 			log_info(ptrLog, "Pagina enviada");
 		}
 

@@ -97,10 +97,10 @@ int crearSocketCliente(char* direccion, int puerto) {
 }
 
 int enviarMensaje(int socket, char *mensaje) {
-	int id = 2;
-	int longitud = strlen(mensaje);
-	int operacion = 1;
-	int sendBytes = escribir(socket, id, longitud, operacion, mensaje);
+	uint32_t id = 2;
+	uint32_t longitud = strlen(mensaje);
+	uint32_t operacion = 1;
+	int sendBytes = enviarDatos(socket,mensaje, longitud, operacion, id);
 	if (sendBytes< 0) {
 		//error, no pudo escribir
 		log_info(ptrLog, "Error al escribir");
@@ -112,9 +112,10 @@ int enviarMensaje(int socket, char *mensaje) {
 
 int recibirMensaje(int socket) {
 	char *respuestaServidor;
-	int *id;
+	uint32_t id;
+	uint32_t operacion;
 	//Respuesta del socket servidor
-	int bytesRecibidos = leer(socket, &id, &respuestaServidor);
+	int bytesRecibidos = recibirDatos(socket, &respuestaServidor, &operacion, &id);
 	if (bytesRecibidos < 0) {
 		log_info(ptrLog, "Error en al lectura del mensaje del servidor");
 		//no pude recibir nada del nucleo/umc

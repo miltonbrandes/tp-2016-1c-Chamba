@@ -203,34 +203,34 @@ int init() {
 
 void enviarMensajeASwap(char *mensajeSwap) {
 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
-	int id= 5;
-	int longitud = strlen(mensajeSwap);
-	int operacion = 1;
-	int sendBytes = escribir(socketSwap, id,longitud,operacion,mensajeSwap);
+	uint32_t id= 5;
+	uint32_t longitud = strlen(mensajeSwap);
+	uint32_t operacion = 1;
+	int sendBytes = enviarDatos(socketSwap, mensajeSwap, longitud, operacion, id);
 }
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
 	char *mensajeCpu = "Le contesto a Cpu, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a CPU: %s", mensajeCpu);
-	int id= 5;
-	int longitud = strlen(mensajeCpu);
-	int operacion = 1;
-	int sendBytes = escribir(socketCPU,id,longitud,operacion, mensajeCpu);
+	uint32_t id= 5;
+	uint32_t longitud = strlen(mensajeCpu);
+	uint32_t operacion = 1;
+	int sendBytes = enviarDatos(socketCPU, mensajeCpu, longitud, operacion, id);
 }
 
 void enviarMensajeANucleo(int socketNucleo, char* buffer) {
 	char *mensajeNucleo = "Le contesto a Nucleo, soy UMC\0";
 	log_info(ptrLog, "Envio mensaje a Nucleo: %s", mensajeNucleo);
-	int id= 5;
-	int longitud = strlen(mensajeNucleo);
-	int operacion = 1;
-	int sendBytes = escribir(socketNucleo,id,longitud,operacion,mensajeNucleo);
+	uint32_t id= 5;
+	uint32_t longitud = strlen(mensajeNucleo);
+	uint32_t operacion = 1;
+	int sendBytes = enviarDatos(socketNucleo, buffer, longitud, operacion, id);
 }
-
 void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
-	char *buffer[MAX_BUFFER_SIZE];
-	int *id;
-	int bytesRecibidos = leer(socketNuevaConexion, &id, &buffer);
+	char *buffer;
+	uint32_t id;
+	uint32_t operacion;
+	int bytesRecibidos = recibirDatos(socketNuevaConexion, &buffer, &operacion, &id);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Nucleo o CPU");
@@ -244,11 +244,13 @@ void datosEnSocketReceptorNucleoCPU(int socketNuevaConexion) {
 
 int datosEnSocketSwap() {
 	char* buffer;
-	int* id;
-	int bytesRecibidos = leer(socketSwap, &id, &buffer);
+	uint32_t id;
+	uint32_t operacion;
+	int bytesRecibidos = recibirDatos(socketSwap, &buffer, &operacion, &id);
 
 	if(bytesRecibidos < 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos de Swap");
+		return -1;
 	} else if(bytesRecibidos == 0) {
 		log_info(ptrLog, "No se recibieron datos de Swap. Se cierra la conexion");
 		finalizarConexion(socketSwap);
@@ -350,12 +352,13 @@ void manejarConexionesRecibidas() {
 				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
 				//recibirDatos(&tempSockets, &sockets, socketMaximo);
 				char* buffer[MAX_BUFFER_SIZE];
-					int* id;
+					uint32_t id;
+					uint32_t operacion;
 					int bytesRecibidos;
 					int socketFor;
 					for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 						if (FD_ISSET(socketFor, &tempSockets)) {
-							bytesRecibidos = leer(socketFor, &id, &buffer);
+							bytesRecibidos = recibirDatos(socketFor,  &buffer, &operacion, &id);
 
 							if (bytesRecibidos > 0) {
 								buffer[bytesRecibidos] = 0;
@@ -494,7 +497,7 @@ void finalizarTablas(void){
 		memoria=NULL;
 	}
 
-	if(raizTP!=NULL) finalizarListaTP();
+	//if(raizTP!=NULL) finalizarListaTP();
 	//printf("Tablas finalizadas\n");
 }
 
