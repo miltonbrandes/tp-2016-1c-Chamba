@@ -1,0 +1,34 @@
+/*
+ * PrimitivasAnSISOP.h
+ *
+ *  Created on: 12/5/2016
+ *      Author: utnso
+ */
+
+#ifndef CPU_PRIMITIVAS_ANSISOP_H_
+#define CPU_PRIMITIVAS_ANSISOP_H_
+
+#include <parser/parser.h>
+#include <parser/sintax.h>
+#include <parser/metadata_program.h>
+#include <commons/log.h>
+
+//Tipos de datos
+	typedef uint32_t t_posicion;
+
+t_posicion definirVariable(t_nombre_variable identificador_variable);
+t_posicion obtenerPosicionVariable(t_nombre_variable identificador_variable);
+t_valor_variable dereferenciar(t_posicion direccion_variable);
+void asignar(t_posicion	direccion_variable,	t_valor_variable valor);
+t_valor_variable obtenerValorCompartida(t_nombre_compartida	variable);
+t_valor_variable asignarValorCompartida(t_nombre_compartida	variable, t_valor_variable valor);
+t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta);
+t_puntero_instruccion llamarFuncion(t_nombre_etiqueta etiqueta,	t_posicion donde_retornar, t_puntero_instruccion linea_en_ejecuccion);
+t_puntero_instruccion retornar(t_valor_variable retorno);
+int	imprimir(t_valor_variable valor_mostrar);
+int	imprimirTexto(char*	texto);
+int	entradaSalida(t_nombre_dispositivo dispositivo, int	tiempo);
+int	wait(t_nombre_semaforo	identificador_semaforo);
+int signal(t_nombre_semaforo identificador_semaforo);
+
+#endif /* CPU_PRIMITIVAS_ANSISOP_H_ */
