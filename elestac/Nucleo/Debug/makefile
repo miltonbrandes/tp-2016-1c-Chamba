@@ -26,14 +26,15 @@ endif
 all: Nucleo
 
 dependents:
-	-cd /home/utnso/Escritorio/TP\ SO/commons/Debug && $(MAKE) all
-	-cd /home/utnso/Escritorio/TP\ SO/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/parser/Debug && $(MAKE) all
 
 # Tool invocations
-Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/TP\ SO/commons/Debug/libcommons.so /home/utnso/Escritorio/TP\ SO/sockets/Debug/libsockets.so
+Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/parser/Debug/libparser.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Escritorio/TP SO/sockets/Debug" -L"/home/utnso/Escritorio/TP SO/commons/Debug" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/parser/Debug" -L"/home/utnso/workspace/sockets/Debug" -L"/home/utnso/workspace/commons/Debug" -pthread -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -44,7 +45,8 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/Escritorio/TP\ SO/commons/Debug/libcommons.so:
-/home/utnso/Escritorio/TP\ SO/sockets/Debug/libsockets.so:
+/home/utnso/workspace/commons/Debug/libcommons.so:
+/home/utnso/workspace/sockets/Debug/libsockets.so:
+/home/utnso/workspace/parser/Debug/libparser.so:
 
 -include ../makefile.targets

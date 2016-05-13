@@ -13,9 +13,40 @@
 #include <sockets/EscrituraLectura.h>
 
 #define MAX_BUFFER_SIZE 4096
-
+enum CPU {
+	QUANTUM = 2,
+	IO,
+	EXIT,
+	IMPRIMIR_VALOR,
+	IMPRIMIR_TEXTO,
+	LEER_VAR_COMPARTIDA,
+	ASIG_VAR_COMPARTIDA,
+	WAIT,
+	SIGNAL,
+	SIGUSR
+};
 t_log* ptrLog;
 t_config* config;
+typedef struct pcb {
+	int32_t pcb_id;
+	uint32_t seg_codigo;
+	uint32_t seg_stack;
+	uint32_t cursor_stack;
+	uint32_t index_codigo;
+	uint32_t index_etiq;
+	uint32_t tamanio_index_etiquetas;
+	uint32_t tamanio_contexto;
+	uint32_t PC;
+} t_pcb;
+typedef struct{
+	t_pcb* pcb;
+	int32_t valor;
+}t_solicitudes;
+
+typedef struct estructuraInicial {
+	uint32_t Quantum;
+	uint32_t RetardoQuantum;
+} t_EstructuraInicial;
 
 int socketNucleo, socketUMC;
 

@@ -7,7 +7,7 @@
 
 #ifndef CPU_PRIMITIVAS_ANSISOP_H_
 #define CPU_PRIMITIVAS_ANSISOP_H_
-
+/*
 #include <parser/parser.h>
 #include <parser/sintax.h>
 #include <parser/metadata_program.h>
@@ -30,5 +30,5 @@ int	imprimirTexto(char*	texto);
 int	entradaSalida(t_nombre_dispositivo dispositivo, int	tiempo);
 int	wait(t_nombre_semaforo	identificador_semaforo);
 int signal(t_nombre_semaforo identificador_semaforo);
-
+*/
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */

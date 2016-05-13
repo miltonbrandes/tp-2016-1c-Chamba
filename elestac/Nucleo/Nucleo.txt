@@ -9,3 +9,4 @@ SEM_INIT=[1, 1, 1]
 IO_IDS=[Disco, Impresora, Scanner]
 IO_SLEEP=[100, 100, 100]
 SHARED_VARS=[!Global, !Var1, !Var2]
+TAMANIO_STACK=5

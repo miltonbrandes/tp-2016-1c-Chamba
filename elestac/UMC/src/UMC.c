@@ -17,7 +17,30 @@
 #include <sockets/EscrituraLectura.h>
 #include <pthread.h>
 #include <semaphore.h>
+enum UMC{
+	NUEVOPROGRAMA = 1,
+	SOLICITARBYTES,
+	ALMACENARBYTES,
+	FINALIZARPROGRAMA,
+	HANDSHAKE,
+	CAMBIOPROCESOACTIVO
+};
 
+typedef struct package_iniciar_programa {
+	uint32_t programID;
+	uint32_t tamanio;
+} t_iniciar_programa;
+
+typedef struct _package_cambio_proc_activo {
+	uint32_t programID;
+} t_cambio_proc_activo;
+
+typedef struct _package_enviarBytes {
+	uint32_t base;
+	uint32_t offset;
+	uint32_t tamanio;
+	char* buffer;
+} t_enviarBytes;
 //PARA INCLUIR EN LA LIBRERIA
 typedef struct tlb_t { //Registros de la tlb
 	int indice; //Cada vez que se asigna una se le da un indice, el indice menor es el que se saca. (-1 si esta libre)
