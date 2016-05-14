@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/UMC.c 
+../src/UMC.c \
+../src/libreriaUMC.c 
 
 OBJS += \
-./src/UMC.o 
+./src/UMC.o \
+./src/libreriaUMC.o 
 
 C_DEPS += \
-./src/UMC.d 
+./src/UMC.d \
+./src/libreriaUMC.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
