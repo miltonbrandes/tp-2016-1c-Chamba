@@ -19,13 +19,20 @@
 #include <semaphore.h>
 
 enum UMC{
- 	NUEVOPROGRAMA = 1,
- 	SOLICITARBYTES,
- 	ALMACENARBYTES,
- 	FINALIZARPROGRAMA,
+ 	NUEVOPROGRAMA = 0,
+ 	LEER = 1,
+ 	ESCRIBIR = 2,
+ 	FINALIZARPROGRAMA = 3,
  	HANDSHAKE,
  	CAMBIOPROCESOACTIVO
  };
+
+typedef struct{
+ int operacion;
+ int PID;
+ int pagina_proceso;
+ int tamanio_msj;
+} t_headerCPU;
 
  typedef struct package_iniciar_programa {
  	uint32_t programID;
@@ -81,13 +88,15 @@ t_log* ptrLog;
 int puertoTCPRecibirConexionesCPU;
 int puertoTCPRecibirConexionesNucleo;
 int puertoReceptorSwap;
+int marcos, marcosSize, marcoXProc, entradasTLB, retardo, tlbHabilitada, hilosCpus;
 
 char *ipSwap;
 //int *listaCpus;
 int i = 0;
 
-//Variables config
-int marcos, marcosSize, marcoXProc, entradasTLB, retardo, tlbHabilitada, hilosCpus;
+//Variables frames, tlb
+t_list * framesOcupados;
+t_list * framesVacios;
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
@@ -208,14 +217,6 @@ int init() {
 	}
 }
 //Fin Metodos para Iniciar valores de la UMC
-
-void enviarMensajeASwap(char *mensajeSwap) {
-	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
-	uint32_t id= 5;
-	uint32_t longitud = strlen(mensajeSwap);
-	uint32_t operacion = 1;
-	int sendBytes = enviarDatos(socketSwap, mensajeSwap, longitud, operacion, id);
-}
 
 void enviarMensajeACPU(int socketCPU, char* buffer) {
 	char *mensajeCpu = "Le contesto a Cpu, soy UMC\0";
@@ -440,6 +441,114 @@ void manejarConexionesRecibidas() {
 			}
 		}
 	}
+}
+
+char * reservarMemoria(int cantidadMarcos, int tamanioMarco){
+	// calloc me la llena de \0
+	char * memoria = calloc(cantidadMarcos, tamanioMarco);
+	return memoria;
+}
+
+void enviarMensajeASwap(char *mensajeSwap) {
+	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
+	uint32_t id= 5;
+	uint32_t longitud = strlen(mensajeSwap);
+	uint32_t operacion = 1;
+	int sendBytes = enviarDatos(socketSwap, mensajeSwap, longitud, operacion, id);
+}
+
+void ejecutarOperaciones(t_headerCPU * header, char * mensaje, char * memoria_real,
+		t_list * TLB, t_list * tablaMemoria, int socketCliente, int socketServidor,
+		t_list* tablaAccesos) {
+
+	int * flag = malloc(sizeof(uint32_t));
+
+	// ME FIJO QUE TENGO QUE HACER
+	switch (header->operacion) {
+	case 0:
+		/* LA INICIALIZACION SE MANDA DIRECO AL SWAP PARA QUE RESERVE ESPACIO,
+		 EL FLAG = 1 ME AVISA QUE RECIBIO OK */
+		enviarMensajeASwap(header, socketServidor, NULL, flag);
+		bool recibi;
+		if (*flag == 1) {
+			//creo todas las estructuras porque el swap ya inicializo
+			iniciarProceso(tablaMemoria, header, tablaAccesos);
+			log_info(ptrLog,
+					"Proceso mProc creado, numero de PID: %d y cantidad de paginas: %d",
+					header->PID, header->pagina_proceso);
+			// VER COMO MANDAR LA VALIDACION AL CPU QUE NO LE ESTA LLEGANDO BIEN
+			recibi = true;
+			send(socketCliente, &recibi, sizeof(bool), 0);
+			log_info(ptrLog, "Se envia al CPU confimacion de inicializacion");
+		} else {
+			recibi = false;
+			send(socketCliente, &recibi, sizeof(bool), 0);
+			log_error(ptrLog, "Hubo un problema con la conexion/envio al swap");
+		}
+		break;
+	case 1:
+		log_info(ptrLog,
+				"Solicitud de lectura recibida del PID: %d y pagina: %d",
+				header->PID, header->pagina_proceso);
+		/* CUANDO SE RECIBE UNA INSTRUCCION DE LECTURA, PRIMERO SE VERIFICA LA TLB A VER SI YA FUE CARGADA
+		 * RECIENTEMENTE, EN CASO CONTRARIO SE ENVIA AL SWAP, ESTE ME VA A DEVOLVER LA PAGINA A LEER,
+		 * LA MEMORIA LA ALMACENA EN UN MARCO DISPONIBLE PARA EL PROCESO DE LA PAGINA Y ACTUALIZA SUS TABLAS
+		 */
+		// PRIMERO VERIFICO QUE LA TLB ESTE HABILITADA*/
+		if (!strcmp(tlbHabilitada, "SI")) {
+			int flagg = leerDesdeTlb(socketCliente, TLB, header, tablaAccesos,
+					tablaMemoria);
+			// SI NO ESTABA EN TLB, ME FIJO EN MEMORIA
+			if (!flagg) {
+				leerEnMemReal(tablaMemoria, TLB, header, socketServidor,
+						socketCliente, tablaAccesos);
+			}
+		} else {
+			leerEnMemReal(tablaMemoria, TLB, header, socketServidor, socketCliente,
+					tablaAccesos);
+		}
+		break;
+	case 2:
+		log_info(ptrLog,
+				"Solicitud de escritura recibida del PID: %d y Pagina: %d, el mensaje es: \"%s\"",
+				header->PID, header->pagina_proceso, mensaje);
+		// DECLARO UN FLAG PARA SABER SI ESTABA EN LA TLB Y SE ESCRIBIO, O SI NO ESTABA
+		if (!strcmp(tlbHabilitada, "SI")) {
+			int okTlb = escribirDesdeTlb(TLB, header->tamanio_msj, mensaje,
+					header, tablaAccesos, tablaMemoria, socketCliente);
+			// SI ESTABA EN LA TLB, YA LA FUNCION ESCRIBIO Y LISTO
+			if (!okTlb) {
+				escribirEnMemReal(tablaMemoria, TLB, header, socketServidor,
+						socketCliente, mensaje, tablaAccesos);
+			}
+		}
+		// SI NO ESTABA EN LA TLB, AHORA ME FIJO SI ESTA EN LA TABLA DE TABLAS
+		else {
+			escribirEnMemReal(tablaMemoria, TLB, header, socketServidor,
+					socketCliente, mensaje, tablaAccesos);
+		}
+		break;
+	case 3:
+		log_info(ptrLog, TLB, tablaAccesos);
+		envioAlSwap(header,socketServidor, NULL, flag);
+
+		if (flag) {
+			log_info(ptrLog,
+					"Se hizo conexion con swap, se envio proceso a matar y este fue recibido correctamente");
+			bool recibi = true;
+			send(socketCliente, &recibi, sizeof(bool), 0);
+			log_info(ptrLog, "Se informa al CPU confirmacion de finalizacion");
+		} else {
+			bool recibi = false;
+			send(socketCliente, &recibi, sizeof(bool), 0);
+			log_error(ptrLog, "Hubo un problema con la conexion/envio al swap");
+		}
+		break;
+	default:
+		log_error(ptrLog, "El tipo de ejecucion recibido no es valido");
+		break;
+	}
+	free(flag);
 }
 
 int main() {
