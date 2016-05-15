@@ -30,8 +30,8 @@ typedef struct {
 } t_paquete;
 
 
-int escribir(int socket, int id, int longitud, int operacion, void* payload);
-int leer(int socket, int* id, char** payload);
+//int escribir(int socket, int id, int longitud, int operacion, void* payload);
+//int leer(int socket, int* id, char** payload);
 
 int finalizarConexion(int socket);
 

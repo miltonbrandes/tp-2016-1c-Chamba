@@ -11,8 +11,8 @@
 #include <string.h>
 #include "EscrituraLectura.h"
 
-int leer(int socket, char* buffer, int longitud);
-int escribir(int socket, char* buffer, int longitud);
+//int leer(int socket, char* buffer, int longitud);
+//int escribir(int socket, char* buffer, int longitud);
 /*
  * Lee datos del socket. Devuelve el numero de bytes leidos o
  * 0 si se cierra fichero o -1 si hay error.
@@ -84,7 +84,7 @@ int enviarDatos(int socket, char** datos, uint32_t tamanio, uint32_t op, uint32_
 	 * Se envian primero los datos necesarios que dan informacion
 	 * sobre el verdadero buffer a enviar
 	 */
-	char* buffer = malloc(tamanio + 3*sizeof(uint32_t)); //1B de op y 4B de long
+	void* buffer = malloc(tamanio + 3*sizeof(uint32_t)); //1B de op y 4B de long
 	memcpy(buffer, &op, sizeof(uint32_t));
 	memcpy(buffer + sizeof(uint32_t), &tamanio, sizeof(uint32_t));
 	memcpy(buffer+ 2*sizeof(uint32_t), &id, sizeof(uint32_t));
