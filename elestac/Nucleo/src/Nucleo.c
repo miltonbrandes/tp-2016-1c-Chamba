@@ -5,6 +5,7 @@
  *  Created on: 18/4/2016
  *      Author: utnso
  */
+//TODO: le tengo que pasar tambien cual es la primer pagina de mi codigo a la cpu para que se la pueda pedir a la umc??? en principio se lo paso por las dudas
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
@@ -59,53 +60,53 @@ typedef struct {
 	char *nombre;
 	int valor;
 } t_variable_compartida;
-int cpuAcerrar = 0;
-int tamanioMarcos = 0;
-int tamanioStack;
-uint32_t handshakeumv=0;
+char *ipUMC;
 fd_set sockets, tempSockets; //descriptores
-sem_t semNuevoProg;
-pthread_t threadSocket;
-pthread_t threadPlanificador;
-pthread_t hiloCpuOciosa;
-sem_t semProgExit;
-sem_t semNuevoPcbColaReady;
-sem_t semProgramaFinaliza;
-sem_t semCpuOciosa;
-sem_t semMensajeImpresion;
-t_list* listaSocketsConsola;
-t_list* listaSocketsCPUs;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
-t_EstructuraInicial *estructuraInicial;
-t_list* colaNew;
-t_list* pcbStack;
-t_list* listaIndCodigo;
-t_queue* colaReady;
-t_queue* colaExit;
-t_queue* colaImprimibles;
-t_queue* colaBloqueados;
 int *listaCpus;
+int cpuAcerrar = 0;
 int i = 0;
-uint32_t tamaniostack;
-uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
-t_config* config;
+int puertoConexionUMC;
+//Variables de configuracion para establecer Conexiones
+int puertoReceptorCPU, puertoReceptorConsola;
+//Variables propias del Nucleo
+int quantum, quantumSleep;
 //Socket que recibe conexiones de CPU y Consola
 int socketReceptorCPU, socketReceptorConsola;
 int socketUMC;
+int tamanioMarcos = 0;
+int tamanioStack;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
+pthread_t hiloCpuOciosa;
+pthread_t threadPlanificador;
+pthread_t threadSocket;
+sem_t semCpuOciosa;
+sem_t semMensajeImpresion;
+sem_t semNuevoPcbColaReady;
+sem_t semNuevoProg;
+sem_t semProgExit;
+sem_t semProgramaFinaliza;
+t_config* config;
+t_EstructuraInicial *estructuraInicial;
+t_list *listaDispositivosIO, *listaSemaforos, *listaVariablesCompartidas;
+t_list* colaNew;
+t_list* listaIndCodigo;
+t_list* listaSocketsConsola;
+t_list* listaSocketsCPUs;
+t_list* pcbStack;
 //Archivo de Log
 t_log* ptrLog;
-//Variables propias del Nucleo
-int quantum, quantumSleep;
-t_list *listaDispositivosIO, *listaSemaforos, *listaVariablesCompartidas;
-uint32_t pcbAFinalizar;
-//Variables de configuracion para establecer Conexiones
-int puertoReceptorCPU, puertoReceptorConsola;
-int puertoConexionUMC;
-char *ipUMC;
 t_pcb* crearPCB(char* programa,int socket);
-void operacionesConSemaforos(char operacion, char* buffer, t_clienteCpu *unCliente);
+t_queue* colaBloqueados;
+t_queue* colaExit;
+t_queue* colaImprimibles;
+t_queue* colaReady;
+uint32_t handshakeumv=0;
+uint32_t pcbAFinalizar;
+uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
+uint32_t tamaniostack;
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado);
+void operacionesConSemaforos(char operacion, char* buffer, t_clienteCpu *unCliente);
 //Metodos para iniciar valores de Nucleo
 int crearLog() {
 	ptrLog = log_create(getenv("NUCLEO_LOG"), "Nucleo", 1, 0);
@@ -947,7 +948,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion, int serve
 }
 
 t_pcb* crearPCB(char* programa,int socket){
-
 	log_debug(ptrLog,"Procedo a crear el pcb del programa recibido");
 	t_pcb* pcb;
 	pcb=malloc(sizeof(t_pcb));
@@ -957,7 +957,6 @@ t_pcb* crearPCB(char* programa,int socket){
 	char* rtaEnvio;
 	char* basePagCod;
 	char* basePagStack;
-	char* basePagIndEtiq;
 	log_debug(ptrLog,"Obtengo la metadata utilizando el preprocesador del parser");
 	datos=metadata_desde_literal(programa);
 	pcb->pcb_id=++nroProg;//nroProg variable global definida en el Kernel, aumenta en 1 su valor cada vez que entra un programa
@@ -977,6 +976,7 @@ t_pcb* crearPCB(char* programa,int socket){
 		free(datos);
 		return NULL;
 	}
+	pcb->posicionPrimerPaginaCodigo = (uint32_t)basePagCod; //la funcion enviaroperacion me deberia devolver la primer pagina en la que se almacena el codigo
 	log_debug(ptrLog,"espacio de codigo literal creado!");
 	log_info(ptrLog,"En este punto ya creamos las distintos paginas requeridos para el programa, procedemos a"
 			" escribir sobre ellos");
@@ -1008,7 +1008,6 @@ t_pcb* crearPCB(char* programa,int socket){
 	log_debug(ptrLog,"Se ha escrito correctamente sobre las paginas de codigo");
 	free(envioBytes.buffer);
 	free(rtaEnvio);
-
 
 	log_debug(ptrLog,"Rellenamos la estructura del pcb con las direcciones devueltas por la UMC y completamos"
 	" la creacion del PCB %d",pcb->pcb_id);
@@ -1109,6 +1108,69 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado) {
 	imprimoInformacionGeneral();
 }
 
+void* mensajesPrograma(void){
+
+	while(1){
+		sem_wait(&semMensajeImpresion);
+		t_imprimibles* msjCliente;
+		msjCliente=queue_pop(colaImprimibles);
+		t_socket_pid *aux;
+		log_info(ptrLog,"Ingreso un nuevo mensaje que sera impreso por el Programa %u",msjCliente->PCB_ID);
+
+		bool _encuentraCliente(t_socket_pid* socket_pid){
+			return socket_pid->pid==msjCliente->PCB_ID;
+		}
+
+		aux=list_find(listaSocketsConsola,(void*) _encuentraCliente);
+		if (aux==NULL) {
+			free(msjCliente);
+			log_error(ptrLog,"No se llego a imprimir porque el programa habia sido cerrado");
+			return 0;
+		}
+		switch(msjCliente->tipoDeValor){
+			case IMPRIMIR_TEXTO:
+				if((enviarDatos(aux->socket,&msjCliente->valor,strlen(msjCliente->valor)+1,IMPRIMIR_TEXTO)) < 0){
+					log_error(ptrLog,"Error al enviar un mensaje a imprimir:TEXTO por el Programa: %u",aux->pid);
+				}else{
+					log_debug(ptrLog,"Mensaje de tipo:TEXTO enviado al Programa: %u con éxito!",aux->pid);
+				}
+				break;
+			case IMPRIMIR_VALOR:
+				if((enviarDatos(aux->socket,&msjCliente->valor,sizeof(uint32_t),IMPRIMIR_VALOR)) < 0){
+					log_error(ptrLog,"Error al enviar un mensaje a imprimir de tipo:VALOR por el Programa: %u",aux->pid);
+				}else{
+					log_debug(ptrLog,"Mensaje de tipo:VALOR enviado al Programa: %u con éxito!",aux->pid);
+				}
+				break;
+			case EXIT:
+				aux->terminado=true;
+				if((enviarDatos(aux->socket,&msjCliente->valor,strlen(msjCliente->valor)+1,EXIT)) < 0){
+					log_error(ptrLog,"Error al enviar un mensaje a imprimir de tipo:EXIT por el Programa: %u",aux->pid);
+				}else{
+					log_debug(ptrLog,"Mensaje de tipo:EXIT enviado al Programa: %u con éxito!",aux->pid);
+				}
+
+				pthread_mutex_unlock(&mutex_exit);
+				break;
+			case ERROR:
+				aux->terminado=true;
+				if((enviarDatos(aux->socket,&msjCliente->valor,strlen(msjCliente->valor)+1,ERROR)) < 0){
+					log_error(ptrLog,"Error al enviar un mensaje a imprimir de tipo:ERROR por el Programa: %u",aux->pid);
+				}else{
+					log_debug(ptrLog,"Mensaje de tipo:ERROR enviado al Programa: %u con éxito!",aux->pid);
+				}
+				pthread_mutex_unlock(&mutex_exit);
+				break;
+			default:
+				log_error(ptrLog,"El tipo de mensaje ingresado no es soportado por la interface");
+				break;
+		}
+		free(msjCliente);
+	}
+
+	return 0;
+}
+
 int main() {
 	colaNew=list_create();					// Lista para procesos en estado NEW
 	colaReady=queue_create();				// Cola para procesos en estado READY
@@ -1150,7 +1212,7 @@ int main() {
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
 		returnInt = enviarMensajeAUMC("Hola, soy el Nucleo/0");
-		if(pthread_create(&threadSocket, NULL, escucharPuertos, NULL)!= 0)
+		if(pthread_create(&threadSocket, NULL, (void*)escucharPuertos, NULL)!= 0)
 		{
 			perror("could not create thread");
 		}
@@ -1164,6 +1226,11 @@ int main() {
 			} else {
 				log_debug(ptrLog, "Hilo cliente ocioso creado");
 		}
+		if (pthread_create(&threadPlanificador, NULL, (void*) mensajesPrograma,	NULL ) != 0) {
+			perror("could not create thread");
+		} else{
+			log_debug(ptrLog, "Hilo para enviar mensajes a clientes creado");
+		}
 		while (1) {
 				sem_wait(&semNuevoProg);/*Este 1er semaforo espera que se cree un nuevo pcb y que mande signal para recien
 				 poder enviarlo a la cola de Ready*/
@@ -1176,6 +1243,7 @@ int main() {
 		}
 		pthread_join(threadSocket, NULL);
 		pthread_join(hiloCpuOciosa, NULL);
+		pthread_join(threadPlanificador, NULL);
 
 	} else {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");
@@ -1189,5 +1257,3 @@ int main() {
 	return returnInt;
 
 }
-
-

@@ -34,4 +34,6 @@ char* serializar_pcb(t_pcb* pcb);
 char* serializadoIndiceDeCodigo(t_list* indiceCodigo);
 char* serializarIndiceStack(t_list* indiceStack);
 t_list* llenarLista(t_list* lista, t_intructions* indiceCodigo, t_size cantInstruc);
+t_list* deserializarIndiceCodigo(char* indice, uint32_t tam);
+t_list* deserializarIndiceStack(char* indice, uint32_t tam);
 #endif /* SRC_OPERACIONESNUCLEO_H_ */

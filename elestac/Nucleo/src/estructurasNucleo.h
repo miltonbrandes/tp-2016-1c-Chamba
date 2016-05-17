@@ -41,6 +41,7 @@ typedef struct pcb {
 	t_list* ind_stack;
 	char* ind_etiq;
 	uint32_t PC;
+	uint32_t posicionPrimerPaginaCodigo;
 } t_pcb;
 
 typedef struct

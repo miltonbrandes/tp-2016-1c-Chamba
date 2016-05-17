@@ -5,11 +5,31 @@
 #include <commons/config.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
-
+#include <stdbool.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #define MAX_BUFFER_SIZE 4096
 
 t_log* ptrLog;
 t_config* config;
+enum CPU_PCP {
+	QUANTUM = 2,
+	IO,
+	EXIT,
+	IMPRIMIR_VALOR,
+	IMPRIMIR_TEXTO,
+	LEER_VAR_COMPARTIDA,
+	ASIG_VAR_COMPARTIDA,
+	WAIT,
+	SIGNAL,
+	SIGUSR
+};
 char *direccion;
 int puerto;
 char buff[MAX_BUFFER_SIZE] = "Hola como estas, soy consola, nucleo";
@@ -141,6 +161,37 @@ int main(int argc, char **argv) {
 			}
 
 			enviarScriptAlNucleo(script);
+			char* server_reply;
+			uint32_t operacion;
+			uint32_t id;
+			int valor = 0;
+			bool salir = false;
+			while (1)
+				{
+					if (recibirDatos(socketConexionNucleo, &server_reply, &operacion, &id) < 0)
+					{
+						log_error(ptrLog, "Error al recibir datos del servior.");
+						return EXIT_FAILURE;
+					}
+
+					switch(operacion)
+					{
+						case IMPRIMIR_TEXTO:
+							printf("%s\n", server_reply);
+							break;
+						case IMPRIMIR_VALOR:
+							memcpy(&valor, server_reply, 4);
+							printf("%d\n", valor);
+							break;
+						default:
+							printf("%s\n", server_reply);
+							salir = true;
+							break;
+					}
+
+					free(server_reply);
+					if (salir) break;
+				}
 		}
 		else
 		{
