@@ -16,17 +16,41 @@
 #include <commons/collections/queue.h>
 #include <commons/config.h>
 #include <commons/log.h>
+
+typedef struct _package_solicitarBytes {
+	uint32_t pagina;
+	uint32_t offset;
+	uint32_t tamanio;
+} t_solicitarBytes;
+typedef struct{
+	uint32_t pagina;
+	uint32_t offset;
+	uint32_t size;
+}t_argumento;
+typedef struct stack{
+	uint32_t posicion;
+	t_list* argumentos;
+	t_list* variables;
+	uint32_t direcretorno;
+	t_argumento retVar;
+}t_stack;
 typedef struct pcb {
-	int32_t pcb_id;
-	uint32_t seg_codigo;
-	uint32_t seg_stack;
-	uint32_t cursor_stack;
-	uint32_t index_codigo;
-	uint32_t index_etiq;
-	uint32_t tamanio_index_etiquetas;
-	uint32_t tamanio_contexto;
+	uint32_t pcb_id;
+	uint32_t codigo;
+	t_list* ind_codigo;
+	t_list* ind_stack;
+	char* ind_etiq;
 	uint32_t PC;
 } t_pcb;
+
+typedef struct
+{
+	uint32_t idVariable;
+	uint32_t pagina;
+	uint32_t offset;
+	uint32_t size;
+}t_variable;
+
 typedef struct{
 	t_pcb* pcb;
 	int32_t valor;
@@ -59,32 +83,11 @@ typedef struct{
 	t_queue *colaSolicitudes; 		//va a ser una cola de t_solicitudes
 }t_IO;
 
-//Socket que recibe conexiones de CPU y Consola
-int socketReceptorCPU, socketReceptorConsola;
-int socketUMC;
-
-int *listaCpus;
-int i = 0;
-uint32_t tamaniostack;
-int32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
-t_config* config;
-//Archivo de Log
-t_log* ptrLog;
-
-//Variables de configuracion para establecer Conexiones
-int puertoReceptorCPU, puertoReceptorConsola;
-int puertoConexionUMC;
-char *ipUMC;
-
 typedef struct{
 	t_pcb* pcb;
 	char* nombreSemaforo;
 }t_pcbBlockedSemaforo;
 
-//Variables propias del Nucleo
-int quantum, quantumSleep;
-t_list *listaDispositivosIO, *listaSemaforos, *listaVariablesCompartidas;
-extern int32_t pcbAFinalizar;
 typedef struct indiceCodigo{
 	uint32_t offset;
 	uint32_t tamanio;
@@ -100,7 +103,7 @@ typedef struct _package_cambio_proc_activo {
 } t_cambio_proc_activo;
 
 typedef struct _package_enviarBytes {
-	uint32_t base;
+	uint32_t pagina;
 	uint32_t offset;
 	uint32_t tamanio;
 	char* buffer;
@@ -112,7 +115,9 @@ typedef struct op_varCompartida {
 	uint32_t valor;
 } t_op_varCompartida;
 
-
+typedef struct _package_finalizar_programa {
+	uint32_t programID;
+} t_finalizar_programa;
 
 typedef struct {
 	int socket;

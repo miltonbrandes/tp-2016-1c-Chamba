@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 		//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
 		log_info(ptrLog, "Inicio del Programa");
 		log_debug(ptrLog, "Abriendo el script..");
-		if ((programa = fopen("/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/facil.ansisop", "r")) == NULL)
+		if ((programa = fopen(argv[1], "r")) == NULL)
 		{
 				log_error(ptrLog, "No se ha podido abrir el script. Favor, verificar si existe.");
 				return EXIT_FAILURE;
