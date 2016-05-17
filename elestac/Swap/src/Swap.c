@@ -48,13 +48,6 @@ char* nombreSwap;
 int tamanoPagina;
 int cantidadPaginas;
 
-typedef struct mensaje_UMC_SWAP_t {
-	instruccion_t instruccion;
-	uint32_t pid;
-	uint32_t parametro; // cantidad de paginas a crear, pagina a leer o a escribir.
-	char*contenidoPagina; //Suponemos que el tamanio de la pagina ya lo sabe el swap y que se manda de a una pagina.
-} mensaje_UMC_SWAP;
-
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
 	ptrLog = log_create(getenv("SWAP_LOG"), "Swap", 1, 0);
@@ -165,7 +158,6 @@ void manejarConexionesRecibidas(int socketUMC) {
 		uint32_t id;
 		uint32_t operacion;
 		int bytesRecibidos = recibirDatos(socketUMC, &buffer, &operacion, &id);
-
 		if (bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC\0");
 			finalizarConexion(socketUMC);
@@ -198,6 +190,7 @@ int crearArchivoControlMemoria() {
 	archivo_control = fopen(nombre_archivo, "w+");
 	if (archivo_control == 0) {
 		printf("No se pudo crear el archivo en swap.c \n");
+
 		log_error(ptrLog, "Fallo al crear el archivo de swap");
 		cerrarSwap();
 	}
@@ -232,183 +225,487 @@ void inicializarArchivo(void) { //lo llenamos con el caracter correspondiente
 	return;
 }
 
-int asignarMemoria( uint32_t pid, uint32_t cantPag)
-{//le damos memoria al proceso nuevo
+//funciones para asignar memoria
+int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria al proceso nuevo
 	int inicio;
-	inicio= hayEspacio(cantPag);
-	if(!inicio)
-	{
-		if(alcanzanPaginas(cantPag)) //si las paginas libres totales alcanzan, que desfragmente
-		{
+	inicio = hayEspacio(cantidad_paginas);
+	if (!inicio) {
+		if (alcanzanPaginas(cantidad_paginas)) //si las paginas libres totales alcanzan, que desfragmente
+				{
 			log_info(ptrLog, "Se inicia la compactacion del archivo");
 			printf("se compacta el archivo... \n");
-			sleep(retardoCompactacion);//antes de compactar hacemos el sleep
+			sleep(retardoCompactacion); //antes de compactar hacemos el sleep
 			desfragmentar();
 			log_info(ptrLog, "Finaliza la compactacion del archivo");
 			printf("finalizada la compactacion del archivo.\n");
-			inicio = hayEspacio(cantPag);
-		}
-		else
-		{
-			log_info(ptrLog, "Se rechaza el proceso de pid %u por no haber espacio suficiente", pid);
+			inicio = hayEspacio(cantidad_paginas);
+		} else {
+			log_info(ptrLog,
+					"Se rechaza el proceso de pid %u por no haber espacio suficiente",
+					pid);
 			//printf("No hay espacio suficiente para el proceso de pid: %u\n", pid);
 			return 0;
 		}
 	}
-	int exito= agregarOcupado(pid, cantPag, inicio);
-	log_info(ptrLog, "Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u",
-			cantPag*tamanoPagina, pid, (inicio-1)*tamanoPagina); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
+	int exito = agregarOcupado(pid, cantidad_paginas, inicio);
+	log_info(ptrLog,
+			"Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u",
+			cantidad_paginas * tamanoPagina, pid, (inicio - 1) * tamanoPagina); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
 	return exito;
 }
 
-
-int hayEspacio(int espacio)//espacio esta en paginas
-{//te dice si hay un nodo libre con es el espacio requerido
+int hayEspacio(int espacio) //espacio esta en paginas
+{ //te dice si hay un nodo libre con es el espacio requerido
 	int posicion;
-	espacioLibre* raiz=libre;//para no cambiar al puntero
-	while(raiz)
-	{
-		if(raiz->cantidad_paginas >= espacio)
-		{
-			posicion= raiz->posicion_inicial;//el comienzo minimo es 1
-			ocupar(posicion, espacio);//ocupamos el espacio requerido por el proceso
-			return posicion;//devolvemos la posicion inicial del espacio
+	espacioLibre* raiz = libre; //para no cambiar al puntero
+	while (raiz) {
+		if (raiz->cantidad_paginas >= espacio) {
+			posicion = raiz->posicion_inicial; //el posicion_inicial minimo es 1
+			ocupar(posicion, espacio); //ocupamos el espacio requerido por el proceso
+			return posicion; //devolvemos la posicion inicial del espacio
 		}
-		raiz= raiz->sgte;
+		raiz = raiz->sgte;
 	}
 	return 0;
 }
 
-
-void ocupar(int posicion, int espacio)
-{//cambia un espacio libre a ocupado
-	espacioLibre* aux=libre;
-	while(aux->posicion_inicial != posicion)//vamos al nodo a ocupar
+void ocupar(int posicion, int espacio) { //cambia un espacio libre a ocupado
+	espacioLibre* aux = libre;
+	while (aux->posicion_inicial != posicion) //vamos al nodo a ocupar
 	{
-		aux= aux->sgte;
+		aux = aux->sgte;
 	}
-	aux->posicion_inicial= aux->posicion_inicial + espacio;
-	aux->cantidad_paginas= aux->cantidad_paginas - espacio;
-	if(aux->cantidad_paginas == 0)//si nos piden el nodo entero
-	{
-		if(aux->ant)
-		{
-			aux->ant->sgte= aux->sgte;
+	aux->posicion_inicial = aux->posicion_inicial + espacio;
+	aux->cantidad_paginas = aux->cantidad_paginas - espacio;
+	if (aux->cantidad_paginas == 0) //si nos piden el nodo entero
+			{
+		if (aux->ant) {
+			aux->ant->sgte = aux->sgte;
 		}
-		if(aux->sgte)
-		{
-			aux->sgte->ant= aux->ant;
+		if (aux->sgte) {
+			aux->sgte->ant = aux->ant;
 		}
 
-		if(aux == libre)
-		{
-			libre= libre->sgte;
-			if(libre)
-			{
-				libre->ant= NULL;
+		if (aux == libre) {
+			libre = libre->sgte;
+			if (libre) {
+				libre->ant = NULL;
 			}
 		}
 		free(aux);
 	}
-    int tamano=(espacio)*(tamanoPagina);
-    char* s = string_repeat('\0', tamano);
-    fseek(archivo_control, (posicion -1) * tamanoPagina, SEEK_SET);//vamos al inicio de ocupado
-    fwrite(s, sizeof(char), (espacio * tamanoPagina) , archivo_control);
-    free(s);
+	int tamano = (espacio) * (tamanoPagina);
+	char* s = string_repeat('\0', tamano);
+	fseek(archivo_control, (posicion - 1) * tamanoPagina, SEEK_SET); //vamos al inicio de ocupado
+	fwrite(s, sizeof(char), (espacio * tamanoPagina), archivo_control);
+	free(s);
 	return;
 }
 
-int alcanzanPaginas(int pagsNecesarias)//0 no alcanzan, 1 alcanzan
-{//nos dice si vale la pena desfragmentar (si hay paginas libres suficientes)
-	espacioLibre* auxL= libre;
-	int pagsTotales= 0;
-	while (auxL)
-	{
-		pagsTotales= pagsTotales + auxL->cantidad_paginas;//sumamos todas las paginas libres en pagsTotales
-		auxL= auxL->sgte;
+int alcanzanPaginas(int pagsNecesarias) //0 no alcanzan, 1 alcanzan
+{ //nos dice si vale la pena desfragmentar (si hay paginas libres suficientes)
+	espacioLibre* auxL = libre;
+	int pagsTotales = 0;
+	while (auxL) {
+		pagsTotales = pagsTotales + auxL->cantidad_paginas; //sumamos todas las paginas libres en pagsTotales
+		auxL = auxL->sgte;
 	}
-	if(pagsNecesarias > pagsTotales) //se necesitan mas de las que hay
-	{
+	if (pagsNecesarias > pagsTotales) //se necesitan mas de las que hay
+			{
 		return 0;
 	}
 	return 1;
 }
 
-void desfragmentar(void)
-{//movemos los nodos ocupados y juntamos los espacios libres en uno solo
-	int sizeLibres= 0;
-	espacioLibre* auxLibre= libre;
-	espacioOcupado* auxO= ocupado;
-	while(auxLibre)//contamos cuantos espacios libres hay
-    {
-        auxLibre=auxLibre->sgte;
-        sizeLibres++;
+void desfragmentar(void) { //movemos los nodos ocupados y juntamos los espacios libres en uno solo
+	int sizeLibres = 0;
+	espacioLibre* auxLibre = libre;
+	espacioOcupado* auxO = ocupado;
+	while (auxLibre) //contamos cuantos espacios libres hay
+	{
+		auxLibre = auxLibre->sgte;
+		sizeLibres++;
 	}
-    while (sizeLibres>1)
-    {
-    	auxO= ocupado;//el nodo siguiente puede reprecentar una pagina anterior, no estan en orden, por eso inicializamos en el comienzo en cada iteracion
-    	while(auxO && auxO->posicion_inicial != libre->posicion_inicial + libre->cantidad_paginas)
-    	{//vamos al nodo ocupado a la derecha del nodo libre, si existe
-    		auxO=auxO->sgte;
-    	}
-    	if(!auxO) return;//si no hay nodos a la derecha nos vamos
-    	moverInformacion(auxO->posicion_inicial, auxO->cantidad_paginas, libre->posicion_inicial);
-    	auxO->posicion_inicial= libre->posicion_inicial;//lo colocamos al principio de los libres
-    	libre->posicion_inicial= libre->posicion_inicial + auxO->cantidad_paginas;//movemos la raiz al final del nodo ocupado
-    	if(libre->sgte->posicion_inicial == libre->posicion_inicial + libre->cantidad_paginas)
-    	{//si la pagina siguiente tmb esta libre los unimos en un solo nodo
-    		unirBloquesLibres();
-    		sizeLibres--;
-    	}
-    }
+	while (sizeLibres > 1) {
+		auxO = ocupado; //el nodo siguiente puede reprecentar una pagina anterior, no estan en orden, por eso inicializamos en el posicion_inicial en cada iteracion
+		while (auxO
+				&& auxO->posicion_inicial
+						!= libre->posicion_inicial + libre->cantidad_paginas) { //vamos al nodo ocupado a la derecha del nodo libre, si existe
+			auxO = auxO->sgte;
+		}
+		if (!auxO)
+			return; //si no hay nodos a la derecha nos vamos
+		moverInformacion(auxO->posicion_inicial, auxO->cantidad_paginas,
+				libre->posicion_inicial);
+		auxO->posicion_inicial = libre->posicion_inicial; //lo colocamos al principio de los libres
+		libre->posicion_inicial = libre->posicion_inicial
+				+ auxO->cantidad_paginas; //movemos la raiz al final del nodo ocupado
+		if (libre->sgte->posicion_inicial
+				== libre->posicion_inicial + libre->cantidad_paginas) { //si la pagina siguiente tmb esta libre los unimos en un solo nodo
+			unirBloquesLibres();
+			sizeLibres--;
+		}
+	}
 	return;
 }
 
-void moverInformacion(int inicioDe, int cantPags, int inicioA)// puse unos -1 alguien que me confime que tiene sentido
-{//intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
-	char buffer[cantPags * tamanoPagina];//creamos el buffer
-	fseek(archivo_control, (inicioDe -1) * tamanoPagina, SEEK_SET);//vamos al inicio de ocupado
-	fread(buffer, sizeof(char), (cantPags * tamanoPagina) , archivo_control);//leemos
-	fseek(archivo_control, (inicioA -1) * tamanoPagina, SEEK_SET);//vamos a libre
-	fwrite(buffer, sizeof(char), (cantPags * tamanoPagina) , archivo_control);//escribimos
-	return;//en el "nuevo" libre ahora hay basura
+void unirBloquesLibres(void) { //une dos nodos libres en uno solo mas grande
+	espacioLibre* nodoABorrar = libre->sgte;
+	libre->cantidad_paginas = libre->cantidad_paginas
+			+ nodoABorrar->cantidad_paginas;
+	if (!(nodoABorrar->sgte)) //solo son dos nodos
+	{
+		libre->sgte = NULL;
+		free(nodoABorrar);
+		return;
+	}
+	nodoABorrar->sgte->ant = libre;
+	libre->sgte = nodoABorrar->sgte;
+	free(nodoABorrar);
+	return;
 }
 
-int agregarOcupado(uint32_t pid, uint32_t cantPag, int comienzo)//LOS NODOS OCUPADOS SE APILAN SIN ORDEN
-{//llega un proceso nuevo y le asignamos un nodo correspondiente
-	espacioOcupado* aux= ocupado;
-	while(aux && aux->sgte)//vamos al ultimo nodo si hay una lista
+void moverInformacion(int inicioDe, int cantidad_paginass, int inicioA) // puse unos -1 alguien que me confime que tiene sentido
+{ //intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
+	char buffer[cantidad_paginass * tamanoPagina]; //creamos el buffer
+	fseek(archivo_control, (inicioDe - 1) * tamanoPagina, SEEK_SET); //vamos al inicio de ocupado
+	fread(buffer, sizeof(char), (cantidad_paginass * tamanoPagina),
+			archivo_control); //leemos
+	fseek(archivo_control, (inicioA - 1) * tamanoPagina, SEEK_SET); //vamos a libre
+	fwrite(buffer, sizeof(char), (cantidad_paginass * tamanoPagina),
+			archivo_control); //escribimos
+	return; //en el "nuevo" libre ahora hay basura
+}
+
+int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,
+		int posicion_inicial) //LOS NODOS OCUPADOS SE APILAN SIN ORDEN
+{ //llega un proceso nuevo y le asignamos un nodo correspondiente
+	espacioOcupado* aux = ocupado;
+	while (aux && aux->sgte) //vamos al ultimo nodo si hay una lista
 	{
-		aux= aux->sgte;
+		aux = aux->sgte;
 	}
-	espacioOcupado* nuevo= malloc(sizeof(espacioOcupado));
-	if(!nuevo)
-	{
+	espacioOcupado* nuevo = malloc(sizeof(espacioOcupado));
+	if (!nuevo) {
 		printf("fallo el malloc para la lista de ocupados \n");
 		log_error(ptrLog, "Fallo el malloc para la lista de ocupados");
 		cerrarSwap();
 	}
-	nuevo->pid= pid;
-	nuevo->cantidad_paginas= cantPag;
-	nuevo->posicion_inicial= comienzo;
-	nuevo->sgte= NULL;
-	nuevo->ant= aux;
-	nuevo->escrito= 0;
-	nuevo->leido= 0;
-	if(!aux)//si no habia nodos
+	nuevo->pid = pid;
+	nuevo->cantidad_paginas = cantidad_paginas;
+	nuevo->posicion_inicial = posicion_inicial;
+	nuevo->sgte = NULL;
+	nuevo->ant = aux;
+	nuevo->escrito = 0;
+	nuevo->leido = 0;
+	if (!aux) //si no habia nodos
 	{
-		ocupado= nuevo;
+		ocupado = nuevo;
 		return 1;
 	}
-	aux->sgte= nuevo;//si habia
+	aux->sgte = nuevo; //si habia
 	return 1;
+}
+
+//funciones para liberar memoria
+int liberarMemoria(espacioOcupado* aBorrar) { //se va un proceso y borramos su nodo ocupado y agregamos un libre
+	int anteriorVar = anterior(aBorrar);
+	int posteriorVar = posterior(aBorrar);
+	log_info(ptrLog,
+			"Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u. El proceso leyo %u paginas y escribio %u.",
+			(aBorrar->cantidad_paginas) * tamanoPagina, aBorrar->pid,
+			(aBorrar->posicion_inicial - 1) * tamanoPagina, aBorrar->leido,
+			aBorrar->escrito);
+	if (anteriorVar == 0 && posteriorVar == 0) //el proceso ocupa el archivo entero
+			{
+		inicializarArchivo();
+		libre = malloc(sizeof(espacioLibre)); //creamos el primero nodo libre (que esTodo el archivo)
+		if (!libre) {
+			printf("fallo el malloc para la lista de libres en swap.c \n");
+			log_error(ptrLog, "Fallo el malloc para la lista de libres");
+			cerrarSwap();
+		}
+		libre->sgte = NULL;
+		libre->ant = NULL;
+		libre->posicion_inicial = 1; //posicion 1 en vez de 0, mas comodo
+		libre->cantidad_paginas = (cantidadPaginas);
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	} else if (anteriorVar == 0 && posteriorVar == 1) //tiene un libre posterior
+			{
+		libre->posicion_inicial = 1;
+		libre->cantidad_paginas = libre->cantidad_paginas
+				+ aBorrar->cantidad_paginas;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	} else if (anteriorVar == 1 && posteriorVar == 0) //tiene libre anterior y nada posterior
+			{
+		espacioLibre* ultimo = libre;
+		while (ultimo->sgte) //vamos al ultimo nodo libre
+		{
+			ultimo = ultimo->sgte;
+		}
+		ultimo->cantidad_paginas = ultimo->cantidad_paginas
+				+ aBorrar->cantidad_paginas;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	} else if (anteriorVar == 2 && posteriorVar == 2) //esta entre dos ocupados, hay varios sub casos aca
+			{
+		if (!libre) // estaba ocupado entero y sacamos un proceso
+		{
+			libre = malloc(sizeof(espacioLibre));
+			if (!libre) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			libre->sgte = NULL;
+			libre->ant = NULL;
+			libre->posicion_inicial = aBorrar->posicion_inicial;
+			libre->cantidad_paginas = aBorrar->cantidad_paginas;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		} else if (libre->posicion_inicial
+				> aBorrar->cantidad_paginas + aBorrar->posicion_inicial) { //la raiz esta posterior. pasamos la raiz anterior y agregamos un nodo donde estaba la raiz
+			espacioLibre* nuevo;
+			nuevo = malloc(sizeof(espacioLibre));
+			if (!nuevo) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			if (libre->sgte) {
+				libre->sgte->ant = nuevo;
+			}
+			nuevo->cantidad_paginas = libre->cantidad_paginas;
+			nuevo->posicion_inicial = libre->posicion_inicial;
+			nuevo->sgte = libre->sgte;
+			nuevo->ant = libre;
+			libre->cantidad_paginas = aBorrar->cantidad_paginas;
+			libre->posicion_inicial = aBorrar->posicion_inicial;
+			libre->ant = NULL;
+			libre->sgte = nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		} else //la raiz esta anterior
+		{
+			espacioLibre* anterior = libre;
+			while (anterior->sgte
+					&& anterior->sgte->posicion_inicial
+							+ anterior->sgte->cantidad_paginas
+							< aBorrar->posicion_inicial) {
+				anterior = anterior->sgte;
+			} //mientras no sea el ultimo y el nodo siguiente este por dentras de nuestro nodo avanzamos
+			espacioLibre* nuevo;
+			nuevo = malloc(sizeof(espacioLibre));
+			if (!nuevo) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			nuevo->posicion_inicial = aBorrar->posicion_inicial;
+			nuevo->cantidad_paginas = aBorrar->cantidad_paginas;
+			nuevo->ant = anterior;
+			nuevo->sgte = anterior->sgte;
+			if (anterior->sgte) {
+				anterior->sgte->ant = nuevo;
+			}
+			anterior->sgte = nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+	} else if (anteriorVar == 1 && posteriorVar == 2) //esta entre un libre y un ocupado
+			{
+		espacioLibre* anterior = libre;
+		while (anterior->posicion_inicial + anterior->cantidad_paginas
+				!= aBorrar->posicion_inicial) {
+			anterior = anterior->sgte;
+		}
+		anterior->cantidad_paginas = anterior->cantidad_paginas
+				+ aBorrar->cantidad_paginas;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	} else if (anteriorVar == 2 && posteriorVar == 1) //esta entre un ocupado y un libre
+			{
+		espacioLibre* siguiente = libre;
+		while (siguiente->posicion_inicial
+				!= aBorrar->posicion_inicial + aBorrar->cantidad_paginas) { //si a la derecha esta la raiz anda igual
+			siguiente = siguiente->sgte;
+		}
+		siguiente->posicion_inicial = aBorrar->posicion_inicial;
+		siguiente->cantidad_paginas = siguiente->cantidad_paginas
+				+ aBorrar->cantidad_paginas;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	} else if (anteriorVar == 1 && posteriorVar == 1) //esta entre dos libres
+			{
+		espacioLibre* anterior = libre;
+		while (anterior->posicion_inicial + anterior->cantidad_paginas
+				!= aBorrar->posicion_inicial) {
+			anterior = anterior->sgte;
+		}
+		espacioLibre* aUnir = anterior->sgte; //a este nodo mas tarde lo tenemos que eliminar
+		anterior->cantidad_paginas = anterior->cantidad_paginas
+				+ aBorrar->cantidad_paginas + aUnir->cantidad_paginas; //unimos los tres en uno
+		if (aUnir->sgte) //si hay un tercer nodo libre
+		{
+			aUnir->sgte->ant = anterior;
+		}
+		anterior->sgte = aUnir->sgte;
+		borrarNodoOcupado(aBorrar);
+		free(aUnir);
+		return 1;
+	} else if (anteriorVar == 2 && posteriorVar == 0) //entre un ocupado y el final del archivo
+			{
+		if (!libre) {
+			libre = malloc(sizeof(espacioLibre));
+			if (!libre) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			libre->sgte = NULL;
+			libre->ant = NULL;
+			libre->posicion_inicial = aBorrar->posicion_inicial;
+			libre->cantidad_paginas = aBorrar->cantidad_paginas;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		} else //hay un anterior a la izquierda
+		{
+			espacioLibre* anterior = libre;
+			while (anterior->sgte) //vamos al ultimo nodo de los libres
+			{
+				anterior = anterior->sgte;
+			}
+			espacioLibre* nuevo;
+			nuevo = malloc(sizeof(espacioLibre));
+			if (!nuevo) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			nuevo->posicion_inicial = aBorrar->posicion_inicial;
+			nuevo->cantidad_paginas = aBorrar->cantidad_paginas;
+			nuevo->ant = anterior;
+			nuevo->sgte = NULL;
+			anterior->sgte = nuevo;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+	} else if (anteriorVar == 0 && posteriorVar == 2) //entre el inicio del archivo y un ocupado
+			{
+		if (!libre) {
+			libre = malloc(sizeof(espacioLibre));
+			if (!libre) {
+				printf("fallo el malloc para la lista de libres en swap.c \n");
+				log_error(ptrLog, "Fallo el malloc para la lista de libres");
+				cerrarSwap();
+			}
+			libre->sgte = NULL;
+			libre->ant = NULL;
+			libre->posicion_inicial = aBorrar->posicion_inicial;
+			libre->cantidad_paginas = aBorrar->cantidad_paginas;
+			borrarNodoOcupado(aBorrar);
+			return 1;
+		}
+		espacioLibre* nuevo;
+		nuevo = malloc(sizeof(espacioLibre));
+		if (!nuevo) {
+			printf("fallo el malloc para la lista de libres en swap.c \n");
+			log_error(ptrLog, "Fallo el malloc para la lista de libres");
+			cerrarSwap();
+		}
+		if (libre->sgte) //corremos la raiz al inicio y nuevo donde estaba la raiz
+		{
+			libre->sgte->ant = nuevo;
+		}
+		nuevo->cantidad_paginas = libre->cantidad_paginas;
+		nuevo->posicion_inicial = libre->posicion_inicial;
+		nuevo->sgte = libre->sgte;
+		nuevo->ant = libre;
+		libre->cantidad_paginas = aBorrar->cantidad_paginas;
+		libre->posicion_inicial = aBorrar->posicion_inicial;
+		libre->ant = NULL;
+		libre->sgte = nuevo;
+		borrarNodoOcupado(aBorrar);
+		return 1;
+	}
+	return 0;
+}
+
+void borrarNodoOcupado(espacioOcupado* aBorrar)
+{//se va un proceso y borramos su nodo
+	if(aBorrar->ant)
+	{
+		aBorrar->ant->sgte=aBorrar->sgte;
+	}
+	if(aBorrar->sgte)
+	{
+		aBorrar->sgte->ant= aBorrar->ant;
+	}
+	if(aBorrar == ocupado)
+	{
+		ocupado= ocupado->sgte;
+		if(ocupado)
+		{
+			ocupado->ant= NULL;
+		}
+	}
+	free(aBorrar);
+	return;
+}
+
+int anterior(espacioOcupado* nodo) //0 no hay nada 1 libre 2 ocupado
+{ //recibe un nodo ocupado y nos dice si la pagina de atras es libre u ocupada
+	int comienzo = nodo->posicion_inicial;
+	espacioLibre* libreAux = libre;
+	espacioOcupado* ocupadoAux = ocupado;
+	while (libreAux) {
+		if (comienzo
+				== libreAux->posicion_inicial + libreAux->cantidad_paginas) {
+			return 1;
+		}
+		libreAux = libreAux->sgte;
+	}
+	while (ocupadoAux) {
+		if (comienzo
+				== ocupadoAux->posicion_inicial
+						+ ocupadoAux->cantidad_paginas) {
+			return 2;
+		}
+		ocupadoAux = ocupadoAux->sgte;
+	}
+	return 0;
+}
+
+int posterior(espacioOcupado* nodo) // 0 no hay nada 1 libre 2 ocupado
+{ //recibe un nodo ocupado y nos dice si la pagina de adelante es libre u ocupada
+	int comienzo = nodo->posicion_inicial;
+	int cantPag = nodo->cantidad_paginas;
+	espacioLibre* libreAux = libre;
+	espacioOcupado* ocupadoAux = ocupado;
+	while (libreAux) {
+		if (comienzo + cantPag == libreAux->posicion_inicial) {
+			return 1;
+		}
+		libreAux = libreAux->sgte;
+	}
+	while (ocupadoAux) {
+		if (comienzo + cantPag == ocupadoAux->posicion_inicial) {
+			return 2;
+		}
+		ocupadoAux = ocupadoAux->sgte;
+	}
+	return 0;
 }
 
 int main() {
 	if (init()) {
 		libre = NULL;
 		ocupado = NULL;
-		//MENSAJE
+		char** mensaje;
+		uint32_t instruccion;
+		uint32_t id;
 		socketReceptorUMC = AbrirSocketServidor(puertoTCPRecibirConexiones);
 		if (socketReceptorUMC < 0) {
 			log_info(ptrLog, "No se pudo abrir el Socket Servidor Swap");
@@ -431,28 +728,25 @@ int main() {
 			int socketUMC = AceptarConexionCliente(socketReceptorUMC);
 			log_info(ptrLog, "Conexion de UMC aceptada");
 			manejarConexionesRecibidas(socketUMC);
+			int status; // Estructura que maneja el status de los receive.
+			status = recibirDatos(socketUMC, &mensaje, &instruccion, &id);
+			/*while (status) {
+			 if (status == -1) {
+			 printf("Error en recibir pagina de ADM\n");
+			 log_info(ptrLog, "Error en recibir pagina de ADM");
+			 cerrarSwap();
+			 }
+			 //printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
+			 interpretarMensaje(mensaje, socketUMC);
+			 status = recibirPaginaDeADM(socketADM, &mensaje,
+			 configuracion.TAMANIO_PAGINA);
+			 }*/
 		} while (1);
 
 	} else {
 		log_info(ptrLog, "El SWAP no pudo inicializarse correctamente");
 		return -1;
 	}
-	/*MENSAJE!?!?!?
-	 *
-	 *
-	 * int status;		// Estructura que maneja el status de los receive.
-	 status = recibirPaginaDeADM(socketUMC, &mensaje, tamanoPagina);
-	 while (status) {
-	 if (status == -1) {
-	 printf("Error en recibir pagina de ADM\n");
-	 log_error(log, "Error en recibir pagina de ADM");
-	 cerrarSwap();
-	 }
-	 //printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
-	 interpretarMensaje(mensaje, socketUMC);
-	 status = recibirPaginaDeADM(socketADM, &mensaje,
-	 configuracion.TAMANIO_PAGINA);
-	 }*/
 	printf("Proceso SWAP finalizado.\n\n");
 	log_info(ptrLog, "Proceso SWAP finalizado.\n");
 	finalizarConexion(socketReceptorUMC);
