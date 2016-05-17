@@ -116,6 +116,21 @@ typedef struct op_varCompartida {
 	uint32_t valor;
 } t_op_varCompartida;
 
+typedef struct {
+	char *nombre;
+	int tiempo;
+} t_dispositivo_io;
+
+typedef struct {
+	char* nombre;
+	int valor;
+} t_semaforo;
+
+typedef struct {
+	char *nombre;
+	int valor;
+} t_variable_compartida;
+
 typedef struct _package_finalizar_programa {
 	uint32_t programID;
 } t_finalizar_programa;

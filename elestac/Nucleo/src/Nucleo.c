@@ -46,20 +46,6 @@ enum OPERACIONES_GENERALES {
 	ERROR = -1, NOTHING, SUCCESS
 };
 uint32_t nroProg = 0;
-typedef struct {
-	char *nombre;
-	int tiempo;
-} t_dispositivo_io;
-
-typedef struct {
-	char* nombre;
-	int valor;
-} t_semaforo;
-
-typedef struct {
-	char *nombre;
-	int valor;
-} t_variable_compartida;
 char *ipUMC;
 fd_set sockets, tempSockets; //descriptores
 int *listaCpus;
