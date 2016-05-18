@@ -20,7 +20,9 @@ src/ProcesoCpu.d: ../src/ProcesoCpu.c \
  /home/utnso/Escritorio/TP\ SO/sockets/sockets/ClienteFunciones.h \
  /home/utnso/Escritorio/TP\ SO/sockets/sockets/EscrituraLectura.h \
  /home/utnso/Escritorio/TP\ SO/sockets/sockets/StructsUtiles.h \
- ../src/ProcesoCpu.h
+ ../src/ProcesoCpu.h ../src/PrimitivasAnSISOP.h \
+ /home/utnso/Escritorio/TP\ SO/parser/parser/parser.h \
+ /home/utnso/Escritorio/TP\ SO/parser/parser/sintax.h
 
 /home/utnso/Escritorio/TP\ SO/commons/commons/log.h:
 
@@ -65,3 +67,9 @@ src/ProcesoCpu.d: ../src/ProcesoCpu.c \
 /home/utnso/Escritorio/TP\ SO/sockets/sockets/StructsUtiles.h:
 
 ../src/ProcesoCpu.h:
+
+../src/PrimitivasAnSISOP.h:
+
+/home/utnso/Escritorio/TP\ SO/parser/parser/parser.h:
+
+/home/utnso/Escritorio/TP\ SO/parser/parser/sintax.h:

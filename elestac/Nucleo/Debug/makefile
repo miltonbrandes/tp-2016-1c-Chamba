@@ -26,9 +26,9 @@ endif
 all: Nucleo
 
 dependents:
-	-cd /home/utnso/Escritorio/TP\ SO/commons/Debug && $(MAKE) clean all
-	-cd /home/utnso/Escritorio/TP\ SO/sockets/Debug && $(MAKE) clean all
-	-cd /home/utnso/Escritorio/TP\ SO/parser/Debug && $(MAKE) clean all
+	-cd /home/utnso/Escritorio/TP\ SO/commons/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/TP\ SO/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/TP\ SO/parser/Debug && $(MAKE) all
 
 # Tool invocations
 Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/TP\ SO/commons/Debug/libcommons.so /home/utnso/Escritorio/TP\ SO/sockets/Debug/libsockets.so /home/utnso/Escritorio/TP\ SO/parser/Debug/libparser.so

@@ -31,6 +31,9 @@ void recibirAsignacionVariableCompartida(char **mensaje);
 void recibirValorVariableCompartida(char **mensaje);
 void recibirInstruccion(char **mensaje);
 
+void comenzarEjecucionDePrograma();
+char* solicitarProximaInstruccionAUMC();
+
 int recibirMensaje(int socket);
 
 #endif /* SRC_PROCESOCPU_H_ */

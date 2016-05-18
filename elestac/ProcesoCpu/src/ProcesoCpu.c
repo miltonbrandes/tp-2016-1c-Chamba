@@ -14,13 +14,15 @@
 #include <sockets/StructsUtiles.h>
 #include <sockets/OpsUtiles.h>
 #include "ProcesoCpu.h"
+#include "PrimitivasAnSISOP.h"
 
 #define MAX_BUFFER_SIZE 4096
 t_log* ptrLog;
 t_config* config;
 
+t_pcb *pcb;
 int socketNucleo, socketUMC;
-int quantum, quantumSleep, tamanioPagina;
+uint32_t quantum, quantumSleep, tamanioPagina;
 
 int crearLog() {
 	ptrLog = log_create(getenv("CPU_LOG"), "ProcesoCpu", 1, 0);
@@ -116,12 +118,13 @@ int recibirMensaje(int socket) {
 	} else {
 		log_info(ptrLog, "Servidor dice: %s", respuestaServidor);
 
-		manejarMensajeRecibido(&id, &operacion, &respuestaServidor);
+		manejarMensajeRecibido(id, operacion, &respuestaServidor);
 	}
 
 	return 0;
 }
 
+//Veo quien me mando mensajes
 void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char **mensaje) {
 	switch(id) {
 	case NUCLEO:
@@ -136,23 +139,18 @@ void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char **mensaje) {
 void manejarMensajeRecibidoNucleo(uint32_t operacion, char **mensaje) {
 	switch(operacion) {
 	case QUANTUM_PARA_CPU:
-		log_info(ptrLog, "recibo quantum");
 		recibirQuantum(mensaje);
 		break;
 	case EXECUTE_PCB:
-		log_info(ptrLog, "recibo pcb");
 		recibirPCB(mensaje);
 		break;
 	case VALOR_VAR_COMPARTIDA:
-		log_info(ptrLog, "recibo variable compartida");
 		recibirValorVariableCompartida(mensaje);
 		break;
 	case ASIG_VAR_COMPARTIDA:
-		log_info(ptrLog, "recibo asignacion variable compartida");
 		recibirAsignacionVariableCompartida(mensaje);
 		break;
 	case SIGNAL_SEMAFORO:
-		log_info(ptrLog, "recibo signal semaforo");
 		recibirSignalSemaforo(mensaje);
 		break;
 	default:
@@ -163,21 +161,19 @@ void manejarMensajeRecibidoNucleo(uint32_t operacion, char **mensaje) {
 void manejarMensajeRecibidoUMC(uint32_t operacion, char **mensaje) {
 	switch(operacion) {
 	case ENVIAR_TAMANIO_PAGINA_A_CPU:
-		log_info(ptrLog, "recibo tamanio de pagina");
 		recibirTamanioPagina(mensaje);
 		break;
 	case ENVIAR_INSTRUCCION_A_CPU:
-		log_info(ptrLog, "recibo instruccion");
 		recibirInstruccion(mensaje);
 		break;
 	}
 }
+//Fin veo quien me mando mensajes
 
+//Manejo de mensajes recibidos
 void recibirPCB(char **mensaje) {
-	t_pcb *pcb = deserializar_pcb(mensaje);
-
-	int instructionPointer = pcb->PC;
-
+	pcb = deserializar_pcb(mensaje);
+	comenzarEjecucionDePrograma();
 }
 
 void recibirQuantum(char **mensaje) {
@@ -187,7 +183,7 @@ void recibirQuantum(char **mensaje) {
 }
 
 void recibirTamanioPagina(char **mensaje) {
-
+	tamanioPagina = deserializarUint32((void**)mensaje);
 }
 
 void recibirValorVariableCompartida(char **mensaje) {
@@ -204,4 +200,30 @@ void recibirSignalSemaforo(char **mensaje) {
 
 void recibirInstruccion(char **mensaje) {
 
+}
+//Fin manejo de mensajes recibidos
+
+void comenzarEjecucionDePrograma() {
+	int contador = 1;
+	while(contador <= quantum) {
+		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+		sleep(quantumSleep);
+	}
+}
+
+char* solicitarProximaInstruccionAUMC() {
+	void *message;
+	uint32_t operation, id;
+
+	int bytesReceived = recibirDatos(socketUMC, &message, &operation, &id);
+	if(bytesReceived < 0) {
+
+	}else if(bytesReceived == 0) {
+
+	}else{
+
+	}
+
+	return (char*) message;
 }
