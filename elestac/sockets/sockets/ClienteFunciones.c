@@ -29,7 +29,6 @@ int AbrirConexion(char *ip, int puerto)
 	// Conectar el socket con la direccion 'socketInfo'.
 	if (connect (nuevoSocket,(struct sockaddr *)&socket_info,sizeof (socket_info)) != 0)
 	{
-		printf("Soy un crack me conecte");
 		return -1;
 	}
 

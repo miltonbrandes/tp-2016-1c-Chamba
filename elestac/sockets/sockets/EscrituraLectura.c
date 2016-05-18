@@ -11,8 +11,6 @@
 #include <string.h>
 #include "EscrituraLectura.h"
 
-//int leer(int socket, char* buffer, int longitud);
-//int escribir(int socket, char* buffer, int longitud);
 /*
  * Lee datos del socket. Devuelve el numero de bytes leidos o
  * 0 si se cierra fichero o -1 si hay error.
