@@ -26,14 +26,14 @@ endif
 all: Consola
 
 dependents:
-	-cd /home/utnso/Escritorio/TP\ SO/commons/Debug && $(MAKE) all
-	-cd /home/utnso/Escritorio/TP\ SO/sockets/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/TP\ SO/commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/Escritorio/TP\ SO/sockets/Debug && $(MAKE) clean all
 
 # Tool invocations
 Consola: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/TP\ SO/commons/Debug/libcommons.so /home/utnso/Escritorio/TP\ SO/sockets/Debug/libsockets.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Escritorio/TP SO/sockets/Debug" -L"/home/utnso/Escritorio/TP SO/commons/Debug" -o "Consola" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/Escritorio/TP SO/commons/Debug" -L"/home/utnso/Escritorio/TP SO/sockets/Debug" -o "Consola" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

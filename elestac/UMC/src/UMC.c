@@ -21,15 +21,6 @@
 
 #define SLEEP 1000000
 
-enum UMC{
- 	NUEVOPROGRAMA = 0,
- 	LEER = 1,
- 	ESCRIBIR = 2,
- 	FINALIZARPROGRAMA = 3,
- 	HANDSHAKE,
- 	CAMBIOPROCESOACTIVO
- };
-
 typedef struct{
  int operacion;
  int PID;
@@ -183,14 +174,6 @@ int iniciarUMC(t_config* config) {
 					"El archivo de configuracion no contiene la clave TLB_HABILITADA");
 			return 0;
 		}
-
-	if (config_has_property(config, "CANT_HILOS_CPU")) {
-			hilosCpus = config_get_int_value(config, "CANT_HILOS_CPU");
-			} else {
-				log_info(ptrLog,
-						"El archivo de configuracion no contiene la clave CANT_HILOS_CPU");
-				return 0;
-			}
 
 	return 1;
 }
@@ -482,6 +465,7 @@ void enviarMensajeASwap(char *mensajeSwap) {
 	int sendBytes = enviarDatos(socketSwap, mensajeSwap, longitud, operacion, id);
 }
 
+
 void AbrirConexionSwap(){
 	socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
 }
@@ -493,6 +477,7 @@ void AbrirServidorNucleo(){
 void AbrirServidorCPU() {
 	socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
 }
+
 
 int main() {
 	if (init()) {

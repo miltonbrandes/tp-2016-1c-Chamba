@@ -7,15 +7,29 @@
 
 #ifndef CPU_PRIMITIVAS_ANSISOP_H_
 #define CPU_PRIMITIVAS_ANSISOP_H_
-/*
+
 #include <parser/parser.h>
 #include <parser/sintax.h>
 #include <parser/metadata_program.h>
 #include <commons/log.h>
-
+#include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <commons/string.h>
+#include <sockets/StructsUtiles.h>
 //Tipos de datos
-	typedef uint32_t t_posicion;
-
+typedef uint32_t t_posicion;
+typedef u_int32_t t_puntero;
+typedef u_int32_t t_size;
+typedef u_int32_t t_puntero_instruccion;
+typedef char t_nombre_variable;
+typedef int t_valor_variable;
+typedef t_nombre_variable* t_nombre_semaforo;
+typedef t_nombre_variable* t_nombre_etiqueta;
+typedef  t_nombre_variable* t_nombre_compartida;
+typedef  t_nombre_variable* t_nombre_dispositivo;
 t_posicion definirVariable(t_nombre_variable identificador_variable);
 t_posicion obtenerPosicionVariable(t_nombre_variable identificador_variable);
 t_valor_variable dereferenciar(t_posicion direccion_variable);
@@ -30,5 +44,5 @@ int	imprimirTexto(char*	texto);
 int	entradaSalida(t_nombre_dispositivo dispositivo, int	tiempo);
 int	wait(t_nombre_semaforo	identificador_semaforo);
 int signal(t_nombre_semaforo identificador_semaforo);
-*/
+
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */
