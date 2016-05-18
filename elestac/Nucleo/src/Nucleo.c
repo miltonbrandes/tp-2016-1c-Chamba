@@ -272,7 +272,7 @@ int enviarMensajeACpu( socket) {
 int enviarMensajeAUMC(char* msj) {
 	uint32_t id = 3;
 	uint32_t operacion = 1;
-	log_info(ptrLog, *msj);
+	log_info(ptrLog, msj);
 	int longitud = strlen(msj);
 	int bytesEnviados = enviarDatos(socket, msj, longitud, operacion, id);
 	if (bytesEnviados < 0) {
@@ -401,7 +401,7 @@ void operacionesConVariablesCompartidas(char operacion, char *buffer,
 				(void*) _obtenerVariable2);
 		memcpy(valorEnBuffer, &(varCompartidaEnLaLista->valor),
 				sizeof(uint32_t));
-		enviarDatos(socketCliente, &valorEnBuffer, sizeof(uint32_t), NOTHING);
+		enviarDatos(socketCliente, &valorEnBuffer, sizeof(uint32_t), NOTHING, NUCLEO);
 		free(valorEnBuffer);
 		free(bufferLeerVarCompartida);
 		break;
@@ -773,7 +773,7 @@ void operacionesConSemaforos(char operacion, char* buffer,
 	_Bool _obtenerSemaforo(t_semaforo *unSemaforo) {
 		return (strcmp(unSemaforo->nombre, buffer) == 0);
 	}
-
+	uint32_t id;
 	t_semaforo * semaforo;
 	t_pcbBlockedSemaforo * unPcbBlocked;
 	char* bufferPCB;
@@ -781,18 +781,18 @@ void operacionesConSemaforos(char operacion, char* buffer,
 	switch (operacion) {
 	case WAIT:
 		if (unCliente->programaCerrado) {
-			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), ERROR);
+			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), ERROR, NUCLEO);
 			break;
 		}
 
 		if (semaforo->valor > 0) {
 			//No se bloquea
-			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), NOTHING);
+			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), NOTHING, NUCLEO);
 		} else {
 			//Se bloquea
-			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), WAIT);
+			enviarDatos(unCliente->socket, &buffer, sizeof(buffer), WAIT, NUCLEO);
 			unPcbBlocked = malloc(sizeof(t_pcbBlockedSemaforo));
-			recibirDatos(unCliente->socket, &bufferPCB, NULL);
+			recibirDatos(unCliente->socket, &bufferPCB, NULL, &id);
 			unPcbBlocked->nombreSemaforo = semaforo->nombre;
 			unPcbBlocked->pcb = deserializar_pcb((char **) &bufferPCB);
 			free(bufferPCB);
@@ -865,7 +865,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 	int packageSize;
 	char *paqueteSerializado;
 	char* respuestaOperacion;
-
+	uint32_t id;
 	switch (operacion) {
 	case LEER:
 		//info del segundo paquete
@@ -874,13 +874,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 				&operacion);
 
 		if ((enviarDatos(serverSocket, &paqueteSerializado, packageSize,
-				NOTHING)) < 0) {
+				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
 
 		//####		Recibo buffer pedidos		####
-		if (recibirDatos(serverSocket, &respuestaOperacion, NULL) < 0) {
+		if (recibirDatos(serverSocket, &respuestaOperacion, NULL, &id) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
@@ -895,12 +895,12 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		//info del primer paquete
 		if ((enviarDatos(serverSocket, &paqueteSerializado, packageSize,
-				NOTHING)) < 0) {
+				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
 		//Recibo la respuesta si fue exitosa
-		if ((recibirDatos(serverSocket, &respuestaOperacion, NULL)) < 0) {
+		if ((recibirDatos(serverSocket, &respuestaOperacion, NULL, &id)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
@@ -915,7 +915,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		//Envio paquete
 		if ((enviarDatos(serverSocket, &paqueteSerializado, packageSize,
-				NOTHING)) < 0) {
+				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
@@ -929,13 +929,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		//Envio paquete
 		if ((enviarDatos(serverSocket, &paqueteSerializado, packageSize,
-				NOTHING)) < 0) {
+				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
 		//Recibo el valor respuesta de la operación
 		respuestaOperacion = malloc(sizeof(int));
-		if (recibirDatos(serverSocket, &respuestaOperacion, NULL) < 0) {
+		if (recibirDatos(serverSocket, &respuestaOperacion, NULL, &id) < 0) {
 			respuestaOperacion[0] = -1;
 			respuestaOperacion[1] = '\0';
 			free(paqueteSerializado);
@@ -951,13 +951,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		//envio paquete
 		if ((enviarDatos(serverSocket, &paqueteSerializado, packageSize,
-				NOTHING)) < 0) {
+				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
 
 		//Recibo respuesta
-		if (recibirDatos(serverSocket, &respuestaOperacion, NULL) < 0) {
+		if (recibirDatos(serverSocket, &respuestaOperacion, NULL, &id) < 0) {
 			free(paqueteSerializado);
 			return NULL;
 		}
@@ -1140,7 +1140,7 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado) {
 	log_debug(ptrLog, "Serializo el PCB");
 	pcbSerializado = serializar_pcb(unPCB);
 	enviarDatos(clienteSeleccionado->socket, &pcbSerializado, sizeof(t_pcb),
-			NOTHING);
+			NOTHING, NUCLEO);
 	log_debug(ptrLog, "PCB enviado al CPU %d", clienteSeleccionado->id);
 	clienteSeleccionado->pcbAsignado = unPCB;
 	clienteSeleccionado->fueAsignado = true;
@@ -1172,7 +1172,7 @@ void* mensajesPrograma(void) {
 		switch (msjCliente->tipoDeValor) {
 		case IMPRIMIR_TEXTO:
 			if ((enviarDatos(aux->socket, &msjCliente->valor,
-					strlen(msjCliente->valor) + 1, IMPRIMIR_TEXTO)) < 0) {
+					strlen(msjCliente->valor) + 1, IMPRIMIR_TEXTO, NUCLEO)) < 0) {
 				log_error(ptrLog,
 						"Error al enviar un mensaje a imprimir:TEXTO por el Programa: %u",
 						aux->pid);
@@ -1184,7 +1184,7 @@ void* mensajesPrograma(void) {
 			break;
 		case IMPRIMIR_VALOR:
 			if ((enviarDatos(aux->socket, &msjCliente->valor, sizeof(uint32_t),
-					IMPRIMIR_VALOR)) < 0) {
+					IMPRIMIR_VALOR, NUCLEO)) < 0) {
 				log_error(ptrLog,
 						"Error al enviar un mensaje a imprimir de tipo:VALOR por el Programa: %u",
 						aux->pid);
@@ -1197,7 +1197,7 @@ void* mensajesPrograma(void) {
 		case EXIT:
 			aux->terminado = true;
 			if ((enviarDatos(aux->socket, &msjCliente->valor,
-					strlen(msjCliente->valor) + 1, EXIT)) < 0) {
+					strlen(msjCliente->valor) + 1, EXIT, NUCLEO)) < 0) {
 				log_error(ptrLog,
 						"Error al enviar un mensaje a imprimir de tipo:EXIT por el Programa: %u",
 						aux->pid);
@@ -1212,7 +1212,7 @@ void* mensajesPrograma(void) {
 		case ERROR:
 			aux->terminado = true;
 			if ((enviarDatos(aux->socket, &msjCliente->valor,
-					strlen(msjCliente->valor) + 1, ERROR)) < 0) {
+					strlen(msjCliente->valor) + 1, ERROR, NUCLEO)) < 0) {
 				log_error(ptrLog,
 						"Error al enviar un mensaje a imprimir de tipo:ERROR por el Programa: %u",
 						aux->pid);
@@ -1274,7 +1274,7 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
 
-		returnInt = enviarMensajeAUMC("Hola, soy el Nucleo/0");
+		//returnInt = enviarMensajeAUMC("Hola, soy el Nucleo/0");
 		if (pthread_create(&threadSocket, NULL, (void*) escucharPuertos, NULL)
 				!= 0) {
 			perror("could not create thread");
