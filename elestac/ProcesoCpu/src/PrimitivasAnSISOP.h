@@ -13,67 +13,12 @@
 #include <parser/metadata_program.h>
 #include <commons/log.h>
 #include <commons/collections/dictionary.h>
+#include <commons/collections/list.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <commons/string.h>
-typedef struct op_varCompartida {
-	char* nombre;
-	uint32_t longNombre;
-	uint32_t valor;
-} t_op_varCompartida;
-enum CPU {
-	QUANTUM = 2,
-	IO,
-	EXIT,
-	IMPRIMIR_VALOR,
-	IMPRIMIR_TEXTO,
-	LEER_VAR_COMPARTIDA,
-	ASIG_VAR_COMPARTIDA,
-	WAIT,
-	SIGNAL,
-	SIGUSR
-};
-typedef struct
-{
-	uint32_t idVariable;
-	uint32_t pagina;
-	uint32_t offset;
-	uint32_t size;
-}t_variable;
-typedef struct {
-	char *nombre;
-	int tiempo;
-} t_dispositivo_io;
-typedef struct {
-	char* nombre;
-	int valor;
-} t_semaforo;
-typedef struct {
-	char *nombre;
-	int valor;
-} t_variable_compartida;
-typedef struct{
-	uint32_t pagina;
-	uint32_t offset;
-	uint32_t size;
-}t_argumento;
-typedef struct stack{
-	uint32_t posicion;
-	t_list* argumentos;
-	t_list* variables;
-	uint32_t direcretorno;
-	t_argumento retVar;
-}t_stack;
-typedef struct pcb {
-	uint32_t pcb_id;
-	uint32_t codigo;
-	t_list* ind_codigo;
-	t_list* ind_stack;
-	char* ind_etiq;
-	uint32_t PC;
-	uint32_t posicionPrimerPaginaCodigo;
-} t_pcb;
+#include <sockets/StructsUtiles.h>
 //Tipos de datos
 typedef uint32_t t_posicion;
 typedef u_int32_t t_puntero;

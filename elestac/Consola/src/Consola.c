@@ -8,28 +8,15 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <netinet/in.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #define MAX_BUFFER_SIZE 4096
 
 t_log* ptrLog;
 t_config* config;
-enum CPU_PCP {
-	QUANTUM = 2,
-	IO,
-	EXIT,
-	IMPRIMIR_VALOR,
-	IMPRIMIR_TEXTO,
-	LEER_VAR_COMPARTIDA,
-	ASIG_VAR_COMPARTIDA,
-	WAIT,
-	SIGNAL,
-	SIGUSR
-};
+
 char *direccion;
 int puerto;
 char buff[MAX_BUFFER_SIZE] = "Hola como estas, soy consola, nucleo";

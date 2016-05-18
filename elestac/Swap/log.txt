@@ -155,3 +155,24 @@
 [INFO] 14:54:43:279 Swap/(7005:7005): Esperando recibir alguna peticion
 [INFO] 14:55:00:413 Swap/(7005:7005): Ocurrio un error al Leer datos de UMC
 [INFO] 14:55:00:415 Swap/(7005:7005): Esperando conexiones
+[INFO] 23:39:54:136 Swap/(2450:2450): Se abrio el socket Servidor Swap
+[INFO] 23:39:54:140 Swap/(2450:2450): Se creo correctamente el archivo de control de memoria
+[INFO] 23:39:54:140 Swap/(2450:2450): Esperando conexiones
+[INFO] 23:56:30:17 Swap/(5519:5519): No se pudo abrir el Socket Servidor Swap
+[INFO] 00:00:13:348 Swap/(2450:2450): Conexion de UMC aceptada
+[INFO] 00:00:13:348 Swap/(2450:2450): Esperando recibir alguna peticion
+[INFO] 00:00:13:350 Swap/(2450:2450): Abrimos bien, soy la umc
+[INFO] 00:00:13:350 Swap/(2450:2450): Esperando Compactacion
+[INFO] 00:00:16:350 Swap/(2450:2450): Pagina enviada
+[INFO] 00:00:16:352 Swap/(2450:2450): Esperando recibir alguna peticion
+[INFO] 00:09:35:274 Swap/(2450:2450): Ocurrio un error al Leer datos de UMC
+[INFO] 00:09:35:274 Swap/(2450:2450): Esperando conexiones
+[INFO] 00:09:40:391 Swap/(7219:7219): Se abrio el socket Servidor Swap
+[INFO] 00:09:40:403 Swap/(7219:7219): Se creo correctamente el archivo de control de memoria
+[INFO] 00:09:40:403 Swap/(7219:7219): Esperando conexiones
+[INFO] 00:09:44:577 Swap/(7219:7219): Conexion de UMC aceptada
+[INFO] 00:09:44:577 Swap/(7219:7219): Esperando recibir alguna peticion
+[INFO] 00:09:44:578 Swap/(7219:7219): Abrimos bien, soy la umc
+[INFO] 00:09:44:578 Swap/(7219:7219): Esperando Compactacion
+[INFO] 00:09:47:578 Swap/(7219:7219): Pagina enviada
+[INFO] 00:09:47:580 Swap/(7219:7219): Esperando recibir alguna peticion
