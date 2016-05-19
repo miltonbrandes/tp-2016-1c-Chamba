@@ -71,32 +71,12 @@ int enviarScriptAlNucleo(char *script) {
 	}
 	log_info(ptrLog, "Se conecto con el nucleo");
 	operacion = 1;
-	bytesRecibidos = enviarDatos(socketConexionNucleo, script, longitud, operacion, id);
+	bytesRecibidos = enviarDatos(socketConexionNucleo, script, longitud+1, operacion, id);
 	if (bytesRecibidos< 0) {
 		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
-	while (1) {
-			log_info(ptrLog, "Esperando mensaje del Nucleo");
-			buff = recibirDatos(socketConexionNucleo, &operacion, &id);
-			if (bytesRecibidos < 0) {
-				finalizarConexion(socketConexionNucleo);
-				log_info(ptrLog, "Error en la lectura del nucleo");
-				return -1;
-			}else if(bytesRecibidos > 0) {
-				if (strcmp("ERROR", respuestaServidor) == 0) {
-
-				} else {
-					log_info(ptrLog, "Mensaje recibido de Nucleo: %s", respuestaServidor);
-				}
-			} else {
-				//Aca matamos a Nucleo
-				finalizarConexion(socketConexionNucleo);
-				log_info(ptrLog, "No se recibio nada de Nucleo. Cerramos conexion");
-				break;
-			}
-		}
 	//log_info(ptrLog, respuestaServidor);
 	finalizarConexion(socketConexionNucleo);
 	return 0;
