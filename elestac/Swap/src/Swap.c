@@ -727,8 +727,8 @@ int main() {
 			log_info(ptrLog, "Conexion de UMC aceptada");
 			manejarConexionesRecibidas(socketUMC);
 
-			mensaje = recibirDatos(socket, &operacion, &id);
-			int status = strlen(mensaje);
+			//mensaje = recibirDatos(socketUMC, &operacion, &id);
+			//int status = strlen(mensaje);
 			/*while (status) {
 			 if (status == -1) {
 			 printf("Error en recibir pagina de ADM\n");

@@ -312,6 +312,10 @@ void operacionesConVariablesCompartidas(char operacion, char *buffer,
 	}
 }
 
+void imprimirProcesoNew(t_pcb* pcb) {
+	log_debug(ptrLog, "Proceso %d en estado NEW \n",pcb->pcb_id);
+}
+
 void escucharPuertos() {
 
 	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
@@ -450,10 +454,6 @@ void escucharPuertos() {
 					list_add(colaNew, unPcb);
 					log_info(ptrLog,
 							"===== Lista de Procesos en cola NEW =====");
-					void _imprimirProcesoNew(t_pcb* pcb) {
-						log_debug(ptrLog, "Proceso %d en estado NEW \n",
-								pcb->pcb_id);
-					}
 					imprimirProcesoNew(unPcb);
 					sem_post(&semNuevoProg);
 				}
@@ -843,7 +843,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 	case NUEVOPROGRAMA:
 		//info del segundo paquete
 		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t);
-		paqueteSerializado = serializarCrearSegmento(estructuraDeOperacion,
+		paqueteSerializado = serializarIniciarPrograma(estructuraDeOperacion,
 				&operacion);
 
 		//Envio paquete
@@ -869,7 +869,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 	case FINALIZARPROGRAMA:
 		//info del segundo paquete
 		packageSize = sizeof(t_finalizar_programa) + sizeof(uint32_t);
-		paqueteSerializado = serializarDestruirSegmento(estructuraDeOperacion,
+		paqueteSerializado = serializarFinalizarPrograma(estructuraDeOperacion,
 				&operacion);
 
 		//envio paquete

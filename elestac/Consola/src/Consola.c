@@ -78,7 +78,7 @@ int enviarScriptAlNucleo(char *script) {
 	}
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	//log_info(ptrLog, respuestaServidor);
-	finalizarConexion(socketConexionNucleo);
+	//finalizarConexion(socketConexionNucleo);
 	return 0;
 
 }
