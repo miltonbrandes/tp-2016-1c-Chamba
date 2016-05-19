@@ -64,6 +64,10 @@ typedef struct {
 //int escribir(int socket, int id, int longitud, int operacion, void* payload);
 //int leer(int socket, int* id, char** payload);
 
+char* recibirDatos(int socket, uint32_t ** op, uint32_t ** id);
+int enviarDatos(int socket, char* datos, uint32_t tamanio, uint32_t op, uint32_t id);
+int leer(int socket, char* buffer, int longitud);
+int escribir(int socket, char* buffer, int longitud);
 int finalizarConexion(int socket);
 
 #endif /* LIBRERIAS_SOCKETSESCRITURALECTURA_H_ */

@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
+#include <sockets/OpsUtiles.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <netinet/in.h>
@@ -77,13 +79,17 @@ int enviarScriptAlNucleo(char *script) {
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
 	while (1) {
 			log_info(ptrLog, "Esperando mensaje del Nucleo");
-			bytesRecibidos = recibirDatos(socketConexionNucleo, &buff, &operacion, &id);
+			buff = recibirDatos(socketConexionNucleo, &operacion, &id);
 			if (bytesRecibidos < 0) {
 				finalizarConexion(socketConexionNucleo);
 				log_info(ptrLog, "Error en la lectura del nucleo");
 				return -1;
 			}else if(bytesRecibidos > 0) {
-				log_info(ptrLog, "Mensaje recibido de Nucleo: %s", respuestaServidor);
+				if (strcmp("ERROR", respuestaServidor) == 0) {
+
+				} else {
+					log_info(ptrLog, "Mensaje recibido de Nucleo: %s", respuestaServidor);
+				}
 			} else {
 				//Aca matamos a Nucleo
 				finalizarConexion(socketConexionNucleo);
@@ -155,29 +161,32 @@ int main(int argc, char **argv) {
 			bool salir = false;
 			while (1)
 				{
-					if (recibirDatos(socketConexionNucleo, &server_reply, &operacion, &id) < 0)
+					server_reply = recibirDatos(socketConexionNucleo, &operacion, &id);
+					if (strlen(server_reply) < 0)
 					{
 						log_error(ptrLog, "Error al recibir datos del servior.");
 						return EXIT_FAILURE;
-					}
+					}else if (strcmp("ERROR", respuestaServidor) == 0) {
 
-					switch(operacion)
-					{
-						case IMPRIMIR_TEXTO:
-							printf("%s\n", server_reply);
-							break;
-						case IMPRIMIR_VALOR:
-							memcpy(&valor, server_reply, 4);
-							printf("%d\n", valor);
-							break;
-						default:
-							printf("%s\n", server_reply);
-							salir = true;
-							break;
-					}
+					} else {
+						switch(operacion)
+						{
+							case IMPRIMIR_TEXTO:
+								printf("%s\n", server_reply);
+								break;
+							case IMPRIMIR_VALOR:
+								memcpy(&valor, server_reply, 4);
+								printf("%d\n", valor);
+								break;
+							default:
+								printf("%s\n", server_reply);
+								salir = true;
+								break;
+						}
 
-					free(server_reply);
-					if (salir) break;
+						free(server_reply);
+						if (salir) break;
+					}
 				}
 		}
 		else

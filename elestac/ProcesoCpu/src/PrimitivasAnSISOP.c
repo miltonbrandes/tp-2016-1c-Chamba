@@ -41,13 +41,18 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 			variable);
 //	if (enviarDatos(socketNucleo, &variable, (uint32_t)(strlen(variable) + 1),	(uint32_t)LEER_VAR_COMPARTIDA, (uint32_t)CPU) < 0)
 	return -1;
-	if (recibirDatos(socketNucleo, &buffer, NULL, &id) < 0)
+	buffer = recibirDatos(socketNucleo, NULL, &id);
+	if (strlen(buffer) < 0)
 		return -1;
 
-	memcpy(&valor, buffer, sizeof(t_valor_variable));
-	log_debug(ptrLog, "El valor de '%s' es %d", variable, valor);
-	free(buffer);
-	return valor;
+	if (strcmp("ERROR", buffer) == 0) {
+
+	} else {
+		memcpy(&valor, buffer, sizeof(t_valor_variable));
+		log_debug(ptrLog, "El valor de '%s' es %d", variable, valor);
+		free(buffer);
+		return valor;
+	}
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
@@ -76,8 +81,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	log_debug(ptrLog, "Llamada a irAlLabel");
 }
 
-void llamarFuncion(t_nombre_etiqueta etiqueta,
-		t_posicion donde_retornar) {
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_posicion donde_retornar) {
 	log_debug(ptrLog, "Llamada a llamarFuncion");
 }
 
@@ -134,7 +138,9 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 			identificador_semaforo);
 //	enviarDatos(socketNucleo, &identificador_semaforo, (uint32_t)(strlen(identificador_semaforo) + 1), WAIT, CPU);
 	log_debug(ptrLog, "Esperando respuesta del kernel");
-	int bytesRecibidos = recibirDatos(socketNucleo, &buffer, &op, &id);
+
+	buffer = recibirDatos(socketNucleo, NULL, &id);
+
 	if (op != NULL)
 		operacion = (uint32_t) op;
 //	if (op == WAIT)
@@ -143,6 +149,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 			identificador_semaforo);
 	free(buffer);
 //	return bytesRecibidos;
+
 }
 
 void signal(t_nombre_semaforo identificador_semaforo) {

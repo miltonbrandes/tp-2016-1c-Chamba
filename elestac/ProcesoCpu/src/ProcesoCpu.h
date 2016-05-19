@@ -19,17 +19,17 @@
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();
 
-void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char **mensaje);
-void manejarMensajeRecibidoNucleo(uint32_t operacion, char **mensaje);
-void manejarMensajeRecibidoUMC(uint32_t operacion, char **mensaje);
+void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje);
+void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);
+void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje);
 
-void recibirPCB(char **mensaje);
-void recibirQuantum(char **mensaje);
-void recibirTamanioPagina(char **mensaje);
-void recibirSignalSemaforo(char **mensaje);
-void recibirAsignacionVariableCompartida(char **mensaje);
-void recibirValorVariableCompartida(char **mensaje);
-void recibirInstruccion(char **mensaje);
+void recibirPCB(char *mensaje);
+void recibirQuantum(char *mensaje);
+void recibirTamanioPagina(char *mensaje);
+void recibirSignalSemaforo(char *mensaje);
+void recibirAsignacionVariableCompartida(char *mensaje);
+void recibirValorVariableCompartida(char *mensaje);
+void recibirInstruccion(char *mensaje);
 
 void comenzarEjecucionDePrograma();
 char* solicitarProximaInstruccionAUMC();

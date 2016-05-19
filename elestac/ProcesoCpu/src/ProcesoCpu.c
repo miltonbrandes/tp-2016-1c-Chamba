@@ -6,6 +6,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
@@ -23,6 +24,19 @@ t_config* config;
 t_pcb *pcb;
 int socketNucleo, socketUMC;
 uint32_t quantum, quantumSleep, tamanioPagina;
+
+AnSISOP_funciones functions = { .AnSISOP_asignar = asignar,
+		.AnSISOP_asignarValorCompartida = asignarValorCompartida,
+		.AnSISOP_definirVariable = definirVariable, .AnSISOP_dereferenciar =
+				dereferenciar, .AnSISOP_entradaSalida = entradaSalida,
+		.AnSISOP_imprimir = imprimir, .AnSISOP_imprimirTexto = imprimirTexto,
+		.AnSISOP_irAlLabel = irAlLabel, .AnSISOP_obtenerPosicionVariable =
+				obtenerPosicionVariable, .AnSISOP_obtenerValorCompartida =
+				obtenerValorCompartida, .AnSISOP_retornar = retornar,
+		.AnSISOP_llamarConRetorno = llamarConRetorno };
+
+AnSISOP_kernel kernel_functions = { .AnSISOP_signal = signal, .AnSISOP_wait =
+		wait };
 
 int crearLog() {
 	ptrLog = log_create(getenv("CPU_LOG"), "ProcesoCpu", 1, 0);
@@ -57,7 +71,7 @@ int controlarConexiones() {
 	while (1) {
 		if (recibirMensaje(socketNucleo) == 0) {
 
-		}else{
+		} else {
 			return 0;
 		}
 	}
@@ -97,7 +111,8 @@ int recibirMensaje(int socket) {
 	uint32_t id;
 	uint32_t operacion;
 
-	int bytesRecibidos = recibirDatos(socket, &respuestaServidor, &operacion, &id);
+	respuestaServidor = recibirDatos(socket, &operacion, &id);
+	int bytesRecibidos = strlen(respuestaServidor);
 
 	if (bytesRecibidos < 0) {
 		log_info(ptrLog, "Error en al lectura del mensaje del servidor");
@@ -105,52 +120,60 @@ int recibirMensaje(int socket) {
 
 	} else if (bytesRecibidos == 0) {
 
-		if(socket == socketNucleo) {
+		if (socket == socketNucleo) {
 			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
 			finalizarConexion(socketNucleo);
-		}else
-		if(socket == socketUMC) {
+		} else if (socket == socketUMC) {
 			log_info(ptrLog, "No se recibio nada de UMC, cierro conexion");
 			finalizarConexion(socketUMC);
 		}
 		return -1;
 
 	} else {
-		log_info(ptrLog, "Servidor dice: %s", respuestaServidor);
+		if (strcmp("ERROR", respuestaServidor) == 0) {
 
-		manejarMensajeRecibido(id, operacion, &respuestaServidor);
+		} else {
+			manejarMensajeRecibido(id, operacion, respuestaServidor);
+		}
 	}
 
 	return 0;
 }
 
 //Veo quien me mando mensajes
-void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char **mensaje) {
-	switch(id) {
+void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje) {
+	switch (id) {
 	case NUCLEO:
+		log_info(ptrLog, "Mensaje de Nucleo");
 		manejarMensajeRecibidoNucleo(operacion, mensaje);
 		break;
 	case UMC:
+		log_info(ptrLog, "Mensaje de UMC");
 		manejarMensajeRecibidoUMC(operacion, mensaje);
 		break;
 	}
 }
 
-void manejarMensajeRecibidoNucleo(uint32_t operacion, char **mensaje) {
-	switch(operacion) {
+void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje) {
+	switch (operacion) {
 	case QUANTUM_PARA_CPU:
+		log_info(ptrLog, "Mensaje QUANTUM PARA CPU");
 		recibirQuantum(mensaje);
 		break;
 	case EXECUTE_PCB:
+		log_info(ptrLog, "Mensaje EXECUTE_PCB");
 		recibirPCB(mensaje);
 		break;
 	case VALOR_VAR_COMPARTIDA:
+		log_info(ptrLog, "Mensaje VALOR_VAR_COMPARTIDA");
 		recibirValorVariableCompartida(mensaje);
 		break;
 	case ASIG_VAR_COMPARTIDA:
+		log_info(ptrLog, "Mensaje ASIG_VAR_COMPARTIDA");
 		recibirAsignacionVariableCompartida(mensaje);
 		break;
 	case SIGNAL_SEMAFORO:
+		log_info(ptrLog, "Mensaje SIGNAL_SEMAFORO");
 		recibirSignalSemaforo(mensaje);
 		break;
 	default:
@@ -158,12 +181,14 @@ void manejarMensajeRecibidoNucleo(uint32_t operacion, char **mensaje) {
 	}
 }
 
-void manejarMensajeRecibidoUMC(uint32_t operacion, char **mensaje) {
-	switch(operacion) {
+void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje) {
+	switch (operacion) {
 	case ENVIAR_TAMANIO_PAGINA_A_CPU:
+		log_info(ptrLog, "Mensaje ENVIAR_TAMANIO_PAGINA_A_CPU");
 		recibirTamanioPagina(mensaje);
 		break;
 	case ENVIAR_INSTRUCCION_A_CPU:
+		log_info(ptrLog, "Mensaje ENVIAR_INSTRUCCION_A_CPU");
 		recibirInstruccion(mensaje);
 		break;
 	}
@@ -171,41 +196,42 @@ void manejarMensajeRecibidoUMC(uint32_t operacion, char **mensaje) {
 //Fin veo quien me mando mensajes
 
 //Manejo de mensajes recibidos
-void recibirPCB(char **mensaje) {
+void recibirPCB(char *mensaje) {
 	pcb = deserializar_pcb(mensaje);
 	comenzarEjecucionDePrograma();
 }
 
-void recibirQuantum(char **mensaje) {
+void recibirQuantum(char *mensaje) {
 	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(mensaje);
 	quantum = estructuraInicial->Quantum;
 	quantumSleep = estructuraInicial->RetardoQuantum;
+	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d", quantum, quantumSleep);
 }
 
-void recibirTamanioPagina(char **mensaje) {
-	tamanioPagina = deserializarUint32((void**)mensaje);
+void recibirTamanioPagina(char *mensaje) {
+	tamanioPagina = deserializarUint32(mensaje);
 }
 
-void recibirValorVariableCompartida(char **mensaje) {
-
-}
-
-void recibirAsignacionVariableCompartida(char **mensaje) {
+void recibirValorVariableCompartida(char *mensaje) {
 
 }
 
-void recibirSignalSemaforo(char **mensaje) {
+void recibirAsignacionVariableCompartida(char *mensaje) {
 
 }
 
-void recibirInstruccion(char **mensaje) {
+void recibirSignalSemaforo(char *mensaje) {
+
+}
+
+void recibirInstruccion(char *mensaje) {
 
 }
 //Fin manejo de mensajes recibidos
 
 void comenzarEjecucionDePrograma() {
 	int contador = 1;
-	while(contador <= quantum) {
+	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		sleep(quantumSleep);
@@ -213,16 +239,20 @@ void comenzarEjecucionDePrograma() {
 }
 
 char* solicitarProximaInstruccionAUMC() {
-	void *message;
+	char *message;
 	uint32_t operation, id;
 
-	int bytesReceived = recibirDatos(socketUMC, &message, &operation, &id);
-	if(bytesReceived < 0) {
+	message = recibirDatos(socketUMC, &operation, &id);
+	if (strlen(message) < 0) {
 
-	}else if(bytesReceived == 0) {
+	} else if (strlen(message) == 0) {
 
-	}else{
+	} else {
+		if(strcmp("ERROR", message) == 0) {
 
+		}else{
+			//Aca hago la piola
+		}
 	}
 
 	return (char*) message;

@@ -6,6 +6,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <commons/config.h>
 #include <sockets/ServidorFunciones.h>
 #include <commons/collections/list.h>
@@ -157,7 +158,10 @@ void manejarConexionesRecibidas(int socketUMC) {
 		char* buffer;
 		uint32_t id;
 		uint32_t operacion;
-		int bytesRecibidos = recibirDatos(socketUMC, &buffer, &operacion, &id);
+
+		buffer = recibirDatos(socket, &operacion, &id);
+		int bytesRecibidos = strlen(buffer);
+
 		if (bytesRecibidos < 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC\0");
 			finalizarConexion(socketUMC);
@@ -168,17 +172,11 @@ void manejarConexionesRecibidas(int socketUMC) {
 			finalizarConexion(socketUMC);
 			return;
 		} else {
-			log_info(ptrLog, buffer);
-			//Envio algo a UMC esperando con un retardo de compactacion
-			log_info(ptrLog, "Esperando Compactacion");
-			sleep(retardoCompactacion);
-			char *mensajeUMC = "Toma la pagina que te pidio nucleo\0";
-			uint32_t id = 4;
-			uint32_t longitud = strlen(mensajeUMC);
-			uint32_t operacion = 1;
-			int sendBytes = enviarDatos(socketUMC, mensajeUMC, longitud,
-					operacion, id);
-			log_info(ptrLog, "Pagina enviada");
+			if (strcmp("ERROR", buffer) == 0) {
+				return;
+			} else {
+				//Hacer algo, me hablo UMC
+			}
 		}
 
 	} while (1);
@@ -703,8 +701,8 @@ int main() {
 	if (init()) {
 		libre = NULL;
 		ocupado = NULL;
-		char** mensaje;
-		uint32_t instruccion;
+		char* mensaje;
+		uint32_t operacion;
 		uint32_t id;
 		socketReceptorUMC = AbrirSocketServidor(puertoTCPRecibirConexiones);
 		if (socketReceptorUMC < 0) {
@@ -728,8 +726,9 @@ int main() {
 			int socketUMC = AceptarConexionCliente(socketReceptorUMC);
 			log_info(ptrLog, "Conexion de UMC aceptada");
 			manejarConexionesRecibidas(socketUMC);
-			int status; // Estructura que maneja el status de los receive.
-			status = recibirDatos(socketUMC, &mensaje, &instruccion, &id);
+
+			mensaje = recibirDatos(socket, &operacion, &id);
+			int status = strlen(mensaje);
 			/*while (status) {
 			 if (status == -1) {
 			 printf("Error en recibir pagina de ADM\n");
