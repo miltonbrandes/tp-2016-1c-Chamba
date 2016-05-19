@@ -119,7 +119,7 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 	op_IO->nombre = malloc(strlen(dispositivo) + 1);
 	strcpy(op_IO->nombre, dispositivo);
 	op_IO->tiempo = tiempo;
-	buffer = serializar_opIO(op_IO);
+//	buffer = serializar_opIO(op_IO);
 	int bytesEnviados = enviarDatos(socketNucleo, &buffer, (uint32_t)(8 + strlen(dispositivo) + 1), operacion, (uint32_t)CPU);
 	log_debug(ptrLog, "Dispositivo '%s' con un tiempo de %d enviados al kernel",
 			dispositivo, tiempo);

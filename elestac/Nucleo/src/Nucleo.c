@@ -839,8 +839,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 	case NUEVOPROGRAMA:
 		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t);
-		paqueteSerializado = serializarIniciarPrograma(estructuraDeOperacion,
-				&operacion);
+//		paqueteSerializado = serializarIniciarPrograma(estructuraDeOperacion, &operacion);
 
 		//Envio paquete
 		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize,
@@ -864,8 +863,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 	case FINALIZARPROGRAMA:
 		packageSize = sizeof(t_finalizar_programa) + sizeof(uint32_t);
-		paqueteSerializado = serializarFinalizarPrograma(estructuraDeOperacion,
-				&operacion);
+//		paqueteSerializado = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
 
 		//envio paquete
 		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize,
@@ -995,8 +993,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	pcb->codigo = datos->instrucciones_size;
 
 	listaIndCodigo = list_create();
-	listaIndCodigo = llenarLista(listaIndCodigo,
-			datos->instrucciones_serializado, datos->instrucciones_size);
+	listaIndCodigo = llenarLista(listaIndCodigo, datos->instrucciones_serializado, datos->instrucciones_size);
 	pcb->ind_codigo = listaIndCodigo;
 	/*La funcion toma el mapa de instrucciones, lo serializa y lo copia en el buffer*/
 
@@ -1005,7 +1002,9 @@ t_pcb* crearPCB(char* programa, int socket) {
 		indiceEtiquetas = datos->etiquetas;
 		pcb->ind_etiq = indiceEtiquetas;
 	} else {
-		pcb->ind_etiq = 0;
+		//Harcodeo
+		pcb->ind_etiq = malloc(sizeof(char));
+		pcb->ind_etiq = 'x';
 	}
 	free(basePagCod);
 	free(basePagStack);
