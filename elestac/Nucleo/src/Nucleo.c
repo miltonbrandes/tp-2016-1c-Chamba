@@ -6,6 +6,7 @@
  *      Author: utnso
  */
 //TODO: le tengo que pasar tambien cual es la primer pagina de mi codigo a la cpu para que se la pueda pedir a la umc??? en principio se lo paso por las dudas
+//TODO: ver el tema del notify
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
@@ -647,10 +648,9 @@ void escucharPuertos() {
 											free(buffer);
 											break;
 										}
-
 									}
 								} else if (id == UMC) {
-
+									//en algun momento puedo recibir alguna otra cosa de umc?????? creo que no
 									//entonces recibio de umc
 								} else if (id == CONSOLA) {
 									//aca me tengo que fijar que pasa si se cierra inesperadamente la consola
@@ -771,15 +771,14 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 	}
 }
 
-char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
-		int serverSocket) {
+char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
 	int packageSize;
 	char *paqueteSerializado;
 	char* respuestaOperacion;
 	uint32_t id;
 	switch (operacion) {
 	case LEER:
-		//info del segundo paquete
+		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
 		packageSize = sizeof(t_solicitarBytes) + sizeof(uint32_t);
 		paqueteSerializado = serializarSolicitarBytes(estructuraDeOperacion,
 				&operacion);
@@ -802,13 +801,12 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		break;
 	case ESCRIBIR:
+		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
 		packageSize = sizeof(t_enviarBytes) + sizeof(uint32_t);
 		t_enviarBytes* aux = (t_enviarBytes*) estructuraDeOperacion;
 		packageSize += aux->tamanio;
 		paqueteSerializado = serializarEnviarBytes(estructuraDeOperacion,
 				&operacion);
-
-		//info del primer paquete
 		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize,
 				NOTHING, NUCLEO)) < 0) {
 			free(paqueteSerializado);
@@ -827,7 +825,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 		break;
 
 	case CAMBIOPROCESOACTIVO:
-		//info del segundo paquete
 		packageSize = sizeof(t_cambio_proc_activo) + sizeof(uint32_t);
 		paqueteSerializado = serializarCambioProcActivo(estructuraDeOperacion,
 				&operacion);
@@ -841,7 +838,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		break;
 	case NUEVOPROGRAMA:
-		//info del segundo paquete
 		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t);
 		paqueteSerializado = serializarIniciarPrograma(estructuraDeOperacion,
 				&operacion);
@@ -867,7 +863,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,
 
 		break;
 	case FINALIZARPROGRAMA:
-		//info del segundo paquete
 		packageSize = sizeof(t_finalizar_programa) + sizeof(uint32_t);
 		paqueteSerializado = serializarFinalizarPrograma(estructuraDeOperacion,
 				&operacion);
@@ -941,7 +936,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg.tamanio=tamanioStack;
 	basePagStack=malloc(sizeof(uint32_t));
 	//basePagStack=enviarOperacion(NUEVOPROGRAMA,&iniciarProg,socket);
-	//pcb->stackPointer = basePagStack; porque me tira error aca????
+	pcb->stackPointer = basePagStack;
 	memcpy(&rtaOp,basePagStack,sizeof(int));
 	rtaOp = 1;
 	if(rtaOp < 0){

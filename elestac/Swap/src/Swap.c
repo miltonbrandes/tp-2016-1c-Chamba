@@ -12,11 +12,11 @@
 #include <commons/collections/list.h>
 #include <commons/log.h>
 #include <sockets/EscrituraLectura.h>
+#include <sockets/OpsUtiles.h>
 
 #define MAX_BUFFER_SIZE 4096
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorUMC;
-
 //Archivo de Log
 t_log* ptrLog;
 
@@ -159,7 +159,7 @@ void manejarConexionesRecibidas(int socketUMC) {
 		uint32_t id;
 		uint32_t operacion;
 
-		buffer = recibirDatos(socket, &operacion, &id);
+		buffer = recibirDatos(socketUMC, &operacion, &id);
 		int bytesRecibidos = strlen(buffer);
 
 		if (bytesRecibidos < 0) {
@@ -175,7 +175,6 @@ void manejarConexionesRecibidas(int socketUMC) {
 			if (strcmp("ERROR", buffer) == 0) {
 				return;
 			} else {
-				//Hacer algo, me hablo UMC
 			}
 		}
 
@@ -727,19 +726,7 @@ int main() {
 			log_info(ptrLog, "Conexion de UMC aceptada");
 			manejarConexionesRecibidas(socketUMC);
 
-			//mensaje = recibirDatos(socketUMC, &operacion, &id);
-			//int status = strlen(mensaje);
-			/*while (status) {
-			 if (status == -1) {
-			 printf("Error en recibir pagina de ADM\n");
-			 log_info(ptrLog, "Error en recibir pagina de ADM");
-			 cerrarSwap();
-			 }
-			 //printf("Recibi de ADM: Pid: %d Inst: %d Parametro: %d\n",mensaje.pid,mensaje.instruccion,mensaje.parametro);
-			 interpretarMensaje(mensaje, socketUMC);
-			 status = recibirPaginaDeADM(socketADM, &mensaje,
-			 configuracion.TAMANIO_PAGINA);
-			 }*/
+
 		} while (1);
 
 	} else {
