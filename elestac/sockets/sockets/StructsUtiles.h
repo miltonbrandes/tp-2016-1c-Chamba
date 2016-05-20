@@ -93,7 +93,7 @@ typedef struct{
 
 typedef struct indiceCodigo{
 	uint32_t offset;
-	uint32_t tamanio;
+	uint32_t start;
 }t_indice_codigo;
 
 typedef struct package_iniciar_programa {
