@@ -335,8 +335,9 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 }
 
 void enviarMensajeASwap(char *mensajeSwap) {
-	int sendBytes = enviarDatos(socketSwap, mensajeSwap, NULL, NULL, NULL);
-}
+ 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
+ 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
+ }
 
 int main() {
 	if (init()) {
