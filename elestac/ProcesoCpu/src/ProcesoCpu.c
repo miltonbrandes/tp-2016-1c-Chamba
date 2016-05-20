@@ -107,11 +107,10 @@ int enviarMensaje(int socket, char *mensaje) {
 }
 
 int recibirMensaje(int socket) {
-	char *respuestaServidor;
 	uint32_t id;
 	uint32_t operacion;
 
-	respuestaServidor = recibirDatos(socket, &operacion, &id);
+	char *respuestaServidor = recibirDatos(socket, &operacion, &id);
 	int bytesRecibidos = strlen(respuestaServidor);
 
 	if (bytesRecibidos < 0) {
@@ -202,7 +201,8 @@ void recibirPCB(char *mensaje) {
 }
 
 void recibirQuantum(char *mensaje) {
-	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(mensaje);
+	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(
+			mensaje);
 	quantum = estructuraInicial->Quantum;
 	quantumSleep = estructuraInicial->RetardoQuantum;
 	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d", quantum, quantumSleep);
@@ -234,26 +234,109 @@ void comenzarEjecucionDePrograma() {
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+		contador++;
 		sleep(quantumSleep);
 	}
 }
 
 char* solicitarProximaInstruccionAUMC() {
+	int tamanioTotalInstruccion = 0;
+	t_list * listaInstrucciones = list_create();
+	t_list * requestsUMC = crearRequestsParaUMC();
+
 	char *message;
 	uint32_t operation, id;
 
-	message = recibirDatos(socketUMC, &operation, &id);
-	if (strlen(message) < 0) {
-
-	} else if (strlen(message) == 0) {
-
-	} else {
-		if(strcmp("ERROR", message) == 0) {
-
+	int i;
+	for (i = 0; i < list_size(requestsUMC); i++) {
+		t_solicitarBytes *request = list_get(requestsUMC, i);
+		char *requestSerializado = serializarSolicitarBytes(request);
+		int bytesEnviados = enviarDatos(socketUMC, *requestSerializado, LEER, CPU);
+		if(bytesEnviados <= 0) {
+			//Error
 		}else{
-			//Aca hago la piola
+			message = recibirDatos(socketUMC, &operation, &id);
+			if (strlen(message) < 0) {
+				//Error
+			} else if (strlen(message) == 0) {
+				//Error
+			} else {
+				if (strcmp("ERROR", message) == 0) {
+					//Error
+				} else {
+					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes(message);
+					char *datos = malloc(bytesRecibidos->tamanio);
+					memcpy(datos, &(bytesRecibidos->buffer), bytesRecibidos->tamanio);
+					list_add(listaInstrucciones, datos);
+					tamanioTotalInstruccion += bytesRecibidos->tamanio;
+				}
+			}
+
+			free(message);
 		}
+		free(requestSerializado);
 	}
 
-	return (char*) message;
+	char *instruccionCompleta = malloc(tamanioTotalInstruccion);
+	int j;
+	for(j = 0; j < list_size(listaInstrucciones); j++) {
+		instruccionCompleta = strcpy(instruccionCompleta, list_get(listaInstrucciones, j));
+	}
+
+	return instruccionCompleta;
 }
+
+t_list * crearRequestsParaUMC() {
+	t_list * requestsParaUMC = list_create();
+
+	t_indice_codigo *indice = list_get(pcb->ind_codigo, pcb->PC);
+	uint32_t requestStart = indice->start;
+	uint32_t requestOffset = indice->offset;
+
+	uint32_t contador = 0;
+	while (requestStart > (tamanioPagina + (tamanioPagina * contador))) {
+		contador++;
+	}
+	uint32_t paginaAPedir = contador + pcb->posicionPrimerPaginaCodigo;
+
+	//Armo el primer request
+	t_solicitarBytes *request = malloc(sizeof(t_solicitarBytes));
+	request->pagina = paginaAPedir;
+	request->start = requestStart;
+	if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
+		request->offset = requestOffset;
+		requestStart = -1;
+		requestOffset = -1;
+	} else {
+		request->offset = tamanioPagina * contador;
+		requestStart = (tamanioPagina * contador) + 1;
+		requestOffset = requestOffset - tamanioPagina;
+		contador++;
+	}
+	list_add(requestsParaUMC, request);
+
+	//Veo si tengo que armar mas request porque me pase de Pagina
+	while ((requestStart + requestOffset) > tamanioPagina) {
+		paginaAPedir++;
+
+		t_solicitarBytes *requestWhile = malloc(sizeof(t_solicitarBytes));
+		requestWhile->pagina = paginaAPedir;
+		requestWhile->start = requestStart;
+
+		if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
+			requestWhile->offset = requestOffset;
+			requestStart = -1;
+			requestOffset = -1;
+		} else {
+			requestWhile->offset = tamanioPagina * contador;
+			requestStart = (tamanioPagina * contador) + 1;
+			requestOffset = requestOffset - tamanioPagina;
+			contador++;
+		}
+
+		list_add(requestsParaUMC, requestWhile);
+	}
+
+	return requestsParaUMC;
+}
+

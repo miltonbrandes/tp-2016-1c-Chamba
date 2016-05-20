@@ -34,6 +34,8 @@ void recibirInstruccion(char *mensaje);
 void comenzarEjecucionDePrograma();
 char* solicitarProximaInstruccionAUMC();
 
+t_list * crearRequestsParaUMC();
+
 int recibirMensaje(int socket);
 
 #endif /* SRC_PROCESOCPU_H_ */

@@ -490,7 +490,6 @@ int main() {
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
-		enviarMensajeASwap("Abrimos bien, soy la umc");
 		manejarConexionesRecibidas();
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");

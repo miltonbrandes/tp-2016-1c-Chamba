@@ -22,7 +22,8 @@
 #include <commons/collections/queue.h>
 #include "StructsUtiles.h"
 
-char* serializarSolicitarBytes(t_solicitarBytes* solicitarBytes, uint32_t *operacion);
+char* serializarSolicitarBytes(t_solicitarBytes* solicitarBytes);
+t_solicitarBytes* deserializarSolicitarBytes(char * message);
 char* serializarEnviarBytes(t_enviarBytes* enviarBytes, uint32_t *operacion);
 char* serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion);
 char* serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);

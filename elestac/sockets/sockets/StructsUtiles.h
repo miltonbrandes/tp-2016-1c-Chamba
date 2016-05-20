@@ -20,8 +20,8 @@
 
 typedef struct _package_solicitarBytes {
 	uint32_t pagina;
+	uint32_t start;
 	uint32_t offset;
-	uint32_t tamanio;
 } t_solicitarBytes;
 typedef struct{
 	uint32_t pagina;
