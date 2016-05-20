@@ -298,9 +298,9 @@ char* serializadoIndiceDeCodigo(t_list* indiceCodigo) {
 		printf("buffer: %s\n", buffer);
 		linea = list_get(indiceCodigo, m);
 
-		printf("Indice: %d -- Offset: %d - Tamanio: %d\n", m, linea->offset, linea->tamanio);
+		printf("Indice: %d -- Offset: %d - Tamanio: %d\n", m, linea->offset, linea->start);
 
-		memcpy(&linea->tamanio, buffer + offset, tmp_size);
+		memcpy(&linea->start, buffer + offset, tmp_size);
 		offset += tmp_size;
 		memcpy(&linea->offset, buffer + offset, tmp_size);
 		offset += tmp_size;
@@ -316,7 +316,7 @@ t_list* deserializarIndiceCodigo(char* indice, uint32_t tam) {
 	int i = 0;
 	for (i = 0; i < tam; i++) {
 		t_indice_codigo* linea;
-		memcpy(&linea->tamanio, indice + offset, tmp_size);
+		memcpy(&linea->start, indice + offset, tmp_size);
 		offset += tmp_size;
 		memcpy(&linea->offset, indice + offset, tmp_size);
 		offset += tmp_size;
@@ -402,12 +402,58 @@ char* serializarIndiceStack(t_list* indiceStack) {
 	return buffer;
 }
 
-t_list* deserializarIndiceStack(char* indice, uint32_t tam) {
+t_list* deserializarIndiceStack(char* buffer, uint32_t tamanioTotal) {
 	t_list* ret;
 	ret = list_create();
 	return ret;
-	//TODO:deserializarIndiceStack
-	//TODO:deserializaroperacionio
+	int a;
+	int tmp_size = sizeof(uint32_t);
+	int offset = 0;
+	//agrego adelante el size del stack
+
+	for (a = 0; a < tamanioTotal; a++) {
+		t_stack* linea;
+		memcpy(&(linea->posicion),buffer + offset, tmp_size);
+		offset += tmp_size;
+		//esta es el size de la lista de argumentos para poder despues deserializarlo
+		uint32_t cantArgumentos;
+		memcpy(&cantArgumentos, buffer + offset,tmp_size);
+		offset += tmp_size;
+		int j = 0;
+		for (j = 0; j < cantArgumentos; j++) {
+			t_argumento* lineaArgumento;
+			memcpy(&(lineaArgumento->pagina),buffer + offset,  tmp_size);
+			offset += tmp_size;
+			memcpy(&(lineaArgumento->offset),buffer + offset,  tmp_size);
+			offset += tmp_size;
+			memcpy(&(lineaArgumento->size),buffer + offset,  tmp_size);
+			offset += tmp_size;
+		}
+		//esta es el size de la lista de variables para poder despues deserializarlo
+		uint32_t cantVariables;
+		memcpy(&cantVariables,buffer + offset, tmp_size);
+		offset += tmp_size;
+		int h = 0;
+		for (h = 0; h < cantVariables; h++) {
+			t_variable* lineaVariable;
+			memcpy(&(lineaVariable->idVariable),buffer + offset,  tmp_size);
+			offset += tmp_size;
+			memcpy(&(lineaVariable->pagina),buffer + offset,  tmp_size);
+			offset += tmp_size;
+			memcpy(&(lineaVariable->offset),buffer + offset,  tmp_size);
+			offset += tmp_size;
+			memcpy(&(lineaVariable->size),buffer + offset,  tmp_size);
+			offset += tmp_size;
+		}
+		memcpy(&(linea->direcretorno),buffer + offset,  tmp_size);
+		offset += tmp_size;
+		memcpy(&(linea->retVar.pagina),buffer + offset,  tmp_size);
+		offset += tmp_size;
+		memcpy(&(linea->retVar.offset),buffer + offset,  tmp_size);
+		offset += tmp_size;
+		memcpy(&(linea->retVar.size),buffer + offset,  tmp_size);
+		offset += tmp_size;
+	}
 }
 
 t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo,
@@ -415,7 +461,7 @@ t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo,
 	int b = 0;
 	for (b = 0; b < cantInstruc; ++b) {
 		t_indice_codigo* linea = malloc(sizeof(t_indice_codigo));
-		linea->tamanio = indiceCodigo[b].start;
+		linea->start = indiceCodigo[b].start;
 		linea->offset = indiceCodigo[b].offset;
 		list_add(lista, linea);
 	}

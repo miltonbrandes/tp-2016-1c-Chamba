@@ -36,7 +36,7 @@ t_op_varCompartida* deserializar_opVarCompartida(char* package);
 char* serializadoIndiceDeCodigo(t_list* indiceCodigo);
 t_list* deserializarIndiceCodigo(char* indice, uint32_t tam);
 char* serializarIndiceStack(t_list* indiceStack);
-t_list* deserializarIndiceStack(char* indice, uint32_t tam);
+t_list* deserializarIndiceStack(char* indice, uint32_t tamanioTotal);
 t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo, t_size cantInstruc);
 t_list* llenarStack(t_list * lista, t_stack* lineaAgregar);
 void* serializarUint32(uint32_t number);
