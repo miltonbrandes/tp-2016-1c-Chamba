@@ -25,18 +25,23 @@ t_pcb *pcb;
 int socketNucleo, socketUMC;
 uint32_t quantum, quantumSleep, tamanioPagina;
 
-AnSISOP_funciones functions = { .AnSISOP_asignar = asignar,
+AnSISOP_funciones functions = {
+		.AnSISOP_asignar = asignar,
 		.AnSISOP_asignarValorCompartida = asignarValorCompartida,
-		.AnSISOP_definirVariable = definirVariable, .AnSISOP_dereferenciar =
-				dereferenciar, .AnSISOP_entradaSalida = entradaSalida,
-		.AnSISOP_imprimir = imprimir, .AnSISOP_imprimirTexto = imprimirTexto,
-		.AnSISOP_irAlLabel = irAlLabel, .AnSISOP_obtenerPosicionVariable =
-				obtenerPosicionVariable, .AnSISOP_obtenerValorCompartida =
-				obtenerValorCompartida, .AnSISOP_retornar = retornar,
+		.AnSISOP_definirVariable = definirVariable,
+		.AnSISOP_dereferenciar = dereferenciar,
+		.AnSISOP_entradaSalida = entradaSalida,
+		.AnSISOP_imprimir = imprimir,
+		.AnSISOP_imprimirTexto = imprimirTexto,
+		.AnSISOP_irAlLabel = irAlLabel,
+		.AnSISOP_obtenerPosicionVariable = obtenerPosicionVariable,
+		.AnSISOP_obtenerValorCompartida =obtenerValorCompartida,
+		.AnSISOP_retornar = retornar,
 		.AnSISOP_llamarConRetorno = llamarConRetorno };
 
-AnSISOP_kernel kernel_functions = { .AnSISOP_signal = signal, .AnSISOP_wait =
-		wait };
+AnSISOP_kernel kernel_functions = {
+		.AnSISOP_signal = signal,
+		.AnSISOP_wait = wait };
 
 int crearLog() {
 	ptrLog = log_create(getenv("CPU_LOG"), "ProcesoCpu", 1, 0);
@@ -52,7 +57,6 @@ int main() {
 
 	t_config* config;
 	config = config_create(getenv("CPU_CONFIG"));
-	//leo del archivo de configuracion el puerto y el ip
 
 	char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
 	log_info(ptrLog, direccionNucleo);
@@ -60,11 +64,19 @@ int main() {
 	log_info(ptrLog, "%d", puertoNucleo);
 	socketNucleo = crearSocketCliente(direccionNucleo, puertoNucleo);
 
-	char *direccionUmc = config_get_string_value(config, "IP_UMC");
-	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
-	socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
+	if(socketNucleo > 0) {
+		char *direccionUmc = config_get_string_value(config, "IP_UMC");
+		int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
+		socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
 
-	return controlarConexiones();
+		if(socketUMC > 0) {
+			return controlarConexiones();
+		}else{
+			return -1;
+		}
+	}else{
+		return -1;
+	}
 }
 
 int controlarConexiones() {
@@ -84,7 +96,6 @@ int crearSocketCliente(char* direccion, int puerto) {
 	int socketConexion;
 	socketConexion = AbrirConexion(direccion, puerto);
 	if (socketConexion < 0) {
-		//aca me deberia mostrar por log que hubo un error
 		log_info(ptrLog, "Error en la conexion con el servidor");
 		return -1;
 	}
@@ -130,7 +141,7 @@ int recibirMensaje(int socket) {
 
 	} else {
 		if (strcmp("ERROR", respuestaServidor) == 0) {
-
+			return -1;
 		} else {
 			manejarMensajeRecibido(id, operacion, respuestaServidor);
 		}
@@ -229,14 +240,25 @@ void recibirInstruccion(char *mensaje) {
 }
 //Fin manejo de mensajes recibidos
 
+void finalizarEjecucionPorQuantum() {
+	char *message = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, message, strlen(message),
+			QUANTUM, CPU);
+	if (bytesEnviados <= 0) {
+		printf("Error al enviar PCB al Nucleo");
+	}
+}
+
 void comenzarEjecucionDePrograma() {
 	int contador = 1;
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
+		pcb->PC = (pcb->PC) + 1;
 		sleep(quantumSleep);
 	}
+	finalizarEjecucionPorQuantum();
 }
 
 char* solicitarProximaInstruccionAUMC() {
@@ -252,9 +274,9 @@ char* solicitarProximaInstruccionAUMC() {
 		t_solicitarBytes *request = list_get(requestsUMC, i);
 		char *requestSerializado = serializarSolicitarBytes(request);
 		int bytesEnviados = enviarDatos(socketUMC, requestSerializado, sizeof(t_solicitarBytes), LEER, CPU);
-		if(bytesEnviados <= 0) {
+		if (bytesEnviados <= 0) {
 			//Error
-		}else{
+		} else {
 			message = recibirDatos(socketUMC, &operation, &id);
 			if (strlen(message) < 0) {
 				//Error
@@ -264,7 +286,7 @@ char* solicitarProximaInstruccionAUMC() {
 				if (strcmp("ERROR", message) == 0) {
 					//Error
 				} else {
-					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes(message);
+					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes( message);
 					char *datos = malloc(bytesRecibidos->tamanio);
 					memcpy(datos, &(bytesRecibidos->buffer), bytesRecibidos->tamanio);
 					list_add(listaInstrucciones, datos);
@@ -279,7 +301,7 @@ char* solicitarProximaInstruccionAUMC() {
 
 	char *instruccionCompleta = malloc(tamanioTotalInstruccion);
 	int j;
-	for(j = 0; j < list_size(listaInstrucciones); j++) {
+	for (j = 0; j < list_size(listaInstrucciones); j++) {
 		instruccionCompleta = strcpy(instruccionCompleta, list_get(listaInstrucciones, j));
 	}
 

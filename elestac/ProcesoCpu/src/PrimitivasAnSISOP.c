@@ -9,7 +9,6 @@
 #include <sockets/OpsUtiles.h>
 
 #define TAMANIO_VARIABLE 5
-extern t_pcb* pcb;
 extern int socketNucleo;
 extern t_log* ptrLog;
 
@@ -37,8 +36,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	char* buffer;
 	uint32_t id;
 	t_valor_variable valor = 0;
-	log_debug(ptrLog, "Obteniendo el valor de la variable compartida '%s'",
-			variable);
+	log_debug(ptrLog, "Obteniendo el valor de la variable compartida '%s'", variable);
 	if (enviarDatos(socketNucleo, &variable, (uint32_t)(strlen(variable) + 1),	(uint32_t)LEER_VAR_COMPARTIDA, (uint32_t)CPU) < 0)
 	return -1;
 	buffer = recibirDatos(socketNucleo, NULL, &id);
@@ -53,6 +51,8 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 		free(buffer);
 		return valor;
 	}
+
+	return NULL;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,

@@ -508,8 +508,7 @@ void escucharPuertos() {
 											log_debug(ptrLog,
 													"Cliente %d envía unPCB",
 													unCliente->id);
-											unPCB = deserializar_pcb(
-													(char *) &buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
+											unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
 											pthread_mutex_lock(&mutex);
 											queue_push(colaReady, (void*) unPCB);
 											pthread_mutex_unlock(&mutex);

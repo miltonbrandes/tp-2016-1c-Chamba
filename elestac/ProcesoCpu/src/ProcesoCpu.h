@@ -33,6 +33,7 @@ void recibirInstruccion(char *mensaje);
 
 void comenzarEjecucionDePrograma();
 char* solicitarProximaInstruccionAUMC();
+void finalizarEjecucionPorQuantum();
 
 t_list * crearRequestsParaUMC();
 

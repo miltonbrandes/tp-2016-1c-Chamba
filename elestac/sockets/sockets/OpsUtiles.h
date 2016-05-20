@@ -40,7 +40,7 @@ char* serializarIndiceStack(t_list* indiceStack);
 t_list* deserializarIndiceStack(char* indice, uint32_t tamanioTotal);
 t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo, t_size cantInstruc);
 t_list* llenarStack(t_list * lista, t_stack* lineaAgregar);
-void* serializarUint32(uint32_t number);
+char* serializarUint32(uint32_t number);
 uint32_t deserializarUint32(char *package);
 
 #endif /* SOCKETS_UTILES_OPSUTILES_H_ */

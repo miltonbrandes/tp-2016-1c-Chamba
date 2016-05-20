@@ -5,6 +5,9 @@
  *      Author: utnso
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <commons/collections/list.h>
 #include <parser/metadata_program.h>
 #include "OpsUtiles.h"
@@ -12,7 +15,7 @@
 
 uint32_t tamanioTotal;
 
-void* serializarUint32(uint32_t number) {
+char* serializarUint32(uint32_t number) {
 	int offset = 0, tmp_size = 0;
 	size_t messageSize = sizeof(uint32_t);
 
@@ -52,11 +55,11 @@ t_solicitarBytes* deserializarSolicitarBytes(char * message) {
 	t_solicitarBytes *respuesta = malloc(sizeof(t_solicitarBytes));
 	int offset = 0, tmp_size = sizeof(uint32_t);
 
-	memcpy((&respuesta->pagina), message + offset, tmp_size);
+	memcpy(&(respuesta->pagina), message + offset, tmp_size);
 	offset += tmp_size;
-	memcpy((&respuesta->offset), message + offset, tmp_size);
+	memcpy(&(respuesta->offset), message + offset, tmp_size);
 	offset += tmp_size;
-	memcpy((&respuesta->start), message + offset, tmp_size);
+	memcpy(&(respuesta->start), message + offset, tmp_size);
 
 	return respuesta;
 }
@@ -79,7 +82,7 @@ char* serializarEnviarBytes(t_enviarBytes* enviarBytes, uint32_t *operacion) {
 	memcpy(paqueteSerializado + offset, &(enviarBytes->tamanio), tmp_size);
 	offset += tmp_size;
 	tmp_size = enviarBytes->tamanio;
-	memcpy(paqueteSerializado + offset, (enviarBytes->buffer), tmp_size);
+	memcpy(paqueteSerializado + offset, &(enviarBytes->buffer), tmp_size);
 	offset++;
 
 	return paqueteSerializado;
@@ -108,28 +111,23 @@ t_enviarBytes* deserializarEnviarBytes(char* message) {
 	return respuesta;
 }
 
-char* serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo,
-		uint32_t *operacion) {
+char* serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion) {
 	int offset = 0, tmp_size = 0;
-	size_t packageSize = sizeof(cambioProcActivo->programID)
-			+ sizeof(cambioProcActivo->programID);
+	size_t packageSize = sizeof(cambioProcActivo->programID) + sizeof(cambioProcActivo->programID);
 	char * paqueteSerializado = malloc(packageSize + sizeof(uint32_t));
 
 	tmp_size = sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, operacion, tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(cambioProcActivo->programID);
-	memcpy(paqueteSerializado + offset, &(cambioProcActivo->programID),
-			tmp_size);
+	memcpy(paqueteSerializado + offset, &(cambioProcActivo->programID), tmp_size);
 
 	return paqueteSerializado;
 }
 
-char* serializarCrearSegmento(t_iniciar_programa* crearSegmento,
-		uint32_t *operacion) {
+char* serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion) {
 	int offset = 0, tmp_size = 0;
-	size_t packageSize = sizeof(crearSegmento->programID)
-			+ sizeof(crearSegmento->tamanio);
+	size_t packageSize = sizeof(crearSegmento->programID) + sizeof(crearSegmento->tamanio);
 	char * paqueteSerializado = malloc(packageSize + sizeof(uint32_t));
 
 	tmp_size = sizeof(uint32_t);
@@ -144,8 +142,7 @@ char* serializarCrearSegmento(t_iniciar_programa* crearSegmento,
 	return paqueteSerializado;
 }
 
-char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento,
-		uint32_t *operacion) {
+char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion) {
 	int offset = 0, tmp_size = 0;
 	size_t packageSize = sizeof(destruirSegmento->programID);
 	char * paqueteSerializado = malloc(packageSize + sizeof(uint32_t));
@@ -154,8 +151,7 @@ char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento,
 	memcpy(paqueteSerializado + offset, operacion, tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(destruirSegmento->programID);
-	memcpy(paqueteSerializado + offset, &(destruirSegmento->programID),
-			tmp_size);
+	memcpy(paqueteSerializado + offset, &(destruirSegmento->programID), tmp_size);
 
 	return paqueteSerializado;
 
@@ -202,7 +198,7 @@ char* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &tmp_size, sizeof(uint32_t));
 	offset += sizeof(uint32_t);
 	tmp_size = 2 * sizeof(uint32_t);
-	memcpy(paqueteSerializado + offset, &(indcod),
+	memcpy(paqueteSerializado + offset, indcod,
 			tmp_size * list_size(pcb->ind_codigo));
 	offset += tmp_size * list_size(pcb->ind_codigo);
 	tmp_size = sizeof(pcb->ind_etiq);
@@ -212,7 +208,7 @@ char* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &(pcb->ind_etiq), tmp_size);
 	offset += tmp_size;
 	tmp_size = tamanioTotal;
-	memcpy(paqueteSerializado + offset, &(stackSerializado), tamanioTotal);
+	memcpy(paqueteSerializado + offset, stackSerializado, tamanioTotal);
 	offset += tmp_size;
 	return paqueteSerializado;
 }
@@ -227,13 +223,13 @@ t_pcb* deserializar_pcb(char* package) {
   	memcpy(&tamanioPCB, package + offset, tmp_size);
  	t_pcb *pcb = malloc(tamanioPCB);
   	offset += tmp_size;
- 	memcpy(&pcb->pcb_id, package + offset, tmp_size);
+ 	memcpy(&(pcb->pcb_id), package + offset, tmp_size);
  	offset += tmp_size;
- 	memcpy(&pcb->PC, package + offset, tmp_size);
+ 	memcpy(&(pcb->PC), package + offset, tmp_size);
  	offset += tmp_size;
- 	memcpy(&pcb->posicionPrimerPaginaCodigo, package + offset, tmp_size);
+ 	memcpy(&(pcb->posicionPrimerPaginaCodigo), package + offset, tmp_size);
  	offset += tmp_size;
- 	memcpy(&pcb->codigo, package + offset, tmp_size);
+ 	memcpy(&(pcb->codigo), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&tamIndCod, package + offset, tmp_size);
  	offset += tmp_size;
@@ -243,7 +239,7 @@ t_pcb* deserializar_pcb(char* package) {
  	pcb->ind_codigo = deserializarIndiceCodigo(indCod, tamIndCod);
  	memcpy(&tamIndEt, package + offset, tmp_size);
  	offset += tmp_size;
- 	memcpy(&pcb->ind_etiq, package + offset, tamIndEt);
+ 	memcpy(&(pcb->ind_etiq), package + offset, tamIndEt);
  	offset += tamIndEt;
  	memcpy(&tamIndSt, package + offset, tmp_size);
  	offset += tmp_size;
@@ -258,15 +254,13 @@ t_pcb* deserializar_pcb(char* package) {
 char* serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial) {
 	char* buffer = malloc(sizeof(t_EstructuraInicial)); //1B de op y 4B de long
 	memcpy(buffer, &(estructuraInicial->Quantum), sizeof(uint32_t));
-	memcpy(buffer + sizeof(uint32_t), &(estructuraInicial->RetardoQuantum),
-			sizeof(uint32_t));
+	memcpy(buffer + sizeof(uint32_t), &(estructuraInicial->RetardoQuantum), sizeof(uint32_t));
 
 	return buffer;
 }
 
 t_EstructuraInicial* deserializar_EstructuraInicial(char* package) {
-	t_EstructuraInicial * estructuraInicial = malloc(
-			sizeof(t_EstructuraInicial));
+	t_EstructuraInicial * estructuraInicial = malloc(sizeof(t_EstructuraInicial));
 	int offset = 0;
 	int tmp_size = sizeof(uint32_t);
 
@@ -285,7 +279,7 @@ char* serializar_opVarCompartida(t_op_varCompartida* varCompartida) {
 	memcpy(paqueteSerializado + offset, &(varCompartida->longNombre), tmp_size);
 	offset += tmp_size;
 	tmp_size = varCompartida->longNombre;
-	memcpy(paqueteSerializado + offset, varCompartida->nombre, tmp_size);
+	memcpy(paqueteSerializado + offset, &(varCompartida->nombre), tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(varCompartida->valor);
 	memcpy(paqueteSerializado + offset, &(varCompartida->valor), tmp_size);
@@ -339,7 +333,7 @@ t_list* deserializarIndiceCodigo(char* indice, uint32_t tam) {
 	int tmp_size = sizeof(uint32_t);
 	int i = 0;
 	for (i = 0; i < tam; i++) {
-		t_indice_codigo* linea;
+		t_indice_codigo* linea = malloc(sizeof(t_indice_codigo));
 		memcpy(&linea->start, indice + offset, tmp_size);
 		offset += tmp_size;
 		memcpy(&linea->offset, indice + offset, tmp_size);
