@@ -22,13 +22,6 @@
 
 #define SLEEP 1000000
 
-typedef struct {
-	int operacion;
-	int PID;
-	int pagina_proceso;
-	int tamanio_msj;
-} t_headerCPU;
-
 // ENTRADAS A LA TLB //
 typedef struct {
 	int pid;
@@ -77,6 +70,7 @@ typedef struct {
 int socketReceptorNucleo;
 int socketReceptorCPU;
 int socketSwap;
+int socketClienteNucleo;
 
 //Archivo de Log
 t_log* ptrLog;
@@ -94,6 +88,9 @@ int i = 0;
 t_list * framesOcupados;
 t_list * framesVacios;
 t_list * listaCpus;
+
+//Variables Hilos
+pthread_t hiloConexiones;
 
 
 //Metodos para Iniciar valores de la UMC
@@ -247,26 +244,26 @@ int datosEnSocketSwap() {
 	return 0;
 }
 
-int obtenerSocketMaximoInicial() {
-	int socketMaximoInicial = 0;
+//int obtenerSocketMaximoInicial() {
+//	int socketMaximoInicial = 0;
+//
+//	if (socketReceptorCPU > socketReceptorNucleo) {
+//		if (socketReceptorCPU > socketSwap) {
+//			socketMaximoInicial = socketReceptorCPU;
+//		} else if (socketSwap > socketReceptorNucleo) {
+//			socketMaximoInicial = socketSwap;
+//		}
+//	} else if (socketReceptorNucleo > socketSwap) {
+//		socketMaximoInicial = socketReceptorNucleo;
+//	} else {
+//		socketMaximoInicial = socketSwap;
+//	}
+//
+//	return socketMaximoInicial;
+//}
 
-	if (socketReceptorCPU > socketReceptorNucleo) {
-		if (socketReceptorCPU > socketSwap) {
-			socketMaximoInicial = socketReceptorCPU;
-		} else if (socketSwap > socketReceptorNucleo) {
-			socketMaximoInicial = socketSwap;
-		}
-	} else if (socketReceptorNucleo > socketSwap) {
-		socketMaximoInicial = socketReceptorNucleo;
-	} else {
-		socketMaximoInicial = socketSwap;
-	}
 
-	return socketMaximoInicial;
-}
-
-
-void AceptarConexionCpu(t_list *listaCpus){
+void AceptarConexionCpu(){
 	int socketCpu = AceptarConexionCliente(socketReceptorCPU);
 	if (socketCpu < 0) {
 		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
@@ -278,55 +275,88 @@ void AceptarConexionCpu(t_list *listaCpus){
 		cpu->numCpu = num + 1;
 		cpu->enUso = false;
 		list_add(listaCpus, cpu);
-	}
+		}
+}
+
+int recibirPeticionesCpu(char* datosRecibidos){
+
+}
+
+int recibirPeticionesNucleo(){
+	int operacion;
+	int id;
+	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
+	int operacion = deserializarUint32(mensajeRecibido);
+	int id = deserializarUint32(mensajeRecibido);
+	int tamaño = deserializarUint32(mensajeRecibido);
+	int paginasRequeridas= deserializarUint32(mensajeRecibido);
+
+	if(operacion == 1){//INICIAR
+		int check = checkDisponibilidadPaginas(paginasRequeridas); //pregunto a swap si tiene paginas
+			if(check){
+				int PID = fork();
+				enviarMensajeASwap(); //pido las paginas
+			}else{
+				//rechazarIniciarPrograma -> Aviso a nucleo
+			}
+	}if(operacion == 4){
+		//finalizar programa
+	}else{
+		//error -> Avisar a nucleo
+}
 }
 
 void manejarConexionesRecibidas() {
-	int socketNucleo = AceptarConexionCliente(socketReceptorNucleo);
-	if (socketNucleo < 0) {
+
+	socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
+	if (socketClienteNucleo < 0) {
 		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Nucleo");
 	} else {
 		log_info(ptrLog, "Se conecto Nucleo");
 	}
+
 	listaCpus = list_create();
+
 	while (1) {
 		log_info(ptrLog, "Esperando conexiones CPU");
 		pthread_t hiloCpu;
-		pthread_create(&hiloCpu, NULL, (void*) AceptarConexionCpu, &listaCpus);
+		pthread_create(&hiloCpu, NULL, (void*) AceptarConexionCpu, NULL);
 		t_cpu* cpu = list_take_and_remove(listaCpus, list_size(listaCpus));
 		cpu->hiloCpu = hiloCpu;
-		list_add(listaCpus, cpu);
-				//TODO hasta aca modifique recibir conexiones
-				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				//recibirDatos(&tempSockets, &sockets, socketMaximo);
-		/*		char* buffer;
-				uint32_t id;
-				uint32_t operacion;
-				int bytesRecibidos;
-				int socketFor;
-						buffer = recibirDatos(socketSwap, &operacion, &id);
-						bytesRecibidos = strlen(buffer);
-						if (bytesRecibidos > 0) {
-							if(strcmp("ERROR", buffer) == 0) {
 
-							}else{
-								buffer[bytesRecibidos] = 0;
-								log_info(ptrLog, buffer);
-								//ACA ME DEBERIA FIJAR QUIEN ES EL QUE ME LO MANDO MEDIANTE EL ID DEL PROCESO QUE ESTA GUARDADO EN EL BUFFER
-								//Recibimos algo
-							}
-						} else if (bytesRecibidos == 0) {
-							//Aca estamos matando el Socket que esta fallando
-							//Ver que hay que hacer porque puede venir de CPU o de Nucleo
-							finalizarConexion(socketFor);
-							log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-						} else {
-							finalizarConexion(socketFor);
-							log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
-						}
-						*/
-		}
+		list_add(listaCpus, cpu);
 	}
+}
+
+//TODO hasta aca modifique recibir conexiones
+//Ver que hacer aca, se esta recibiendo algo de un socket en particular
+//recibirDatos(&tempSockets, &sockets, socketMaximo);
+/*		char* buffer;
+ uint32_t id;
+ uint32_t operacion;
+ int bytesRecibidos;
+ int socketFor;
+ buffer = recibirDatos(socketSwap, &operacion, &id);
+ bytesRecibidos = strlen(buffer);
+ if (bytesRecibidos > 0) {
+ if(strcmp("ERROR", buffer) == 0) {
+
+ }else{
+ buffer[bytesRecibidos] = 0;
+ log_info(ptrLog, buffer);
+ //ACA ME DEBERIA FIJAR QUIEN ES EL QUE ME LO MANDO MEDIANTE EL ID DEL PROCESO QUE ESTA GUARDADO EN EL BUFFER
+ //Recibimos algo
+ }
+ } else if (bytesRecibidos == 0) {
+ //Aca estamos matando el Socket que esta fallando
+ //Ver que hay que hacer porque puede venir de CPU o de Nucleo
+ finalizarConexion(socketFor);
+ log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+ } else {
+ finalizarConexion(socketFor);
+ log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
+ }
+ */
 
 char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	// calloc me la llena de \0
@@ -334,9 +364,11 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	return memoria;
 }
 
-void enviarMensajeASwap(char *mensajeSwap) {
+void enviarMensajeASwap(char *mensajeSwap, int operacion) {
  	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
- 	int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
+ 	int tamanio = strlen(mensajeSwap);
+ 	//int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
+ 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, 5); //5 es CPU
  }
 
 int main() {
@@ -347,20 +379,28 @@ int main() {
 			return -1;
 		}
 		log_info(ptrLog, "Se conecto con Swap");
+
 		socketReceptorNucleo = AbrirSocketServidor(puertoTCPRecibirConexionesNucleo);
 		if (socketReceptorNucleo < 0) {
 			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de UMC");
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
+
 		socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
 		if (socketReceptorCPU < 0) {
 			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de CPU");
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
-		enviarMensajeASwap("Abrimos bien, soy la umc");
-		manejarConexionesRecibidas();
+
+		enviarMensajeASwap("Abrimos bien, soy la umc", 5); //operacion handshake
+
+
+		pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
+
+		recibirPeticionesNucleo();
+
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 		return -1;
@@ -369,5 +409,6 @@ int main() {
 	finalizarConexion(socketSwap);
 	finalizarConexion(socketReceptorNucleo);
 	finalizarConexion(socketReceptorCPU);
+	pthread_join(hiloConexiones, NULL);
 	return EXIT_SUCCESS;
 }

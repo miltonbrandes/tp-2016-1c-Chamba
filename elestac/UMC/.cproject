@@ -40,8 +40,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets/Debug}&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.1652678278" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="commons"/>
-									<listOptionValue builtIn="false" value="sockets"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="commons"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sockets"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1186210987" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
@@ -53,6 +53,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.529896268" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.972002188" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/commons}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sockets}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2040761290" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -64,7 +65,13 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
-				<externalSettings containerId="sockets;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="sockets;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
+					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sockets"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sockets/Debug"/>
+						<entry flags="RESOLVED" kind="libraryFile" name="sockets" srcPrefixMapping="" srcRootPath=""/>
+					</externalSetting>
+				</externalSettings>
 				<externalSettings containerId="commons;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/commons"/>
