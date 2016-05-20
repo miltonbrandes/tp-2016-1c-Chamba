@@ -279,28 +279,35 @@ void AceptarConexionCpu(){
 }
 
 int recibirPeticionesCpu(char* datosRecibidos){
+	return 0;
+}
 
+void finalizarPrograma(PID){
+}
+
+int checkDisponibilidadPaginas(paginasRequeridas){
+	return 0;
 }
 
 int recibirPeticionesNucleo(){
 	int operacion;
 	int id;
 	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
-	int operacion = deserializarUint32(mensajeRecibido);
-	int id = deserializarUint32(mensajeRecibido);
-	int tamaño = deserializarUint32(mensajeRecibido);
+	operacion = deserializarUint32(mensajeRecibido);
+	id = deserializarUint32(mensajeRecibido);
+	int tamanio = deserializarUint32(mensajeRecibido);
 	int paginasRequeridas= deserializarUint32(mensajeRecibido);
-
+	int PID;
 	if(operacion == 1){//INICIAR
 		int check = checkDisponibilidadPaginas(paginasRequeridas); //pregunto a swap si tiene paginas
 			if(check){
-				int PID = fork();
+				PID = fork();
 				enviarMensajeASwap(); //pido las paginas
 			}else{
 				//rechazarIniciarPrograma -> Aviso a nucleo
 			}
 	}if(operacion == 4){
-		//finalizar programa
+		finalizarPrograma(PID);
 	}else{
 		//error -> Avisar a nucleo
 }
@@ -323,40 +330,9 @@ void manejarConexionesRecibidas() {
 		pthread_create(&hiloCpu, NULL, (void*) AceptarConexionCpu, NULL);
 		t_cpu* cpu = list_take_and_remove(listaCpus, list_size(listaCpus));
 		cpu->hiloCpu = hiloCpu;
-
 		list_add(listaCpus, cpu);
 	}
 }
-
-//TODO hasta aca modifique recibir conexiones
-//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-//recibirDatos(&tempSockets, &sockets, socketMaximo);
-/*		char* buffer;
- uint32_t id;
- uint32_t operacion;
- int bytesRecibidos;
- int socketFor;
- buffer = recibirDatos(socketSwap, &operacion, &id);
- bytesRecibidos = strlen(buffer);
- if (bytesRecibidos > 0) {
- if(strcmp("ERROR", buffer) == 0) {
-
- }else{
- buffer[bytesRecibidos] = 0;
- log_info(ptrLog, buffer);
- //ACA ME DEBERIA FIJAR QUIEN ES EL QUE ME LO MANDO MEDIANTE EL ID DEL PROCESO QUE ESTA GUARDADO EN EL BUFFER
- //Recibimos algo
- }
- } else if (bytesRecibidos == 0) {
- //Aca estamos matando el Socket que esta fallando
- //Ver que hay que hacer porque puede venir de CPU o de Nucleo
- finalizarConexion(socketFor);
- log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
- } else {
- finalizarConexion(socketFor);
- log_info(ptrLog, "Ocurrio un error al recibir los bytes de un socket");
- }
- */
 
 char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	// calloc me la llena de \0
@@ -367,9 +343,14 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 void enviarMensajeASwap(char *mensajeSwap, int operacion) {
  	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
  	int tamanio = strlen(mensajeSwap);
- 	//int sendBytes = escribir(socketSwap, mensajeSwap, MAX_BUFFER_SIZE);
- 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, 5); //5 es CPU
+ 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, 5); //5 es UMC
  }
+
+void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio){
+}
+
+void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, char* buffer){
+}
 
 int main() {
 	if (init()) {
@@ -395,7 +376,6 @@ int main() {
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 
 		enviarMensajeASwap("Abrimos bien, soy la umc", 5); //operacion handshake
-
 
 		pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
 
