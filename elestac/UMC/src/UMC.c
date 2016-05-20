@@ -93,6 +93,7 @@ int i = 0;
 //Variables frames, tlb
 t_list * framesOcupados;
 t_list * framesVacios;
+t_list * listaCpus;
 
 
 //Metodos para Iniciar valores de la UMC
@@ -278,6 +279,7 @@ void AceptarConexionCpu(t_list *listaCpus){
 		cpu->enUso = false;
 		list_add(listaCpus, cpu);
 	}
+}
 
 void manejarConexionesRecibidas() {
 	int socketNucleo = AceptarConexionCliente(socketReceptorNucleo);
@@ -332,6 +334,10 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	return memoria;
 }
 
+void enviarMensajeASwap(char *mensajeSwap) {
+	int sendBytes = enviarDatos(socketSwap, mensajeSwap, NULL, NULL, NULL);
+}
+
 int main() {
 	if (init()) {
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
@@ -359,5 +365,8 @@ int main() {
 		return -1;
 	}
 	log_info(ptrLog, "Proceso UMC finalizado");
+	finalizarConexion(socketSwap);
+	finalizarConexion(socketReceptorNucleo);
+	finalizarConexion(socketReceptorCPU);
 	return EXIT_SUCCESS;
 }
