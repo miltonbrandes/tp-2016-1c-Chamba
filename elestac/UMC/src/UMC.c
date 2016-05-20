@@ -467,44 +467,31 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	return memoria;
 }
 
-void AbrirConexionSwap() {
-	socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
-}
-
-void AbrirServidorNucleo() {
-	socketReceptorNucleo = AbrirSocketServidor(
-			puertoTCPRecibirConexionesNucleo);
-}
-
-void AbrirServidorCPU() {
-	socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
-}
-
 int main() {
 	if (init()) {
-		if (pthread_create(&threadSwap, NULL, (void*) AbrirConexionSwap, NULL)
-				!= 0) {
-			perror("could not create thread");
-		} else {
-			pthread_join(threadSwap, NULL);
-			log_info(ptrLog, "Se conecto con Swap");
+		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
+		if (socketSwap < 0) {
+			log_info(ptrLog, "No pudo conectarse con Swap");
+			return -1;
 		}
-		if (pthread_create(&threadNucleo, NULL, (void*) AbrirServidorNucleo,
-				NULL) != 0) {
-			perror("could not create thread");
-		} else {
-			pthread_join(threadNucleo, NULL);
-			log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
+		log_info(ptrLog, "Se conecto con Swap");
+		socketReceptorNucleo = AbrirSocketServidor(
+				puertoTCPRecibirConexionesNucleo);
+		if (socketReceptorNucleo < 0) {
+			log_info(ptrLog,
+					"No se pudo abrir el Socket Servidor Nucleo de UMC");
+			return -1;
 		}
-		if (pthread_create(&threadCPU, NULL, (void*) AbrirServidorCPU, NULL)
-				!= 0) {
-			perror("could not create thread");
-		} else {
-			pthread_join(threadCPU, NULL);
-			log_info(ptrLog, "Se abrio el socket Servidor CPU de UMC");
+		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
+		socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
+		if (socketReceptorCPU < 0) {
+			log_info(ptrLog,
+					"No se pudo abrir el Socket Servidor Nucleo de CPU");
+			return -1;
 		}
+		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
+		enviarMensajeASwap("Abrimos bien, soy la umc");
 		manejarConexionesRecibidas();
-
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 		return -1;
