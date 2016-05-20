@@ -217,6 +217,44 @@ char* serializar_pcb(t_pcb* pcb) {
 	return paqueteSerializado;
 }
 
+t_pcb* deserializar_pcb(char* package) {
+ 	int offset = 0;
+ 	int tmp_size = sizeof(uint32_t);
+ 	uint32_t tamIndCod = 0;
+ 	uint32_t tamIndEt = 0;
+ 	uint32_t tamIndSt = 0;
+ 	uint32_t tamanioPCB;
+  	memcpy(&tamanioPCB, package + offset, tmp_size);
+ 	t_pcb *pcb = malloc(tamanioPCB);
+  	offset += tmp_size;
+ 	memcpy(&pcb->pcb_id, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&pcb->PC, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&pcb->posicionPrimerPaginaCodigo, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&pcb->codigo, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&tamIndCod, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	char* indCod = malloc(tamIndCod);
+ 	memcpy(&indCod, package + offset, tamIndCod * sizeof(uint32_t));
+ 	offset += tmp_size * sizeof(uint32_t);
+ 	pcb->ind_codigo = deserializarIndiceCodigo(indCod, tamIndCod);
+ 	memcpy(&tamIndEt, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&pcb->ind_etiq, package + offset, tamIndEt);
+ 	offset += tamIndEt;
+ 	memcpy(&tamIndSt, package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	char* indStack = malloc(tamIndSt);
+ 	memcpy(&indStack, package + offset, tamIndSt * sizeof(uint32_t));
+ 	offset += tamIndSt * sizeof(uint32_t);
+ 	pcb->ind_stack = deserializarIndiceStack(indStack, tamIndSt);
+ 	return pcb;
+ }
+ 
+
 char* serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial) {
 	char* buffer = malloc(sizeof(t_EstructuraInicial)); //1B de op y 4B de long
 	memcpy(buffer, &(estructuraInicial->Quantum), sizeof(uint32_t));
