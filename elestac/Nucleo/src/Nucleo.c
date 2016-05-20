@@ -777,8 +777,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 	case LEER:
 		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
 		packageSize = sizeof(t_solicitarBytes) + sizeof(uint32_t);
-		paqueteSerializado = serializarSolicitarBytes(estructuraDeOperacion,
-				&operacion);
+		paqueteSerializado = serializarSolicitarBytes(estructuraDeOperacion);
 
 		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize,
 				NOTHING, NUCLEO)) < 0) {

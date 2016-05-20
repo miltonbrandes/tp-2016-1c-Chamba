@@ -52,11 +52,11 @@ t_solicitarBytes* deserializarSolicitarBytes(char * message) {
 	t_solicitarBytes *respuesta = malloc(sizeof(t_solicitarBytes));
 	int offset = 0, tmp_size = sizeof(uint32_t);
 
-	memccpy((&respuesta->pagina), message + offset, tmp_size);
+	memcpy((&respuesta->pagina), message + offset, tmp_size);
 	offset += tmp_size;
-	memccpy((&respuesta->offset), message + offset, tmp_size);
+	memcpy((&respuesta->offset), message + offset, tmp_size);
 	offset += tmp_size;
-	memccpy((&respuesta->start), message + offset, tmp_size);
+	memcpy((&respuesta->start), message + offset, tmp_size);
 
 	return respuesta;
 }
@@ -298,14 +298,14 @@ t_op_varCompartida* deserializar_opVarCompartida(char* package) {
 	int offset = 0;
 	int tmp_size = sizeof(uint32_t);
 
-	memcpy(&varCompartida->longNombre, *package + offset, tmp_size);
+	memcpy(&(varCompartida->longNombre), package + offset, tmp_size);
 	offset += tmp_size;
 	tmp_size = varCompartida->longNombre;
 	varCompartida->nombre = malloc(tmp_size);
-	memcpy(varCompartida->nombre, *package + offset, tmp_size);
+	memcpy(&(varCompartida->nombre), package + offset, tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(uint32_t);
-	memcpy(&varCompartida->valor, *package + offset, tmp_size);
+	memcpy(&(varCompartida->valor), package + offset, tmp_size);
 
 	return varCompartida;
 }
