@@ -371,9 +371,6 @@ void escucharPuertos() {
 				free(estructuraInicial);
 				free(envio);
 				FD_CLR(socketReceptorCPU, &tempSockets);
-				//aca deberia recibir alguna respuesta de cpu???? en principio no
-				//diciendo que se le paso OK la estructura inicial.
-				//datosEnSocketReceptorCPU(nuevoSocketConexion);
 
 			} else if (FD_ISSET(socketReceptorConsola, &tempSockets)) {
 
@@ -914,7 +911,8 @@ t_pcb* crearPCB(char* programa, int socket) {
 	basePagCod = malloc(sizeof(uint32_t));
 	//basePagCod = enviarOperacion(NUEVOPROGRAMA, &iniciarProg, socket);
 	memcpy(&rtaOp, basePagCod, sizeof(int));
-	rtaOp = 1;
+	//hardcodeo
+	basePagCod = 1;
 	if (rtaOp < 0) {
 		/*Suponemos que en el caso de que no pueda crear un segmento, va a devolver -1*/
 		log_error(ptrLog,
@@ -934,9 +932,10 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg.tamanio=tamanioStack;
 	basePagStack=malloc(sizeof(uint32_t));
 	//basePagStack=enviarOperacion(NUEVOPROGRAMA,&iniciarProg,socket);
-	pcb->stackPointer = basePagStack;
 	memcpy(&rtaOp,basePagStack,sizeof(int));
-	rtaOp = 1;
+	//hardcodeando
+	basePagStack = 1;
+	pcb->stackPointer = basePagStack;
 	if(rtaOp < 0){
 		log_error(ptrLog,"No se pudo crear el segmento de stack para el Programa %i",pcb->pcb_id);
 		programa[0]=-1;

@@ -188,7 +188,9 @@ char* serializar_pcb(t_pcb* pcb) {
 	uint32_t tamanioPCB = 0;
 	tamanioPCB += strlen(stackSerializado);
 	tamanioPCB += strlen(indcod);
-	tamanioPCB += strlen(pcb->ind_etiq);
+	if(pcb->ind_etiq){
+	tamanioPCB += sizeof(pcb->ind_etiq);
+	}
 	tamanioPCB += (sizeof(uint32_t) * 5); //Cantidad de uint32_t que tiene le PCB
 	tamanioPCB += sizeof(uint32_t); //Para indicar el tamanio del PCB
 	printf("\nTamanio PCB: %d\n", tamanioPCB);
@@ -218,14 +220,13 @@ char* serializar_pcb(t_pcb* pcb) {
 	tmp_size = 2 * sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, &(indcod),
 			tmp_size * list_size(pcb->ind_codigo));
-	offset += tmp_size;
+	offset += tmp_size*list_size(pcb->ind_codigo);
 	tmp_size = sizeof(pcb->ind_etiq);
 	//mando tamanio de etiquetas para poder despues desserializarlo
 	memcpy(paqueteSerializado + offset, &(tmp_size), sizeof(uint32_t));
 	offset += sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, &(pcb->ind_etiq), tmp_size);
 	offset += tmp_size;
-
 	tmp_size = tamanioTotal;
 	memcpy(paqueteSerializado + offset, &(stackSerializado), tamanioTotal);
 	offset += tmp_size;
@@ -292,13 +293,13 @@ char* serializadoIndiceDeCodigo(t_list* indiceCodigo) {
 	t_indice_codigo* linea;
 	int offset = 0, m = 0;
 	int tmp_size = sizeof(uint32_t);
-	char* buffer = malloc(list_size(indiceCodigo) * (2 * sizeof(uint32_t)));
+	char* buffer = malloc((list_size(indiceCodigo)) * (2 * sizeof(uint32_t)));
 
 	for (m = 0; m < list_size(indiceCodigo); m++) {
 		printf("buffer: %s\n", buffer);
 		linea = list_get(indiceCodigo, m);
 
-		printf("Indice: %d -- Offset: %d - Tamanio: %d\n", m, linea->offset, linea->start);
+		printf("Indice: %d -- Offset: %d - Inicio: %d\n", m, linea->offset, linea->start);
 
 		memcpy(&linea->start, buffer + offset, tmp_size);
 		offset += tmp_size;
