@@ -266,32 +266,39 @@ void finalizarPrograma(PID){
 }
 
 int checkDisponibilidadPaginas(paginasRequeridas){
-	return 0;
+	int hayEspacio = enviarMensajeASwap(paginasRequeridas, 1); // devuelve -1 si hay error, sino ?
+	return hayEspacio;
 }
 
 int recibirPeticionesNucleo(){
 	int operacion;
 	int id;
+
 	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
 	operacion = deserializarUint32(mensajeRecibido);
 	id = deserializarUint32(mensajeRecibido);
 	int tamanio = deserializarUint32(mensajeRecibido);
 	int paginasRequeridas= deserializarUint32(mensajeRecibido);
+
 	int PID;
-	if(operacion == 1){//INICIAR
+	if (operacion == 1) { //INICIAR
 		int check = checkDisponibilidadPaginas(paginasRequeridas); //pregunto a swap si tiene paginas
-			if(check){
-				PID = fork();
-				enviarMensajeASwap(); //pido las paginas
-			}else{
-				//rechazarIniciarPrograma -> Aviso a nucleo
-			}
-	}if(operacion == 4){
+		if (check != -1) {
+			PID = fork(); // a que estructura agrego PID?
+			//enviarMensajeASwap(paginasRequeridas, 1); //pido las paginas
+			enviarMensajeANucleo("Se inicializo el programa",operacion);
+		} else {
+			enviarMensajeANucleo("Error al inicializar programa, no hay espacio", operacion);
+		}
+	}
+	if (operacion == 4) {
 		finalizarPrograma(PID);
-	}else{
-		//error -> Avisar a nucleo
+	} else {
+		enviarMensajeANucleo("Error, operacion no reconocida",operacion);
+	}
 }
-}
+
+
 
 void manejarConexionesRecibidas() {
 
@@ -319,6 +326,12 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	char * memoria = calloc(cantidadMarcos, tamanioMarco);
 	return memoria;
 }
+
+void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
+ 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeNucleo);
+ 	int tamanio = strlen(mensajeNucleo);
+ 	int sendBytes = enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion, 5); //5 es UMC
+ }
 
 void enviarMensajeASwap(char *mensajeSwap, int operacion) {
  	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
