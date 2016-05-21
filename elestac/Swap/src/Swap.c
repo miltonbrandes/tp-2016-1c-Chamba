@@ -175,6 +175,7 @@ void manejarConexionesRecibidas(int socketUMC) {
 			if (strcmp("ERROR", buffer) == 0) {
 				return;
 			} else {
+				interpretarMensajeRecibido(buffer, socketUMC, id);
 			}
 		}
 
@@ -214,6 +215,128 @@ void cerrarSwap(void) //no cierra los sockets
 	exit(-1);
 }
 
+int interpretarMensajeRecibido(char* buffer, int socket, uint32_t ** pid){
+	int resultado;
+	espacioOcupado* aBorrar;
+	espacioOcupado*aEscribir;
+	espacioOcupado* aLeer;
+	int cantidadPaginasALeer;
+	int cantidadPaginasAEscribir;
+	switch(buffer){
+		case NUEVOPROGRAMA:
+			resultado=asignarMemoria(pid, cantidadPaginasALeer);
+			if (!resultado)
+			{
+				char* paqueteAEnviar= serializarUint32(*pid);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t),RECHAZAR_PROCESO_A_UMC,SWAP);
+				if(enviado==-1)
+				{
+					printf("No se pudo enviar mensaje a UMC ");
+					log_error(ptrLog, "No se pudo enviar mensaje a UMC");
+				}
+				return 0;
+			}
+		break;
+		case FINALIZARPROGRAMA:
+			aBorrar=ocupado;
+			while (aBorrar && aBorrar->pid != pid) aBorrar= aBorrar->sgte;
+			if(!aBorrar)
+			{
+				printf ("El proceso %d no se encuentra en el swap \n",pid);
+				log_error(ptrLog, "El proceso %d no se encuentra en el swap",pid);
+				char* paqueteAEnviar= serializarUint32(*pid);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_FINALIZAR_PROCESO_A_UMC);
+				if(enviado==-1)
+				{
+					printf("No se pudo enviar mensaje al ADM\n");
+					log_error(ptrLog, "No se pudo enviar mensaje al ADM");
+				}
+				return 0;
+			}
+			//printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
+			liberarMemoria(aBorrar);
+		break;
+		case LEER:
+			sleep(retardoCompactacion);
+			aLeer=ocupado;
+			while(aLeer && aLeer->pid !=pid) aLeer=aLeer->sgte;
+			if(!aLeer)
+			{
+				printf ("El proceso %d no se encuentra en el swap \n",pid);
+				char* paqueteAEnviar= serializarUint32(*pid);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_LEER_PROCESO_A_UMC);
+				if(enviado==-1)
+				{
+					printf("No se pudo enviar mensaje a UMC\n");
+					log_error(ptrLog, "No se pudo enviar mensaje a UMC");
+				}
+				return 0;
+			}
+			char* leido= leerProceso(aLeer,cantidadPaginasALeer);
+			enviarDatos(socket, leido,sizeof(leido),ENVIAR_PAGINA_A_UMC);
+			free(leido);
+		break;
+		case ESCRIBIR:
+			sleep(retardoCompactacion);
+			aEscribir=ocupado;
+			while(aEscribir && aEscribir->pid != pid) aEscribir=aEscribir->sgte;
+			if(!aEscribir)
+			{
+				printf ("El proceso %d no se encuentra en el swap \n",pid);
+				log_error(ptrLog, "El proceso %d no se encuentra en el swap \n",pid);
+				char* paqueteAEnviar= serializarUint32(*pid);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_ESCRIBIR_PROCESO_A_UMC);
+				if(enviado==-1)
+				{
+					printf("No se pudo enviar mensaje al ADM\n");
+					log_error(ptrLog, "No se pudo enviar mensaje al ADM");
+					cerrarSwap();
+				}
+				return 0;
+			}
+			escribirProceso(aEscribir, cantidadPaginasAEscribir, buffer);
+			buffer=NULL;
+			break;
+
+		break;
+		default:
+			printf("Mensaje de UMC no comprendido\n");
+			log_error(ptrLog, "Mensaje de UMC no comprendido");
+			cerrarSwap();
+			break;
+	}
+	//si llegó hasta acá es porque esta OK
+	int i=-1;
+	i=enviarDatos(socket, "Mensaje comprendido",sizeof(uint32_t),SUCCESS);
+	if(i==-1)
+	{
+		printf("No se pudo enviar mensaje de confirmacion a UMC\n");
+		log_error(ptrLog, "No se pudo enviar mensaje de confirmacion a UMC");
+		cerrarSwap();
+	}
+	return 1;
+}
+
+char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la pos inicial
+{//leemos una pagina del archivo de swap
+	char* buffer=NULL;
+	buffer= calloc(tamanoPagina, 1);//es como el malloc pero inicializa en \0
+	if(!buffer)
+	{
+		printf("Fallo la creacion del buffer en el swap funcion leer \n");
+		log_error(ptrLog, "Fallo la creacion del buffer en el swap funcion leer");
+		return buffer;
+	}
+	fseek(archivo_control,((aLeer->posicion_inicial -1) * tamanoPagina) + (pagALeer * tamanoPagina), SEEK_SET);//vamos la pagina a leer (sin el menos uno la pasamos)
+	fread(buffer, sizeof(char), tamanoPagina, archivo_control);//leemos
+	aLeer->leido= aLeer->leido +1;//aumentamos la cantidad de paginas leidas por el proceso
+	char bufferLogueo[tamanoPagina +1];//esto va a ser para meterle un \0 por las dudas
+	strcpy(bufferLogueo, buffer);
+	bufferLogueo[tamanoPagina]='\0';
+	log_info(ptrLog, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->posicion_inicial -1) * tamanoPagina +  pagALeer * tamanoPagina, bufferLogueo); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
+	return buffer;
+}
+
 void inicializarArchivo(void) { //lo llenamos con el caracter correspondiente
 	int tamanoArchivo = (cantidadPaginas) * (tamanoPagina);
 	char* s = string_repeat('\0', tamanoArchivo);
@@ -228,7 +351,7 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria
 	inicio = hayEspacio(cantidad_paginas);
 	if (!inicio) {
 		if (alcanzanPaginas(cantidad_paginas)) //si las paginas libres totales alcanzan, que desfragmente
-				{
+			{
 			log_info(ptrLog, "Se inicia la compactacion del archivo");
 			printf("se compacta el archivo... \n");
 			sleep(retardoCompactacion); //antes de compactar hacemos el sleep
@@ -237,9 +360,7 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria
 			printf("finalizada la compactacion del archivo.\n");
 			inicio = hayEspacio(cantidad_paginas);
 		} else {
-			log_info(ptrLog,
-					"Se rechaza el proceso de pid %u por no haber espacio suficiente",
-					pid);
+			log_info(ptrLog,"Se rechaza el proceso de pid %u por no haber espacio suficiente",pid);
 			//printf("No hay espacio suficiente para el proceso de pid: %u\n", pid);
 			return 0;
 		}
@@ -374,8 +495,7 @@ void moverInformacion(int inicioDe, int cantidad_paginass, int inicioA) // puse 
 	return; //en el "nuevo" libre ahora hay basura
 }
 
-int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,
-		int posicion_inicial) //LOS NODOS OCUPADOS SE APILAN SIN ORDEN
+int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,int posicion_inicial) //LOS NODOS OCUPADOS SE APILAN SIN ORDEN
 { //llega un proceso nuevo y le asignamos un nodo correspondiente
 	espacioOcupado* aux = ocupado;
 	while (aux && aux->sgte) //vamos al ultimo nodo si hay una lista
