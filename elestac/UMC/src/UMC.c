@@ -378,17 +378,17 @@ int main() {
 		enviarMensajeASwap("Abrimos bien, soy la umc", 5); //operacion handshake
 
 		pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
-
+		log_info(ptrLog, "Se creo el thread para manejar conexiones");
 		recibirPeticionesNucleo();
 
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 		return -1;
 	}
+	pthread_join(hiloConexiones, NULL);
 	log_info(ptrLog, "Proceso UMC finalizado");
 	finalizarConexion(socketSwap);
 	finalizarConexion(socketReceptorNucleo);
 	finalizarConexion(socketReceptorCPU);
-	pthread_join(hiloConexiones, NULL);
 	return EXIT_SUCCESS;
 }
