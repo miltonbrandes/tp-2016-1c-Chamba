@@ -64,7 +64,8 @@ t_log* ptrLog;
 int puertoTCPRecibirConexionesCPU;
 int puertoTCPRecibirConexionesNucleo;
 int puertoReceptorSwap;
-int marcos, marcosSize, marcoXProc, entradasTLB, retardo, tlbHabilitada;
+int marcos, marcosSize, marcoXProc, entradasTLB, retardo;
+char* algoritmoReemplazo;
 
 char *ipSwap;
 int i = 0;
@@ -76,6 +77,44 @@ t_list * listaCpus;
 
 //Variables Hilos
 pthread_t hiloConexiones;
+
+//PROBAR SI ESTO ESTA BIEN//////////////////////////////////////////////////
+t_iniciar_programa* deserializarIniciarPrograma(char* mensaje){
+	t_iniciar_programa *respuesta = malloc(sizeof(t_iniciar_programa));
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	memcpy(&(respuesta->programID), mensaje + offset, tmp_size);
+	offset += tmp_size;
+	memcpy(&(respuesta->tamanio), mensaje + offset, tmp_size);
+	return respuesta;
+}
+
+t_finalizar_programa* deserializarFinalizarPrograma(char * mensaje) {
+	t_finalizar_programa *respuesta = malloc(sizeof(t_finalizar_programa));
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	memcpy(&(respuesta->programID), mensaje + offset, tmp_size);
+	return respuesta;
+}
+
+/////HAY QUE MODIFICAR COMO SE ENVIAN LOS MENSAJES
+void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
+ 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeNucleo);
+ 	int tamanio = strlen(mensajeNucleo);
+ 	enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion,UMC);
+ }
+
+void enviarMensajeASwap(char *mensajeSwap, int operacion) {
+ 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
+ 	int tamanio = strlen(mensajeSwap);
+ 	enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, UMC);
+ }
+
+void enviarMensajeACpu(char *mensaje, int operacion) {
+ 	log_info(ptrLog, "Envio mensaje a Cpu: %s", mensaje);
+ 	int tamanio = strlen(mensaje);
+ 	enviarDatos(socketSwap,mensaje,tamanio, operacion, UMC);
+ }
+
+////////////////////////////////////////////////////////////////////////////
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
@@ -111,7 +150,7 @@ int iniciarUMC(t_config* config) {
 		return 0;
 	}
 
-	if (config_has_property(config, "ENTRADAS_TLB")) {
+	if (config_has_property(config, "ENTRADAS_TLB")) { // =0 -> deshabilitada
 		entradasTLB = config_get_int_value(config, "ENTRADAS_TLB");
 	} else {
 		log_info(ptrLog, "El archivo de configuracion no contiene la clave ENTRADAS_TLB");
@@ -125,8 +164,8 @@ int iniciarUMC(t_config* config) {
 		return 0;
 	}
 
-	if (config_has_property(config, "TLB_HABILITADA")) {
-		tlbHabilitada = config_get_int_value(config, "TLB_HABILITADA");
+	if (config_has_property(config, "ALGORITMO")) {
+		algoritmoReemplazo = config_get_string_value(config, "ALGORITMO");
 	} else {
 		log_info(ptrLog, "El archivo de configuracion no contiene la clave TLB_HABILITADA");
 		return 0;
@@ -244,7 +283,7 @@ void recibirPeticionesCpu(int socketCpu) {
 	}
 
 	if (operacion == ESCRIBIR) {
-		t_enviarBytes *escribir = serializarEnviarBytes(mensajeRecibido);
+		t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
 
 		uint32_t pagina = escribir->pagina;
 		uint32_t tamanio = escribir->tamanio;
@@ -253,7 +292,8 @@ void recibirPeticionesCpu(int socketCpu) {
 
 	} else {
 		operacion = ERROR;
-		enviarMensajeANucleo("Error, operacion no reconocida", operacion);
+		log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
+		enviarMensajeACpu("Error, operacion no reconocida", operacion);
 	}
 }
 
@@ -273,7 +313,7 @@ void aceptarConexionCpu(){
 		pthread_create(&hiloEscuchaCpu, NULL, (void*) recibirPeticionesCpu, &socketCpu);
 		cpu->hiloCpu = hiloEscuchaCpu; // MATAR ESTE HILO ptheradExit y free(cpu) borrar cpu lista.
 		list_add(listaCpus, cpu);
-		}
+	}
 }
 
 
@@ -289,8 +329,7 @@ int checkDisponibilidadPaginas(paginasRequeridas, PID){
 	uint32_t pudoSwap = operacion;
 	return pudoSwap;
 }
-t_iniciar_programa* deserializar(char* mensaje){
-}
+
 
 void recibirPeticionesNucleo(){
 	uint32_t operacion;
@@ -299,44 +338,47 @@ void recibirPeticionesNucleo(){
 	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
 
 	if (operacion == NUEVOPROGRAMA) { //INICIAR
-		t_iniciar_programa *enviarBytes = deserializar(mensajeRecibido);
+		t_iniciar_programa *enviarBytes = deserializarIniciarPrograma(mensajeRecibido);
 
 		uint32_t PID = enviarBytes->programID;
 		uint32_t paginasRequeridas = enviarBytes->tamanio;
+		log_info(ptrLog, "Se recibio orden de inicializacion del PID: %d",PID);
 
 		int pudoSwap = checkDisponibilidadPaginas(paginasRequeridas, PID); //pregunto a swap si tiene paginas
 		if (pudoSwap == SUCCESS) {
 			enviarMensajeANucleo("Se inicializo el programa",pudoSwap);
 		} else {
 			operacion = ERROR;
+			log_info(ptrLog, "No hay espacio, no inicializa el PID: %d",PID);
 			enviarMensajeANucleo("Error al inicializar programa, no hay espacio", operacion);
 		}
 	}
 	if (operacion == FINALIZARPROGRAMA) {
-		t_finalizar_programa *finalizar = deserializar(mensajeRecibido); //deserializar finalizar
-
+		t_finalizar_programa *finalizar = deserializarFinalizarPrograma(mensajeRecibido); //deserializar finalizar
 		uint32_t PID = finalizar->programID;
+		log_info(ptrLog, "Se recibio orden de finalizacion del PID: %d",PID);
 		finalizarPrograma(PID);
 
 	} else {
 		operacion = ERROR;
+		log_info(ptrLog, "Nucleo no entiendo que queres, atte: UMC");
 		enviarMensajeANucleo("Error, operacion no reconocida",operacion);
 	}
 }
 
 void manejarConexionesRecibidas() {
-		listaCpus = list_create();
-		socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
-		if (socketClienteNucleo < 0) {
-			log_info(ptrLog,
-					"Ocurrio un error al intentar aceptar una conexion de Nucleo");
-		} else {
-			log_info(ptrLog, "Se conecto Nucleo");
-		}
-		while (1) {
-			log_info(ptrLog, "Esperando conexiones CPU");
-			aceptarConexionCpu();
-		}
+	listaCpus = list_create();
+	socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
+	if (socketClienteNucleo < 0) {
+		log_info(ptrLog,
+				"Ocurrio un error al intentar aceptar una conexion de Nucleo");
+	} else {
+		log_info(ptrLog, "Se conecto Nucleo");
+	}
+	while (1) {
+		log_info(ptrLog, "Esperando conexiones CPU");
+		aceptarConexionCpu();
+	}
 }
 
 char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
@@ -345,17 +387,10 @@ char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	return memoria;
 }
 
-void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
- 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeNucleo);
- 	int tamanio = strlen(mensajeNucleo);
- 	int sendBytes = enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion, 5); //5 es UMC
- }
-
-void enviarMensajeASwap(char *mensajeSwap, int operacion) {
- 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
- 	int tamanio = strlen(mensajeSwap);
- 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, UMC); //5 es UMC
- }
+void liberarMemoria(char * memoriaALiberar) {
+	free(memoriaALiberar);
+	log_info(ptrLog, "Memoria Liberada");
+}
 
 void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio){
 }
