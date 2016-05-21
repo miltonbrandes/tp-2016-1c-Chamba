@@ -1,28 +1,36 @@
-src/UMC.d: ../src/UMC.c \
- /home/utnso/Escritorio/TP\ SO/commons/commons/log.h \
- /home/utnso/Escritorio/TP\ SO/commons/commons/string.h \
- /home/utnso/Escritorio/TP\ SO/commons/commons/collections/list.h \
- /home/utnso/Escritorio/TP\ SO/commons/commons/collections/node.h \
- /home/utnso/Escritorio/TP\ SO/commons/commons/config.h \
- /home/utnso/Escritorio/TP\ SO/commons/commons/collections/dictionary.h \
- /home/utnso/Escritorio/TP\ SO/sockets/sockets/ServidorFunciones.h \
- /home/utnso/Escritorio/TP\ SO/sockets/sockets/ClienteFunciones.h \
- /home/utnso/Escritorio/TP\ SO/sockets/sockets/EscrituraLectura.h
+src/UMC.d: ../src/UMC.c /home/utnso/workspace/commons/commons/log.h \
+ /home/utnso/workspace/commons/commons/string.h \
+ /home/utnso/workspace/commons/commons/collections/list.h \
+ /home/utnso/workspace/commons/commons/collections/node.h \
+ /home/utnso/workspace/commons/commons/config.h \
+ /home/utnso/workspace/commons/commons/collections/dictionary.h \
+ /home/utnso/workspace/sockets/sockets/ServidorFunciones.h \
+ /home/utnso/workspace/sockets/sockets/ClienteFunciones.h \
+ /home/utnso/workspace/sockets/sockets/EscrituraLectura.h \
+ /home/utnso/workspace/sockets/sockets/StructsUtiles.h \
+ /home/utnso/workspace/commons/commons/collections/queue.h \
+ /home/utnso/workspace/commons/commons/collections/list.h
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/log.h:
+/home/utnso/workspace/commons/commons/log.h:
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/string.h:
+/home/utnso/workspace/commons/commons/string.h:
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/collections/list.h:
+/home/utnso/workspace/commons/commons/collections/list.h:
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/collections/node.h:
+/home/utnso/workspace/commons/commons/collections/node.h:
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/config.h:
+/home/utnso/workspace/commons/commons/config.h:
 
-/home/utnso/Escritorio/TP\ SO/commons/commons/collections/dictionary.h:
+/home/utnso/workspace/commons/commons/collections/dictionary.h:
 
-/home/utnso/Escritorio/TP\ SO/sockets/sockets/ServidorFunciones.h:
+/home/utnso/workspace/sockets/sockets/ServidorFunciones.h:
 
-/home/utnso/Escritorio/TP\ SO/sockets/sockets/ClienteFunciones.h:
+/home/utnso/workspace/sockets/sockets/ClienteFunciones.h:
 
-/home/utnso/Escritorio/TP\ SO/sockets/sockets/EscrituraLectura.h:
+/home/utnso/workspace/sockets/sockets/EscrituraLectura.h:
+
+/home/utnso/workspace/sockets/sockets/StructsUtiles.h:
+
+/home/utnso/workspace/commons/commons/collections/queue.h:
+
+/home/utnso/workspace/commons/commons/collections/list.h:

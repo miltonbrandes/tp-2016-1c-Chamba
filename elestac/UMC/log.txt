@@ -1,1 +1,2 @@
 [INFO] 23:02:24:389 UMC/(8286:8286): No pudo conectarse con Swap
+[INFO] 15:52:12:517 UMC/(5681:5681): No pudo conectarse con Swap
