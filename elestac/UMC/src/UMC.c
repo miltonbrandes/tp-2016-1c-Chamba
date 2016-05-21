@@ -234,12 +234,13 @@ void AceptarConexionCpu(){
 		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 	} else {
 		log_info(ptrLog, "Nueva conexion de CPU");
-		t_cpu* cpu;
+		t_cpu* cpu = malloc(sizeof(t_cpu));
 		int num = list_size(listaCpus);
 		cpu->socket = socketCpu;
 		cpu->numCpu = num + 1;
 		cpu->enUso = false;
 		list_add(listaCpus, cpu);
+		free(cpu);
 		}
 }
 
@@ -257,6 +258,8 @@ int checkDisponibilidadPaginas(paginasRequeridas, PID){
 	char* hayEspacio = recibirDatos(socketSwap,operacion, id); //despues tomar los marcos
 	uint32_t pudoSwap = operacion;
 	return pudoSwap;
+}
+t_iniciar_programa* deserializar(char* mensaje){
 }
 
 void recibirPeticionesNucleo(){
@@ -290,24 +293,23 @@ void recibirPeticionesNucleo(){
 
 
 void manejarConexionesRecibidas() {
-
-	socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
-	if (socketClienteNucleo < 0) {
-		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Nucleo");
-	} else {
-		log_info(ptrLog, "Se conecto Nucleo");
-	}
-
-	listaCpus = list_create();
-
-	while (1) {
-		log_info(ptrLog, "Esperando conexiones CPU");
-		pthread_t hiloCpu;
-		pthread_create(&hiloCpu, NULL, (void*) AceptarConexionCpu, NULL);
-		t_cpu* cpu = list_take_and_remove(listaCpus, list_size(listaCpus));
-		cpu->hiloCpu = hiloCpu;
-		list_add(listaCpus, cpu);
-	}
+		listaCpus = list_create();
+		socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
+		if (socketClienteNucleo < 0) {
+			log_info(ptrLog,
+					"Ocurrio un error al intentar aceptar una conexion de Nucleo");
+		} else {
+			log_info(ptrLog, "Se conecto Nucleo");
+		}
+		while (1) {
+			log_info(ptrLog, "Esperando conexiones CPU");
+			pthread_t hiloCpu = malloc(sizeof(pthread_t));
+			pthread_create(&hiloCpu, NULL, (void*) AceptarConexionCpu, NULL);
+			pthread_join(hiloCpu, NULL);
+			t_cpu* cpu = list_take_and_remove(listaCpus, list_size(listaCpus));
+			cpu->hiloCpu = hiloCpu;
+			list_add(listaCpus, cpu);
+		}
 }
 
 char * reservarMemoria(int cantidadMarcos, int tamanioMarco) {
@@ -325,7 +327,7 @@ void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
 void enviarMensajeASwap(char *mensajeSwap, int operacion) {
  	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
  	int tamanio = strlen(mensajeSwap);
- 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, 5); //5 es UMC
+ 	int sendBytes = enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, UMC); //5 es UMC
  }
 
 void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio){
@@ -360,7 +362,7 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 
-		enviarMensajeASwap("Abrimos bien, soy la umc", 5); //operacion handshake
+		enviarMensajeASwap("Abrimos bien, soy la umc", NUEVOPROGRAMA); //operacion handshake
 
 		pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
 		log_info(ptrLog, "Se creo el thread para manejar conexiones");
