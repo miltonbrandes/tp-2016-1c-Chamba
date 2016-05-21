@@ -17,6 +17,7 @@
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
+#include <sockets/StructsUtiles.h>
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -30,31 +31,15 @@ typedef struct {
 	int marco;
 } t_tlb;
 
-// STRUCT TABLA PARA CADA PROCESO QUE LLEGA //
-typedef struct {
-	int pag; // Contiene el numero de pagina del proceso
-	char * direccion_fisica; //Contiene la direccion de memoria de la pagina que se esta referenciando
-	int marco; // numero de marco (si tiene) en donde esta guardada la pagina
-	int accessed;
-	int dirty;
-	int puntero;
-} process_pag;
-
-typedef struct package_iniciar_programa {
-	uint32_t programID;
-	uint32_t tamanio;
-} t_iniciar_programa;
-
-typedef struct _package_cambio_proc_activo {
-	uint32_t programID;
-} t_cambio_proc_activo;
-
-typedef struct _package_enviarBytes {
-	uint32_t base;
-	uint32_t offset;
-	uint32_t tamanio;
-	char* buffer;
-} t_enviarBytes;
+//// STRUCT TABLA PARA CADA PROCESO QUE LLEGA //
+//typedef struct {
+//	int pag; // Contiene el numero de pagina del proceso
+//	char * direccion_fisica; //Contiene la direccion de memoria de la pagina que se esta referenciando
+//	int marco; // numero de marco (si tiene) en donde esta guardada la pagina
+//	int accessed;
+//	int dirty;
+//	int puntero;
+//} process_pag;
 
 //PARA INCLUIR EN LA LIBRERIA
 typedef struct {
@@ -265,35 +250,39 @@ int recibirPeticionesCpu(char* datosRecibidos){
 void finalizarPrograma(PID){
 }
 
-int checkDisponibilidadPaginas(paginasRequeridas){
-	int hayEspacio = enviarMensajeASwap(paginasRequeridas, 1); // devuelve -1 si hay error, sino ?
-	return hayEspacio;
+int checkDisponibilidadPaginas(paginasRequeridas, PID){
+	enviarMensajeASwap(paginasRequeridas, 1); // enviar tmb el PID
+	uint32_t operacion;
+	uint32_t id;
+	char* hayEspacio = recibirDatos(socketSwap,operacion, id); //despues tomar los marcos
+	uint32_t pudoSwap = operacion;
+	return pudoSwap;
 }
 
-int recibirPeticionesNucleo(){
-	int operacion;
-	int id;
+void recibirPeticionesNucleo(){
+	uint32_t operacion;
+	uint32_t id;
 
 	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
-	operacion = deserializarUint32(mensajeRecibido);
-	id = deserializarUint32(mensajeRecibido);
-	int tamanio = deserializarUint32(mensajeRecibido);
-	int paginasRequeridas= deserializarUint32(mensajeRecibido);
 
-	int PID;
-	if (operacion == 1) { //INICIAR
-		int check = checkDisponibilidadPaginas(paginasRequeridas); //pregunto a swap si tiene paginas
-		if (check != -1) {
-			PID = fork(); // a que estructura agrego PID?
-			//enviarMensajeASwap(paginasRequeridas, 1); //pido las paginas
-			enviarMensajeANucleo("Se inicializo el programa",operacion);
+	if (operacion == NUEVOPROGRAMA) { //INICIAR
+		t_iniciar_programa *enviarBytes = deserializar(mensajeRecibido);
+
+		uint32_t PID = enviarBytes->programID;
+		uint32_t paginasRequeridas = enviarBytes->tamanio;
+
+		int pudoSwap = checkDisponibilidadPaginas(paginasRequeridas, PID); //pregunto a swap si tiene paginas
+		if (pudoSwap == SUCCESS) {
+			enviarMensajeANucleo("Se inicializo el programa",pudoSwap);
 		} else {
+			operacion = ERROR;
 			enviarMensajeANucleo("Error al inicializar programa, no hay espacio", operacion);
 		}
 	}
-	if (operacion == 4) {
-		finalizarPrograma(PID);
+	if (operacion == FINALIZARPROGRAMA) {
+		//finalizarPrograma(PID);
 	} else {
+		operacion = ERROR;
 		enviarMensajeANucleo("Error, operacion no reconocida",operacion);
 	}
 }
