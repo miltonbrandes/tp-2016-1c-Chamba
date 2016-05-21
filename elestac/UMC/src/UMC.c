@@ -92,7 +92,6 @@ t_list * listaCpus;
 //Variables Hilos
 pthread_t hiloConexiones;
 
-
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
 	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 1, 0);
@@ -244,25 +243,6 @@ int datosEnSocketSwap() {
 	return 0;
 }
 
-//int obtenerSocketMaximoInicial() {
-//	int socketMaximoInicial = 0;
-//
-//	if (socketReceptorCPU > socketReceptorNucleo) {
-//		if (socketReceptorCPU > socketSwap) {
-//			socketMaximoInicial = socketReceptorCPU;
-//		} else if (socketSwap > socketReceptorNucleo) {
-//			socketMaximoInicial = socketSwap;
-//		}
-//	} else if (socketReceptorNucleo > socketSwap) {
-//		socketMaximoInicial = socketReceptorNucleo;
-//	} else {
-//		socketMaximoInicial = socketSwap;
-//	}
-//
-//	return socketMaximoInicial;
-//}
-
-
 void AceptarConexionCpu(){
 	int socketCpu = AceptarConexionCliente(socketReceptorCPU);
 	if (socketCpu < 0) {
@@ -354,6 +334,9 @@ void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, 
 
 int main() {
 	if (init()) {
+
+		char * memoria_real = reservarMemoria(marcos,marcosSize);
+
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
 		if (socketSwap < 0) {
 			log_info(ptrLog, "No pudo conectarse con Swap");
