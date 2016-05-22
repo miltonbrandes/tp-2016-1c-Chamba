@@ -28,6 +28,8 @@ typedef enum {
 	SIGUSR
 } cpu_ops;
 typedef enum {
+	ENVIAR_TAMANIO_PAGINA_A_CPU,
+	ENVIAR_INSTRUCCION_A_CPU,
 	NUEVOPROGRAMA,
 	LEER,
 	ESCRIBIR,

@@ -33,7 +33,7 @@ typedef struct stack{
 	t_list* argumentos;
 	t_list* variables;
 	uint32_t direcretorno;
-	t_argumento retVar;
+	t_argumento * retVar;
 }t_stack;
 typedef struct pcb {
 	uint32_t pcb_id;
@@ -142,5 +142,23 @@ typedef struct {
 	int32_t pid;
 	bool terminado;
 }t_socket_pid;
+
+typedef struct {
+	uint32_t numeroPagina;
+	uint32_t numeroFrame;
+} t_pagina_frame;
+
+
+
+//auxiliares
+typedef struct {
+	uint32_t tamanioStack;
+	t_stack * stack;
+} t_tamanio_stack_stack;
+
+typedef struct {
+	uint32_t tamanioBuffer;
+	char *buffer;
+} t_buffer_tamanio;
 
 #endif /* SOCKETS_UTILES_STRUCTSUTILES_H_ */
