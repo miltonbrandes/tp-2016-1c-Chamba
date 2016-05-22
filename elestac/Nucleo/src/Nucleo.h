@@ -8,7 +8,7 @@
 #ifndef SRC_NUCLEO_H_
 #define SRC_NUCLEO_H_
 #include <pthread.h>
-uint32_t nroProg = 0;
+uint32_t nroProg = 1;
 char *ipUMC;
 fd_set sockets, tempSockets; //descriptores
 int *listaCpus;

@@ -35,7 +35,7 @@ typedef struct {
 //Tabla de paginas de un Proceso
 typedef struct {
 	uint32_t pID;
-	t_dictionary tablaDePaginas;
+	t_list * tablaDePaginas;
 } t_tabla_de_paginas;
 
 //Valor del dictionary de t_tabla_de_paginas. La clave es el numero de pagina
@@ -116,10 +116,8 @@ void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
  	enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion,UMC);
  }
 
-void enviarMensajeASwap(char *mensajeSwap, int operacion) {
- 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeSwap);
- 	int tamanio = strlen(mensajeSwap);
- 	enviarDatos(socketSwap,mensajeSwap,tamanio, operacion, UMC);
+void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion) {
+ 	enviarDatos(socketSwap,mensajeSwap, tamanioMensaje, operacion, UMC);
  }
 
 void enviarMensajeACpu(char *mensaje, int operacion) {
@@ -344,12 +342,14 @@ void aceptarConexionCpu(){
 void finalizarPrograma(PID){
 }
 
-int checkDisponibilidadPaginas(paginasRequeridas, PID){
-	enviarMensajeASwap(paginasRequeridas, 1); // enviar tmb el PID
+int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
+	char * iniciarProgSerializado = serializarIniciarPrograma(iniciarProg);
+	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
+	enviarMensajeASwap(iniciarProgSerializado, sizeof(t_iniciar_programa), NUEVOPROGRAMA); // enviar tmb el PID
 	uint32_t operacion;
 	uint32_t id;
-	char* hayEspacio = recibirDatos(socketSwap,operacion, id); //despues tomar los marcos
-	//deserializar(hayEspacio);
+	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
+	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
 	uint32_t pudoSwap = operacion;
 	return pudoSwap;
 }
@@ -359,34 +359,37 @@ void recibirPeticionesNucleo(){
 	uint32_t operacion;
 	uint32_t id;
 
-	char* mensajeRecibido = recibirDatos(socketClienteNucleo,&operacion,&id);
+	while (1) {
 
-	if (operacion == NUEVOPROGRAMA) { //INICIAR
-		t_iniciar_programa *enviarBytes = deserializarIniciarPrograma(mensajeRecibido);
+		log_info(ptrLog, "Esperando Peticion de Nucleo");
+		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
+		log_info(ptrLog, "Se recibe Peticion de Nucleo", operacion, id);
 
-		uint32_t PID = enviarBytes->programID;
-		uint32_t paginasRequeridas = enviarBytes->tamanio;
-		log_info(ptrLog, "Se recibio orden de inicializacion del PID: %d",PID);
+		if (operacion == NUEVOPROGRAMA) { //INICIAR
+			t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
-		int pudoSwap = checkDisponibilidadPaginas(paginasRequeridas, PID); //pregunto a swap si tiene paginas
-		if (pudoSwap == SUCCESS) {
-			enviarMensajeANucleo("Se inicializo el programa",pudoSwap);
+			log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
+
+			int pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+			if (pudoSwap == SUCCESS) {
+				enviarMensajeANucleo("Se inicializo el programa", pudoSwap);
+			} else {
+				operacion = ERROR;
+				log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+				enviarMensajeANucleo( "Error al inicializar programa, no hay espacio", operacion);
+			}
+		}
+		if (operacion == FINALIZARPROGRAMA) {
+			t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
+			uint32_t PID = finalizar->programID;
+			log_info(ptrLog, "Se recibio orden de finalizacion del PID: %d", PID);
+			finalizarPrograma(PID);
+
 		} else {
 			operacion = ERROR;
-			log_info(ptrLog, "No hay espacio, no inicializa el PID: %d",PID);
-			enviarMensajeANucleo("Error al inicializar programa, no hay espacio", operacion);
+			log_info(ptrLog, "Nucleo no entiendo que queres, atte: UMC");
+			enviarMensajeANucleo("Error, operacion no reconocida", operacion);
 		}
-	}
-	if (operacion == FINALIZARPROGRAMA) {
-		t_finalizar_programa *finalizar = deserializarFinalizarPrograma(mensajeRecibido); //deserializar finalizar
-		uint32_t PID = finalizar->programID;
-		log_info(ptrLog, "Se recibio orden de finalizacion del PID: %d",PID);
-		finalizarPrograma(PID);
-
-	} else {
-		operacion = ERROR;
-		log_info(ptrLog, "Nucleo no entiendo que queres, atte: UMC");
-		enviarMensajeANucleo("Error, operacion no reconocida",operacion);
 	}
 }
 
@@ -400,6 +403,7 @@ void manejarConexionesRecibidas() {
 		log_info(ptrLog, "Se conecto Nucleo");
 	}
 	while (1) {
+		recibirPeticionesNucleo();
 		log_info(ptrLog, "Esperando conexiones CPU");
 		aceptarConexionCpu();
 	}
@@ -450,7 +454,6 @@ int main() {
 
 		pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
 		log_info(ptrLog, "Se creo el thread para manejar conexiones");
-		recibirPeticionesNucleo();
 
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
