@@ -57,30 +57,39 @@ int main() {
 
 	t_config* config;
 	config = config_create(getenv("CPU_CONFIG"));
+	char *direccionUmc = config_get_string_value(config, "IP_UMC");
+	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
+	socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
 
-	char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
-	log_info(ptrLog, direccionNucleo);
-	int puertoNucleo = config_get_int_value(config, "PUERTO_NUCLEO");
-	log_info(ptrLog, "%d", puertoNucleo);
-	socketNucleo = crearSocketCliente(direccionNucleo, puertoNucleo);
+	if (socketUMC > 0) {
+		if (manejarPrimeraConexionConUMC()) {
+			char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
+			int puertoNucleo = config_get_int_value(config, "PUERTO_NUCLEO");
+			socketNucleo = crearSocketCliente(direccionNucleo, puertoNucleo);
 
-	if(socketNucleo > 0) {
-		char *direccionUmc = config_get_string_value(config, "IP_UMC");
-		int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
-		socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
-
-		if(socketUMC > 0) {
 			return controlarConexiones();
-		}else{
+		} else {
+			log_error(ptrLog, "Error al recibir primer mensaje de UMC");
 			return -1;
 		}
-	}else{
+
+	} else {
+		log_error(ptrLog, "No se pudo abrir la conexion con UMC");
 		return -1;
+	}
+}
+
+int manejarPrimeraConexionConUMC() {
+	if(recibirMensaje(socketUMC) == 0) {
+		return 1;
+	}else{
+		return 0;
 	}
 }
 
 int controlarConexiones() {
 	while (1) {
+		log_info(ptrLog, "Esperando mensajes de Nucleo");
 		if (recibirMensaje(socketNucleo) == 0) {
 
 		} else {
@@ -92,11 +101,10 @@ int controlarConexiones() {
 }
 
 int crearSocketCliente(char* direccion, int puerto) {
-
 	int socketConexion;
 	socketConexion = AbrirConexion(direccion, puerto);
 	if (socketConexion < 0) {
-		log_info(ptrLog, "Error en la conexion con el servidor");
+		log_error(ptrLog, "Error en la conexion con el servidor");
 		return -1;
 	}
 	log_info(ptrLog, "Socket creado y conectado");
@@ -109,8 +117,7 @@ int enviarMensaje(int socket, char *mensaje) {
 	uint32_t operacion = 1;
 	int sendBytes = enviarDatos(socket, mensaje, longitud, operacion, id);
 	if (sendBytes < 0) {
-		//error, no pudo escribir
-		log_info(ptrLog, "Error al escribir");
+		log_error(ptrLog, "Error al escribir");
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado");
@@ -125,7 +132,7 @@ int recibirMensaje(int socket) {
 	int bytesRecibidos = strlen(respuestaServidor);
 
 	if (bytesRecibidos < 0) {
-		log_info(ptrLog, "Error en al lectura del mensaje del servidor");
+		log_error(ptrLog, "Error en al lectura del mensaje del servidor");
 		return -1;
 
 	} else if (bytesRecibidos == 0) {
@@ -154,11 +161,9 @@ int recibirMensaje(int socket) {
 void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje) {
 	switch (id) {
 	case NUCLEO:
-		log_info(ptrLog, "Mensaje de Nucleo");
 		manejarMensajeRecibidoNucleo(operacion, mensaje);
 		break;
 	case UMC:
-		log_info(ptrLog, "Mensaje de UMC");
 		manejarMensajeRecibidoUMC(operacion, mensaje);
 		break;
 	}
@@ -167,23 +172,18 @@ void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje) {
 void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje) {
 	switch (operacion) {
 	case QUANTUM_PARA_CPU:
-		log_info(ptrLog, "Mensaje QUANTUM PARA CPU");
 		recibirQuantum(mensaje);
 		break;
 	case EXECUTE_PCB:
-		log_info(ptrLog, "Mensaje EXECUTE_PCB");
 		recibirPCB(mensaje);
 		break;
 	case VALOR_VAR_COMPARTIDA:
-		log_info(ptrLog, "Mensaje VALOR_VAR_COMPARTIDA");
 		recibirValorVariableCompartida(mensaje);
 		break;
 	case ASIG_VAR_COMPARTIDA:
-		log_info(ptrLog, "Mensaje ASIG_VAR_COMPARTIDA");
 		recibirAsignacionVariableCompartida(mensaje);
 		break;
 	case SIGNAL_SEMAFORO:
-		log_info(ptrLog, "Mensaje SIGNAL_SEMAFORO");
 		recibirSignalSemaforo(mensaje);
 		break;
 	default:
@@ -194,11 +194,9 @@ void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje) {
 void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje) {
 	switch (operacion) {
 	case ENVIAR_TAMANIO_PAGINA_A_CPU:
-		log_info(ptrLog, "Mensaje ENVIAR_TAMANIO_PAGINA_A_CPU");
 		recibirTamanioPagina(mensaje);
 		break;
 	case ENVIAR_INSTRUCCION_A_CPU:
-		log_info(ptrLog, "Mensaje ENVIAR_INSTRUCCION_A_CPU");
 		recibirInstruccion(mensaje);
 		break;
 	}
@@ -216,11 +214,12 @@ void recibirQuantum(char *mensaje) {
 			mensaje);
 	quantum = estructuraInicial->Quantum;
 	quantumSleep = estructuraInicial->RetardoQuantum;
-	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d", quantum, quantumSleep);
+	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d\n", quantum, quantumSleep);
 }
 
 void recibirTamanioPagina(char *mensaje) {
 	tamanioPagina = deserializarUint32(mensaje);
+	log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioPagina);
 }
 
 void recibirValorVariableCompartida(char *mensaje) {
@@ -242,10 +241,9 @@ void recibirInstruccion(char *mensaje) {
 
 void finalizarEjecucionPorQuantum() {
 	char *message = serializar_pcb(pcb);
-	int bytesEnviados = enviarDatos(socketNucleo, message, strlen(message),
-			QUANTUM, CPU);
+	int bytesEnviados = enviarDatos(socketNucleo, message, strlen(message), QUANTUM, CPU);
 	if (bytesEnviados <= 0) {
-		printf("Error al enviar PCB al Nucleo");
+		log_error(ptrLog, "Error al devolver el PCB por Quantum a CPU");
 	}
 }
 

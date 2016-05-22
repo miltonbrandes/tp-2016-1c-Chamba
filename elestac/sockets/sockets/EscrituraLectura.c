@@ -52,7 +52,6 @@ char* recibirDatos(int socket, uint32_t ** op, uint32_t ** id) {
 		free(buffer);
 		return "ERROR";
 	}
-	printf("%s\n", buffer);
 
 	if (leido != longitud)
 		printf("No se han podido leer todos los datos del socket!!");

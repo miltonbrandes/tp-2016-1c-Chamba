@@ -14,6 +14,7 @@
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
+#include <commons/collections/dictionary.h>
 #include <sockets/ServidorFunciones.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
@@ -30,6 +31,19 @@ typedef struct {
 	char * direccion_fisica;
 	int marco;
 } t_tlb;
+
+//Tabla de paginas de un Proceso
+typedef struct {
+	uint32_t pID;
+	t_dictionary tablaDePaginas;
+} t_tabla_de_paginas;
+
+//Valor del dictionary de t_tabla_de_paginas. La clave es el numero de pagina
+typedef struct {
+	uint32_t frame;
+	uint32_t modificado; //1 modificado, 0 no modificado. Para paginas de codigo es siempre 0
+	uint32_t estaEnUMC; //1 esta, 0 no esta. Para ver si hay que pedir o no la pagina a UMC.
+} t_registro_tabla_de_paginas;
 
 //// STRUCT TABLA PARA CADA PROCESO QUE LLEGA //
 //typedef struct {
@@ -49,8 +63,6 @@ typedef struct {
 	pthread_t hiloCpu;
 } t_cpu;
 
-#define MAX_BUFFER_SIZE 4096
-
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorNucleo;
 int socketReceptorCPU;
@@ -64,7 +76,7 @@ t_log* ptrLog;
 int puertoTCPRecibirConexionesCPU;
 int puertoTCPRecibirConexionesNucleo;
 int puertoReceptorSwap;
-int marcos, marcosSize, marcoXProc, entradasTLB, retardo;
+uint32_t marcos, marcosSize, marcoXProc, entradasTLB, retardo;
 char* algoritmoReemplazo;
 
 char *ipSwap;
@@ -77,6 +89,8 @@ t_list * listaCpus;
 
 //Variables Hilos
 pthread_t hiloConexiones;
+
+void enviarTamanioPaginaACPU(int socketCPU);
 
 //PROBAR SI ESTO ESTA BIEN//////////////////////////////////////////////////
 t_iniciar_programa* deserializarIniciarPrograma(char* mensaje){
@@ -297,6 +311,13 @@ void recibirPeticionesCpu(int socketCpu) {
 	}
 }
 
+void enviarTamanioPaginaACPU(int socketCPU) {
+	char *buffer = serializarUint32(marcosSize);
+	int bytesEnviados = enviarDatos(socketCPU, buffer, sizeof(uint32_t), ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
+	if(bytesEnviados<=0) {
+		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
+	}
+}
 
 void aceptarConexionCpu(){
 	pthread_t hiloEscuchaCpu;
@@ -305,6 +326,9 @@ void aceptarConexionCpu(){
 		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 	} else {
 		log_info(ptrLog, "Nueva conexion de CPU");
+
+		enviarTamanioPaginaACPU(socketCpu);
+
 		t_cpu* cpu = malloc(sizeof(t_cpu));
 		int num = list_size(listaCpus);
 		cpu->socket = socketCpu;
@@ -335,7 +359,7 @@ void recibirPeticionesNucleo(){
 	uint32_t operacion;
 	uint32_t id;
 
-	char* mensajeRecibido = recibirDatos(socketClienteNucleo,operacion,id);
+	char* mensajeRecibido = recibirDatos(socketClienteNucleo,&operacion,&id);
 
 	if (operacion == NUEVOPROGRAMA) { //INICIAR
 		t_iniciar_programa *enviarBytes = deserializarIniciarPrograma(mensajeRecibido);

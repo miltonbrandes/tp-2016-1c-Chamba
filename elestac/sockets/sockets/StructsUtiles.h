@@ -106,6 +106,7 @@ typedef struct _package_cambio_proc_activo {
 } t_cambio_proc_activo;
 
 typedef struct _package_enviarBytes {
+	uint32_t pid;
 	uint32_t pagina;
 	uint32_t offset;
 	uint32_t tamanio;
@@ -148,7 +149,10 @@ typedef struct {
 	uint32_t numeroFrame;
 } t_pagina_frame;
 
-
+typedef struct {
+	uint32_t primerPaginaDeProc;
+	uint32_t primerPaginaStack;
+} t_nuevo_prog_en_umc;
 
 //auxiliares
 typedef struct {

@@ -18,6 +18,7 @@
 
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();
+int manejarPrimeraConexionConUMC();
 
 void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje);
 void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);

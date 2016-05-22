@@ -24,6 +24,7 @@ int socketReceptorCPU, socketReceptorConsola;
 int socketUMC;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_pid_counter = PTHREAD_MUTEX_INITIALIZER;
 pthread_t hiloCpuOciosa;
 pthread_t threadPlanificador;
 pthread_t threadSocket;
@@ -41,10 +42,8 @@ t_EstructuraInicial *estructuraInicial;
 t_list *listaDispositivosIO,
 *listaSemaforos, *listaVariablesCompartidas;
 t_list* colaNew;
-t_list* listaIndCodigo;
 t_list* listaSocketsConsola;
 t_list* listaSocketsCPUs;
-t_list* pcbStack;
 //Archivo de Log
 
 t_pcb* crearPCB(char* programa, int socket);
@@ -60,6 +59,5 @@ uint32_t tamanioMarcos = 4;
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado);
 void operacionesConSemaforos(char operacion, char* buffer,
 		t_clienteCpu *unCliente);
-
 
 #endif /* SRC_NUCLEO_H_ */

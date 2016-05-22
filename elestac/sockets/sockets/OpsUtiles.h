@@ -25,7 +25,10 @@
 char* serializarSolicitarBytes(t_solicitarBytes* solicitarBytes);
 t_solicitarBytes* deserializarSolicitarBytes(char * message);
 
-char* serializarEnviarBytes(t_enviarBytes* enviarBytes, uint32_t *operacion);
+char * serializarNuevoProgEnUMC(t_nuevo_prog_en_umc * nuevoProg);
+t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer);
+
+char* serializarEnviarBytes(t_enviarBytes* enviarBytes);
 char* serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion);
 char* serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);
 char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
@@ -53,5 +56,8 @@ uint32_t deserializarUint32(char *package);
 
 char* serializarListaPaginaFrame(t_list * lista);
 t_list * deserializarListaPaginaFrame(char * mensaje);
+
+char * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma);
+t_iniciar_programa * deserializarIniciarPrograma(char * buffer);
 
 #endif /* SOCKETS_UTILES_OPSUTILES_H_ */
