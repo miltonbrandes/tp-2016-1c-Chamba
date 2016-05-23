@@ -38,6 +38,11 @@ typedef struct espacioOcupado_t {
 	uint32_t escrito;
 } espacioOcupado;
 
+typedef struct frame_t{
+	uint32_t pid;
+	uint32_t numero_pagina;
+	uint32_t numero_frame;
+} frame;
 espacioLibre* libre;
 espacioOcupado* ocupado;
 FILE* archivo_control;
@@ -48,6 +53,8 @@ int retardoCompactacion;
 char* nombreSwap;
 int tamanoPagina;
 int cantidadPaginas;
+
+uint32_t paginaAEnviar;
 
 char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer);
 
@@ -65,7 +72,6 @@ int crearLog() {
 int cargarValoresDeConfig() {
 	t_config* config;
 	config = config_create(getenv("SWAP_CONFIG"));
-	//cuando trato de debuggear me tira un error en la ubicacion de la libreria o algo asi. Igual en consola, que si anda, me tira el mismo error. raro.
 
 	//int tamanoPagina, cantidadPaginas;
 
@@ -177,7 +183,7 @@ void manejarConexionesRecibidas(int socketUMC) {
 			if (strcmp("ERROR", buffer) == 0) {
 				return;
 			} else {
-				interpretarMensajeRecibido(buffer, socketUMC, id, operacion);
+				interpretarMensajeRecibido(buffer, operacion, socketUMC);
 			}
 		}
 
@@ -217,19 +223,20 @@ void cerrarSwap(void) //no cierra los sockets
 	exit(-1);
 }
 
-int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t operacion){
-	int resultado;
+int interpretarMensajeRecibido(char* buffer,int op, int socket){
 	espacioOcupado* aBorrar;
 	espacioOcupado*aEscribir;
 	espacioOcupado* aLeer;
-	int cantidadPaginasALeer;
-	int cantidadPaginasAEscribir;
-	switch(operacion){
+	uint32_t paginaSolicitada;
+	//uint32_t cantidadPaginasAEscribir;
+	uint32_t resultado=paginaSolicitada;
+	uint32_t ** pid;
+	switch(op){
 		case NUEVOPROGRAMA:
-			resultado=asignarMemoria(pid, cantidadPaginasALeer);
+			resultado=asignarMemoria(pid, paginaSolicitada);
 			if (!resultado)
 			{
-				char* paqueteAEnviar= serializarUint32(pid);
+				char* paqueteAEnviar= serializarUint32(*pid);
 				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t),RECHAZAR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
@@ -247,7 +254,7 @@ int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t 
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
 				log_error(ptrLog, "El proceso %d no se encuentra en el swap",pid);
 				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_FINALIZAR_PROCESO_A_UMC, SWAP);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_FINALIZAR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje al ADM\n");
@@ -266,7 +273,7 @@ int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t 
 			{
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
 				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_LEER_PROCESO_A_UMC, SWAP);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_LEER_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje a UMC\n");
@@ -274,8 +281,8 @@ int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t 
 				}
 				return 0;
 			}
-			char* leido= leerProceso(aLeer,cantidadPaginasALeer);
-			enviarDatos(socket, leido,sizeof(leido),ENVIAR_PAGINA_A_UMC, SWAP);
+			char* leido= leerProceso(aLeer,paginaSolicitada);
+			enviarDatos(socket, leido,sizeof(leido),ENVIAR_PAGINA_A_UMC,SWAP);
 			free(leido);
 		break;
 		case ESCRIBIR:
@@ -287,16 +294,16 @@ int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t 
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
 				log_error(ptrLog, "El proceso %d no se encuentra en el swap \n",pid);
 				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_ESCRIBIR_PROCESO_A_UMC, SWAP);
+				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_ESCRIBIR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
-					printf("No se pudo enviar mensaje al ADM\n");
-					log_error(ptrLog, "No se pudo enviar mensaje al ADM");
+					printf("No se pudo enviar mensaje al UMC\n");
+					log_error(ptrLog, "No se pudo enviar mensaje al UMC");
 					cerrarSwap();
 				}
 				return 0;
 			}
-//			escribirProceso(aEscribir, cantidadPaginasAEscribir, buffer);
+			escribirProceso(aEscribir, paginaSolicitada, buffer);
 			buffer=NULL;
 			break;
 
@@ -304,12 +311,12 @@ int interpretarMensajeRecibido(char* buffer, int socket, uint32_t pid, uint32_t 
 		default:
 			printf("Mensaje de UMC no comprendido\n");
 			log_error(ptrLog, "Mensaje de UMC no comprendido");
-			cerrarSwap();
+			//cerrarSwap();
 			break;
 	}
 	//si llegó hasta acá es porque esta OK
 	int i=-1;
-	i=enviarDatos(socket, "Mensaje comprendido",sizeof(uint32_t),SUCCESS, SWAP);
+	i=enviarDatos(socket, resultado,sizeof(uint32_t),SUCCESS,SWAP);
 	if(i==-1)
 	{
 		printf("No se pudo enviar mensaje de confirmacion a UMC\n");
@@ -338,7 +345,19 @@ char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como
 	log_info(ptrLog, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->posicion_inicial -1) * tamanoPagina +  pagALeer * tamanoPagina, bufferLogueo); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
 }
-
+void escribirProceso(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
+{//escribimos en el archivo de swap
+	fseek(archivo_control,((aEscribir->posicion_inicial -1) * tamanoPagina) +  (pagAEscribir * tamanoPagina), SEEK_SET);
+	fwrite(texto, sizeof(char), tamanoPagina, archivo_control);
+	aEscribir->escrito= aEscribir->escrito +1;//el proceso lee una pagina y lo documentamos
+	char bufferLogueo[tamanoPagina +1];//esto va a ser para meterle un \0 por las dudas
+	strcpy(bufferLogueo, texto);
+	bufferLogueo[tamanoPagina]='\0';
+	log_info(ptrLog, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe: %s",
+			aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->posicion_inicial -1) * tamanoPagina) +
+			(pagAEscribir * tamanoPagina), bufferLogueo);
+	return;
+}
 void inicializarArchivo(void) { //lo llenamos con el caracter correspondiente
 	int tamanoArchivo = (cantidadPaginas) * (tamanoPagina);
 	char* s = string_repeat('\0', tamanoArchivo);
@@ -367,11 +386,11 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria
 			return 0;
 		}
 	}
-	int exito = agregarOcupado(pid, cantidad_paginas, inicio);
+	uint32_t posicion = agregarOcupado(pid, cantidad_paginas, inicio);
 	log_info(ptrLog,
 			"Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u",
 			cantidad_paginas * tamanoPagina, pid, (inicio - 1) * tamanoPagina); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
-	return exito;
+	return posicion;
 }
 
 int hayEspacio(int espacio) //espacio esta en paginas
@@ -523,7 +542,7 @@ int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,int posicion_inicial)
 		return 1;
 	}
 	aux->sgte = nuevo; //si habia
-	return 1;
+	return nuevo->posicion_inicial;
 }
 
 //funciones para liberar memoria
