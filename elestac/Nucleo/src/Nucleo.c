@@ -354,8 +354,7 @@ void escucharPuertos() {
 							(socketMaximo < nuevoSocketConexion) ?
 									nuevoSocketConexion : socketMaximo;
 				}
-				t_clienteCpu *cliente;
-				cliente = malloc(sizeof(t_clienteCpu));
+				t_clienteCpu *cliente = malloc(sizeof(t_clienteCpu));
 				cliente->socket = nuevoSocketConexion;
 				cliente->id = (uint32_t) list_size(listaSocketsCPUs);
 				cliente->fueAsignado = false;
@@ -391,11 +390,11 @@ void escucharPuertos() {
 				//tienen que ser punteros no???
 				uint32_t id;
 				t_pcb *unPcb;
-				char *buffer;
 				uint32_t operacion;
-				buffer = recibirDatos(nuevoSocketConexion, &operacion, &id);
+				char* bu = recibirDatos(nuevoSocketConexion, &operacion, &id);
+				char* buffer = malloc(strlen(bu));
+				strcpy(buffer, bu);
 				int bytesRecibidos = strlen(buffer);
-
 				if (bytesRecibidos < 0) {
 					log_info(ptrLog,
 							"Ocurrio un error al recibir datos en un Socket Consola");
@@ -408,9 +407,8 @@ void escucharPuertos() {
 					} else {
 						log_info(ptrLog, "Recibi lo siguiente de consola: %s",
 								buffer);
+
 						unPcb = crearPCB(buffer, socketUMC);
-
-
 						if(unPcb == NULL){
 							int bytesEnviados = enviarDatos(nuevoSocketConexion, buffer,(uint32_t) strlen(buffer), ERROR, id);
 							if (bytesEnviados < 0) {
@@ -776,6 +774,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 	char *paqueteSerializado;
 	char* respuestaOperacion;
 	uint32_t id;
+	t_iniciar_programa* est;
 	switch (operacion) {
 	case LEER:
 		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
@@ -830,9 +829,10 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		break;
 	case NUEVOPROGRAMA:
-		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t);
+		est = estructuraDeOperacion;
+		uint32_t tamanioCodigo = (uint32_t)strlen(est->codigoAnsisop);
+		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t)+ tamanioCodigo;
 		paqueteSerializado = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
-
 		//Envio paquete
 		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize, NUEVOPROGRAMA, NUCLEO)) < 0) {
 			free(paqueteSerializado);
@@ -880,118 +880,90 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 t_pcb* crearPCB(char* programa, int socket) {
 	log_debug(ptrLog, "Procedo a crear el pcb del programa recibido");
-	t_pcb* pcb = malloc(sizeof(t_pcb));
+	// lo que esta comentado en esta funcion hay que descomentarlo cuando este hecho el leer y escribir
 	t_metadata_program* datos;
 	uint32_t rta;
 	char* rtaEnvio;
-	char* basePagCod;
-	char* basePagStack;
+	size_t tamanioPCB;
+
+	uint32_t basePagCod;
+	uint32_t basePagStack;
 	log_debug(ptrLog, "Obtengo la metadata utilizando el preprocesador del parser");
 	datos = metadata_desde_literal(programa);
-
+	if(datos->cantidad_de_etiquetas  == 0 && datos->cantidad_de_funciones == 0){
+		tamanioPCB = (5*sizeof(uint32_t))+((datos->instrucciones_size)*8);
+	}
+	else{
+	tamanioPCB = (5*sizeof(uint32_t))+((datos->instrucciones_size)*8)+(strlen(datos->etiquetas));
+	}
+	t_pcb* pcb = malloc(tamanioPCB);
 	pthread_mutex_lock(&mutex_pid_counter);
 	pcb->pcb_id = nroProg++;
 	pthread_mutex_unlock(&mutex_pid_counter);
-
 	log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
-	t_iniciar_programa * iniciarProg = malloc(sizeof(t_iniciar_programa));
+	t_iniciar_programa * iniciarProg = malloc((sizeof(uint32_t)*2)+strlen(programa)+1);
 	iniciarProg->programID = pcb->pcb_id;
 	iniciarProg->tamanio = ((strlen(programa + 1)) / tamanioMarcos) + tamanioStack;
-
-	//basePagCod = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
+	iniciarProg->codigoAnsisop = malloc(strlen(programa)+1);
+	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
+	strcpy(iniciarProg->codigoAnsisop, programa);
+	//rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
+	//t_nuevo_prog_en_umc* nuevoProgEnUMC;
+	//nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
+	//basePagCod = nuevoProgEnUMC->primerPaginaDeProc;
 	basePagCod = 1;
-	//uint32_t respuestaUMCANuevoPrograma = deserializarUint32(basePagCod);
-
-	if (basePagCod < 0) {
-		/*Suponemos que en el caso de que no pueda crear un segmento, va a devolver -1*/
-		log_error(ptrLog, "No hay espacio para el Proceso AnSISOP %i", pcb->pcb_id);
-		programa[0] = -1; // Indicamos con -1 para saber que el error fue por Memory Overload
-		free(pcb);
-		free(basePagCod);
+	if (basePagCod == NULL) {
+		log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
+		programa[0] = -2;
 		free(datos);
+		free(iniciarProg->codigoAnsisop);
+		free(iniciarProg);
+		queue_push(colaExit, pcb);
+		sem_post(&semProgExit);
 		return NULL;
 	} else {
-
-
+		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
+		free(iniciarProg);
+		log_debug(ptrLog, "Completamos la creacion del PCB %d", pcb->pcb_id);
 		pcb->posicionPrimerPaginaCodigo = basePagCod;
 		log_debug(ptrLog, "Espacio para proceso AnSISOP creado");
-
-		log_info(ptrLog, "Pido espacio para el stack");
-		t_iniciar_programa * iniciarPagStack = malloc(sizeof(t_iniciar_programa));
-		iniciarPagStack->programID = pcb->pcb_id;
-		iniciarPagStack->tamanio = tamanioStack;
-		//basePagStack = enviarOperacion(NUEVOPROGRAMA, iniciarPagStack, socket);
+		log_info(ptrLog, "me fijo si el espacio para el stack fue creado");
+		//basePagStack = nuevoProgEnUMC->primerPaginaStack;
 		basePagStack = 1;
-		//uint32_t respuestaUMCaPaginasStack = deserializarUint32(basePagStack);
 		if(basePagStack < 0){
-			free(basePagCod);
+			free(iniciarProg->codigoAnsisop);
+			free(iniciarProg);
 			free(datos);
-			free(basePagStack);
-			free(pcb);
+			queue_push(colaExit, pcb);
+			sem_post(&semProgExit);
 			return NULL;
 		}
 		else{
-
-			log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
-			t_enviarBytes * envioBytes = malloc((sizeof(uint32_t) * 4) + strlen(programa) + 1);
-
-			envioBytes->pid = pcb->pcb_id;
-			envioBytes->pagina = basePagStack;
-			envioBytes->offset = 0;
-			envioBytes->tamanio = (strlen(programa + 1));
-			envioBytes->buffer = malloc(strlen(programa) + 1);
-			strcpy(envioBytes->buffer, programa);
-
-			//rtaEnvio = enviarOperacion(ESCRIBIR, envioBytes, socket);
-			rta = 1;
-			if (rta == NULL) {
-				log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
-				programa[0] = -2;
-				free(basePagCod);
-				free(datos);
-				free(envioBytes->buffer);
-				free(envioBytes);
-				free(rtaEnvio);
-				queue_push(colaExit, pcb);
-				sem_post(&semProgExit);
-				return NULL;
+			pcb->PC = datos->instruccion_inicio;
+			pcb->codigo = datos->instrucciones_size;
+			pcb->stackPointer = basePagStack;
+			t_list * pcbStack = list_create();
+			pcb->ind_stack = pcbStack;
+			//Cargo Indice de Codigo
+			t_list * listaIndCodigo = list_create();
+			listaIndCodigo = llenarLista(listaIndCodigo, datos->instrucciones_serializado, datos->instrucciones_size);
+			pcb->ind_codigo = listaIndCodigo;
+			if (datos->cantidad_de_etiquetas > 0 || datos->cantidad_de_funciones > 0) {
+				char* indiceEtiquetas = malloc(datos->etiquetas_size);
+				indiceEtiquetas = datos->etiquetas;
+				pcb->ind_etiq = indiceEtiquetas;
+				free(indiceEtiquetas);
 			} else {
-				log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
-				free(envioBytes);
-				log_debug(ptrLog, "Completamos la creacion del PCB %d", pcb->pcb_id);
-
-				t_nuevo_prog_en_umc * nuevoProgEnUMC;
-				//nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
-
-				pcb->PC = datos->instruccion_inicio;
-				pcb->codigo = datos->instrucciones_size;
-				//pcb->posicionPrimerPaginaCodigo = nuevoProgEnUMC->primerPaginaDeProc;
-				pcb->posicionPrimerPaginaCodigo = rta;
-				t_list * pcbStack = list_create();
-				pcb->ind_stack = pcbStack;
-
-				//Cargo Indice de Codigo
-				t_list * listaIndCodigo = list_create();
-				listaIndCodigo = llenarLista(listaIndCodigo, datos->instrucciones_serializado, datos->instrucciones_size);
-				pcb->ind_codigo = listaIndCodigo;
-
-				if (datos->cantidad_de_etiquetas > 0 || datos->cantidad_de_funciones > 0) {
-					char* indiceEtiquetas = malloc(datos->etiquetas_size);
-					indiceEtiquetas = datos->etiquetas;
-					pcb->ind_etiq = indiceEtiquetas;
-				} else {
-					//Harcodeo
-					pcb->ind_etiq = malloc(sizeof(char));
-					pcb->ind_etiq = 'x';
-				}
-				//free(basePagCod);
-				free(datos);
-				return pcb;
+				//Harcodeo
+				pcb->ind_etiq = NULL;
+				//pcb->ind_etiq = 'x';
 			}
+			free(datos);
+			free(iniciarProg);
+
+			return pcb;
 		}
 	}
-
-	return NULL;
 }
 
 void *hiloClienteOcioso() {
@@ -1021,14 +993,16 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado) {
 	t_pcb *unPCB = queue_pop(colaReady);
 	pthread_mutex_unlock(&mutex);
 	log_debug(ptrLog, "Obtengo PCB_ID %d de la colaReady", unPCB->pcb_id);
-	char *pcbSerializado;
+	char* pcbSer = serializar_pcb(unPCB);
+	char *pcbSerializado = malloc(strlen(pcbSer));
 	log_debug(ptrLog, "Serializo el PCB");
-	pcbSerializado = serializar_pcb(unPCB);
-	enviarDatos(clienteSeleccionado->socket, pcbSerializado, sizeof(t_pcb),
+	strcpy(pcbSerializado, pcbSer);
+	enviarDatos(clienteSeleccionado->socket, pcbSerializado, strlen(pcbSerializado),
 			NOTHING, NUCLEO);
 	log_debug(ptrLog, "PCB enviado al CPU %d", clienteSeleccionado->id);
 	clienteSeleccionado->pcbAsignado = unPCB;
 	clienteSeleccionado->fueAsignado = true;
+	free(pcbSerializado);
 
 }
 

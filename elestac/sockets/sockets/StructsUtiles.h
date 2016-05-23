@@ -99,6 +99,7 @@ typedef struct indiceCodigo{
 typedef struct package_iniciar_programa {
 	uint32_t programID;
 	uint32_t tamanio;
+	char* codigoAnsisop;
 } t_iniciar_programa;
 
 typedef struct _package_cambio_proc_activo {
@@ -139,8 +140,8 @@ typedef struct _package_finalizar_programa {
 } t_finalizar_programa;
 
 typedef struct {
-	int socket;
-	int32_t pid;
+	uint32_t socket;
+	uint32_t pid;
 	bool terminado;
 }t_socket_pid;
 

@@ -56,13 +56,13 @@ int iniciarConsola() {
 }
 
 int enviarScriptAlNucleo(char *script) {
-	char *buff;
-	char *respuestaServidor;
-	int bytesRecibidos = 0;
+
 	uint32_t id = 1;
 	uint32_t operacion;
-	int longitud = strlen(script + 1);
-
+	uint32_t longitud = strlen(script)+1;
+	char *buff = malloc(longitud);
+	buff = script;
+	int bytesRecibidos = 0;
 	socketConexionNucleo = AbrirConexion(direccion, puerto);
 	if (socketConexionNucleo < 0) {
 		log_info(ptrLog, "Error en la conexion con el nucleo");
@@ -71,14 +71,12 @@ int enviarScriptAlNucleo(char *script) {
 	}
 	log_info(ptrLog, "Se conecto con el nucleo");
 	operacion = 1;
-	bytesRecibidos = enviarDatos(socketConexionNucleo, script, longitud+1, operacion, id);
+	bytesRecibidos = enviarDatos(socketConexionNucleo, buff, longitud, operacion, id);
 	if (bytesRecibidos< 0) {
 		finalizarConexion(socketConexionNucleo);
 		return -1;
 	}
 	log_info(ptrLog, "Mensaje Enviado al nucleo");
-	//log_info(ptrLog, respuestaServidor);
-	//finalizarConexion(socketConexionNucleo);
 	return 0;
 
 }

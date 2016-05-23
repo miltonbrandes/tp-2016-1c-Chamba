@@ -38,22 +38,30 @@ t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer) {
 char * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma) {
 	char * buffer = malloc(sizeof(t_iniciar_programa));
 	int tmp_size = sizeof(uint32_t), offset = 0;
-
+	uint32_t tamanioCodigo = strlen(iniciarPrograma->codigoAnsisop);
+	memcpy(buffer+offset, &(tamanioCodigo), tmp_size);
+	offset+= tmp_size;
 	memcpy(buffer + offset, &(iniciarPrograma->programID), tmp_size);
 	offset += tmp_size;
 	memcpy(buffer + offset, &(iniciarPrograma->tamanio), tmp_size);
-
+	offset+= tmp_size;
+	memcpy(buffer+offset, &(iniciarPrograma->codigoAnsisop), tamanioCodigo);
 	return buffer;
 }
 
 t_iniciar_programa * deserializarIniciarPrograma(char * buffer) {
-	t_iniciar_programa * iniciarPrograma = malloc(sizeof(t_iniciar_programa));
-	int tmp_size = sizeof(uint32_t), offset = 0;
 
+
+	int tmp_size = sizeof(uint32_t), offset = 0;
+	uint32_t tamCod;
+	memcpy(&(tamCod), buffer+offset, tmp_size);
+	offset+= tmp_size;
+	t_iniciar_programa * iniciarPrograma = malloc(sizeof(t_iniciar_programa)+ tamCod);
 	memcpy(&(iniciarPrograma->programID), buffer + offset, tmp_size);
 	offset += tmp_size;
 	memcpy(&(iniciarPrograma->tamanio), buffer + offset, tmp_size);
-
+	offset+=tmp_size;
+	memcpy(&(iniciarPrograma->codigoAnsisop), buffer+offset, tmp_size);
 	return iniciarPrograma;
 }
 
@@ -125,9 +133,7 @@ uint32_t deserializarUint32(char *package) {
 	uint32_t number;
 	int offset = 0;
 	int tmp_size = sizeof(uint32_t);
-
 	memcpy(&number, package + offset, tmp_size);
-
 	return number;
 }
 
@@ -388,7 +394,7 @@ t_op_varCompartida* deserializar_opVarCompartida(char* package) {
 
 t_buffer_tamanio* serializadoIndiceDeCodigo(t_list* indiceCodigo) {
 	t_indice_codigo* linea;
-	int offset = 0, m = 0;
+	uint32_t offset = 0, m = 0;
 	int tmp_size = sizeof(uint32_t);
 	char* buffer = malloc(list_size(indiceCodigo) * (2 * sizeof(uint32_t)));
 
@@ -615,6 +621,7 @@ t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo,
 		linea->start = indiceCodigo[b].start;
 		linea->offset = indiceCodigo[b].offset;
 		list_add(lista, linea);
+		free(linea);
 	}
 	return lista;
 }

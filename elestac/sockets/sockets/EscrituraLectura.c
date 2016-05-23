@@ -21,7 +21,7 @@
 char* recibirDatos(int socket, uint32_t ** op, uint32_t ** id) {
 	int leido = 0;
 	uint32_t longitud = 3 * sizeof(uint32_t);
-	char* buffer = malloc(longitud + 1);
+	char* buffer = malloc(longitud);
 	/*
 	 * Comprobacion de que los parametros de entrada son correctos
 	 */
