@@ -252,7 +252,7 @@ int datosEnSocketUMC() {
 	uint32_t id;
 	uint32_t operacion;
 
-	buffer = recibirDatos(socket, &operacion, &id);
+	buffer = recibirDatos(socketUMC, &operacion, &id);
 	int bytesRecibidos = strlen(buffer);
 
 	if (bytesRecibidos < 0) {
@@ -262,14 +262,16 @@ int datosEnSocketUMC() {
 		finalizarConexion(socketUMC);
 		return -1;
 	} else {
-		log_info(ptrLog, "Bytes recibidos desde UMC: %s", buffer);
+		if (strcmp("ERROR", buffer) == 0) {
+					return -1;
+		} else {
+			tamanioMarcos = deserializarUint32(buffer);
+			log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioMarcos);
+		}
 	}
-	if (handshakeumv == 0) {
-		//esto lo tengo que descomentar cuando ya este hecho umc porque me tiene que mandar cuando inicia, el tamanio de los marcos
-		//tamanioMarcos = (int) *buffer;
-		//handshakeumv++;
-	}
+	//free(buffer);
 	return 0;
+
 }
 
 void operacionesConVariablesCompartidas(char operacion, char *buffer,
@@ -475,6 +477,8 @@ void escucharPuertos() {
 						int bytesRecibidos = strlen(buffer);
 						if (bytesRecibidos > 0) {
 							if (strcmp("ERROR", buffer) == 0) {
+								FD_CLR(socketFor, &tempSockets);
+								FD_CLR(socketFor, &sockets);
 							} else {
 								if (id == CPU) {
 									//entonces recibio de cpu!!!
@@ -878,8 +882,10 @@ t_pcb* crearPCB(char* programa, int socket) {
 	log_debug(ptrLog, "Procedo a crear el pcb del programa recibido");
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	t_metadata_program* datos;
+	uint32_t rta;
 	char* rtaEnvio;
 	char* basePagCod;
+	char* basePagStack;
 	log_debug(ptrLog, "Obtengo la metadata utilizando el preprocesador del parser");
 	datos = metadata_desde_literal(programa);
 
@@ -892,10 +898,11 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg->programID = pcb->pcb_id;
 	iniciarProg->tamanio = ((strlen(programa + 1)) / tamanioMarcos) + tamanioStack;
 
-	basePagCod = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
-	uint32_t respuestaUMCANuevoPrograma = deserializarUint32(basePagCod);
+	//basePagCod = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
+	basePagCod = 1;
+	//uint32_t respuestaUMCANuevoPrograma = deserializarUint32(basePagCod);
 
-	if (respuestaUMCANuevoPrograma < 0) {
+	if (basePagCod < 0) {
 		/*Suponemos que en el caso de que no pueda crear un segmento, va a devolver -1*/
 		log_error(ptrLog, "No hay espacio para el Proceso AnSISOP %i", pcb->pcb_id);
 		programa[0] = -1; // Indicamos con -1 para saber que el error fue por Memory Overload
@@ -904,65 +911,83 @@ t_pcb* crearPCB(char* programa, int socket) {
 		free(datos);
 		return NULL;
 	} else {
-		pcb->posicionPrimerPaginaCodigo = respuestaUMCANuevoPrograma;
+
+
+		pcb->posicionPrimerPaginaCodigo = basePagCod;
 		log_debug(ptrLog, "Espacio para proceso AnSISOP creado");
 
-		log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
-		t_enviarBytes * envioBytes = malloc((sizeof(uint32_t) * 4) + strlen(programa) + 1);
-
-		envioBytes->pid = pcb->pcb_id;
-		envioBytes->pagina = respuestaUMCANuevoPrograma;
-		envioBytes->offset = 0;
-		envioBytes->tamanio = (strlen(programa + 1));
-		envioBytes->buffer = malloc(strlen(programa) + 1);
-		strcpy(envioBytes->buffer, programa);
-
-		rtaEnvio = enviarOperacion(ESCRIBIR, envioBytes, socket);
-
-		if (rtaEnvio == NULL) {
-			log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
-			programa[0] = -2;
+		log_info(ptrLog, "Pido espacio para el stack");
+		t_iniciar_programa * iniciarPagStack = malloc(sizeof(t_iniciar_programa));
+		iniciarPagStack->programID = pcb->pcb_id;
+		iniciarPagStack->tamanio = tamanioStack;
+		//basePagStack = enviarOperacion(NUEVOPROGRAMA, iniciarPagStack, socket);
+		basePagStack = 1;
+		//uint32_t respuestaUMCaPaginasStack = deserializarUint32(basePagStack);
+		if(basePagStack < 0){
 			free(basePagCod);
 			free(datos);
-			free(envioBytes->buffer);
-			free(envioBytes);
-			free(rtaEnvio);
-			queue_push(colaExit, pcb);
-			sem_post(&semProgExit);
+			free(basePagStack);
+			free(pcb);
 			return NULL;
-			return NULL;
-		} else {
-			log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
-			free(envioBytes);
-			log_debug(ptrLog, "Completamos la creacion del PCB %d", pcb->pcb_id);
+		}
+		else{
 
-			t_nuevo_prog_en_umc * nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
+			log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
+			t_enviarBytes * envioBytes = malloc((sizeof(uint32_t) * 4) + strlen(programa) + 1);
 
-			pcb->PC = datos->instruccion_inicio;
-			pcb->codigo = datos->instrucciones_size;
-			pcb->posicionPrimerPaginaCodigo = nuevoProgEnUMC->primerPaginaDeProc;
+			envioBytes->pid = pcb->pcb_id;
+			envioBytes->pagina = basePagStack;
+			envioBytes->offset = 0;
+			envioBytes->tamanio = (strlen(programa + 1));
+			envioBytes->buffer = malloc(strlen(programa) + 1);
+			strcpy(envioBytes->buffer, programa);
 
-			t_list * pcbStack = list_create();
-			pcb->ind_stack = pcbStack;
-
-			//Cargo Indice de Codigo
-			t_list * listaIndCodigo = list_create();
-			listaIndCodigo = llenarLista(listaIndCodigo, datos->instrucciones_serializado, datos->instrucciones_size);
-			pcb->ind_codigo = listaIndCodigo;
-
-			if (datos->cantidad_de_etiquetas > 0 || datos->cantidad_de_funciones > 0) {
-				char* indiceEtiquetas = malloc(datos->etiquetas_size);
-				indiceEtiquetas = datos->etiquetas;
-				pcb->ind_etiq = indiceEtiquetas;
+			//rtaEnvio = enviarOperacion(ESCRIBIR, envioBytes, socket);
+			rta = 1;
+			if (rta == NULL) {
+				log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
+				programa[0] = -2;
+				free(basePagCod);
+				free(datos);
+				free(envioBytes->buffer);
+				free(envioBytes);
+				free(rtaEnvio);
+				queue_push(colaExit, pcb);
+				sem_post(&semProgExit);
+				return NULL;
 			} else {
-				//Harcodeo
-				pcb->ind_etiq = malloc(sizeof(char));
-				pcb->ind_etiq = 'x';
-			}
-			free(basePagCod);
-			free(datos);
+				log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
+				free(envioBytes);
+				log_debug(ptrLog, "Completamos la creacion del PCB %d", pcb->pcb_id);
 
-			return pcb;
+				t_nuevo_prog_en_umc * nuevoProgEnUMC;
+				//nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
+
+				pcb->PC = datos->instruccion_inicio;
+				pcb->codigo = datos->instrucciones_size;
+				//pcb->posicionPrimerPaginaCodigo = nuevoProgEnUMC->primerPaginaDeProc;
+				pcb->posicionPrimerPaginaCodigo = rta;
+				t_list * pcbStack = list_create();
+				pcb->ind_stack = pcbStack;
+
+				//Cargo Indice de Codigo
+				t_list * listaIndCodigo = list_create();
+				listaIndCodigo = llenarLista(listaIndCodigo, datos->instrucciones_serializado, datos->instrucciones_size);
+				pcb->ind_codigo = listaIndCodigo;
+
+				if (datos->cantidad_de_etiquetas > 0 || datos->cantidad_de_funciones > 0) {
+					char* indiceEtiquetas = malloc(datos->etiquetas_size);
+					indiceEtiquetas = datos->etiquetas;
+					pcb->ind_etiq = indiceEtiquetas;
+				} else {
+					//Harcodeo
+					pcb->ind_etiq = malloc(sizeof(char));
+					pcb->ind_etiq = 'x';
+				}
+				//free(basePagCod);
+				free(datos);
+				return pcb;
+			}
 		}
 	}
 
@@ -1200,7 +1225,7 @@ void* hiloPCBaFinalizar() {
 				break;
 			}
 
-			sleep(2);
+			usleep(2);
 		}
 	}
 	return 0;
