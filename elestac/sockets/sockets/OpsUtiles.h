@@ -34,7 +34,7 @@ char* serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *opera
 char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
 
 t_pcb* deserializar_pcb(char* package);
-char* serializar_pcb(t_pcb* pcb);
+t_buffer_tamanio* serializar_pcb(t_pcb* pcb);
 
 char* serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial);
 t_EstructuraInicial* deserializar_EstructuraInicial(char* package);
@@ -46,9 +46,9 @@ t_buffer_tamanio* serializadoIndiceDeCodigo(t_list* indiceCodigo);
 t_list* deserializarIndiceCodigo(char* indice, uint32_t tam);
 
 t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack);
-t_list* deserializarIndiceStack(char* indice, uint32_t tamanioTotal);
+t_list* deserializarIndiceStack(char* indice);
 
-t_list* llenarLista(t_list * lista, t_intructions * indiceCodigo, t_size cantInstruc);
+t_list* llenarLista(t_intructions * indiceCodigo, t_size cantInstruc);
 t_list* llenarStack(t_list * lista, t_stack* lineaAgregar);
 
 char* serializarUint32(uint32_t number);

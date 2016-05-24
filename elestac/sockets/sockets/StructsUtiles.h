@@ -158,7 +158,7 @@ typedef struct {
 //auxiliares
 typedef struct {
 	uint32_t tamanioStack;
-	t_stack * stack;
+	void * stack;
 } t_tamanio_stack_stack;
 
 typedef struct {

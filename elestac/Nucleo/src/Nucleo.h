@@ -41,9 +41,9 @@ t_config* config;
 t_EstructuraInicial *estructuraInicial;
 t_list *listaDispositivosIO,
 *listaSemaforos, *listaVariablesCompartidas;
-t_list* colaNew;
 t_list* listaSocketsConsola;
 t_list* listaSocketsCPUs;
+t_list* colaNew;
 //Archivo de Log
 
 t_pcb* crearPCB(char* programa, int socket);

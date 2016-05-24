@@ -210,8 +210,7 @@ void recibirPCB(char *mensaje) {
 }
 
 void recibirQuantum(char *mensaje) {
-	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(
-			mensaje);
+	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(mensaje);
 	quantum = estructuraInicial->Quantum;
 	quantumSleep = estructuraInicial->RetardoQuantum;
 	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d\n", quantum, quantumSleep);
