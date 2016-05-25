@@ -13,6 +13,8 @@
 #include <sockets/EscrituraLectura.h>
 #include <sockets/StructsUtiles.h>
 
+pthread_mutex_t comunicacionConSwap = PTHREAD_MUTEX_INITIALIZER;
+
 // ENTRADAS A LA TLB //
 typedef struct {
 	int pid;
@@ -21,13 +23,11 @@ typedef struct {
 	int marco;
 } t_tlb;
 
-//Tabla de paginas de un Proceso
 typedef struct {
 	uint32_t pID;
 	t_list * tablaDePaginas;
 } t_tabla_de_paginas;
 
-//Valor del dictionary de t_tabla_de_paginas. La clave es el numero de pagina
 typedef struct {
 	uint32_t paginaProceso;
 	uint32_t frame;
@@ -35,7 +35,6 @@ typedef struct {
 	uint32_t estaEnUMC; //1 esta, 0 no esta. Para ver si hay que pedir o no la pagina a SWAP.
 } t_registro_tabla_de_paginas;
 
-//PARA INCLUIR EN LA LIBRERIA
 typedef struct {
 	uint32_t numCpu;
 	uint32_t socket;
@@ -47,6 +46,12 @@ typedef struct {
 	uint32_t numeroFrame;
 	char * contenido;
 } t_frame;
+
+typedef struct {
+	t_registro_tabla_de_paginas * registro;
+	uint32_t start;
+	uint32_t offset;
+} t_auxiliar_registro;
 
 void reservarMemoria(int cantidadMarcos, int tamanioMarco);
 int crearLog();
@@ -80,5 +85,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla, uint32_t pagina);
 t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId);
 t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset);
+
+char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion);
 
 #endif /* UMC_H_ */

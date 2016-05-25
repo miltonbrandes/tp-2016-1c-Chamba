@@ -47,4 +47,3 @@ void wait(t_nombre_semaforo	identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
 
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */
-

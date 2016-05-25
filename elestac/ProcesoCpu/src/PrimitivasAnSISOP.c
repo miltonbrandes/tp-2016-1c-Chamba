@@ -238,4 +238,3 @@ void signal(t_nombre_semaforo identificador_semaforo) {
 			identificador_semaforo);
 	int bytesEnviados = enviarDatos(socketNucleo, &identificador_semaforo, (uint32_t)(strlen(identificador_semaforo) + 1), (uint32_t)SIGNAL, (uint32_t)CPU);
 }
-

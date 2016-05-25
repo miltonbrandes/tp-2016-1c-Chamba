@@ -98,6 +98,21 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
+char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion) {
+	pthread_mutex_lock(&comunicacionConSwap);
+	char * mensajeDeSwap;
+
+	int bytesEnviados = enviarDatos(socketSwap, bufferTamanio->buffer, bufferTamanio->tamanioBuffer, operacion, UMC);
+	if(bytesEnviados <= 0) {
+		log_error(ptrLog, "Ocurrio un error al enviarle un mensaje a Swap.");
+		mensajeDeSwap = NULL;
+	} else {
+		uint32_t operacion, id;
+		mensajeDeSwap = recibirDatos(socketSwap, &operacion, &id);
+	}
+	pthread_mutex_unlock(&comunicacionConSwap);
+	return mensajeDeSwap;
+}
 
 //////FUNCIONES UMC//////
 
@@ -389,7 +404,6 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
 
 			enviarDatoACPU(cpuEnAccion, pagina, start, offset);
-
 		}else if (operacion == ESCRIBIR) {
 			t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
 
@@ -417,59 +431,73 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 }
 
 void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset) {
+	uint32_t offsetMemcpy = 0;
+	char * datosParaCPU = malloc(offset + 1);
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
-		log_info(ptrLog, "Se encontro la Tabla del Proceso %d", cpu->procesoActivo);
-
 		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso, pagina, start, offset);
-
 		if(listaRegistros != NULL) {
-			log_info(ptrLog, "Paginas involucradas en Solicitud: %d", list_size(listaRegistros));
 			int i;
 			for(i = 0; i < list_size(listaRegistros); i++) {
-				t_registro_tabla_de_paginas * registro = list_get(listaRegistros, i);
+				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
+				t_registro_tabla_de_paginas * registro = auxiliar->registro;
 				log_info(ptrLog, "Registro involucrado-> Pagina: %d - Esta: %d - Modif: %d - Frame: %d", registro->paginaProceso, registro->estaEnUMC, registro->modificado, registro->frame);
+				log_info(ptrLog, "Start del Registro: %d - Offset del Registro: %d", auxiliar->start, auxiliar->offset);
+				if(registro->estaEnUMC == 1) {
+					t_frame * frame = list_get(frames, registro->frame);
+					memcpy(datosParaCPU, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+					offsetMemcpy += auxiliar->offset;
+				}else{
+					log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
+				}
 			}
 		}
 	}
 }
 
 t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset) {
-	log_info(ptrLog, "Tamanio de Marcos: %d", marcosSize);
 	t_list * registros = list_create();
 
 	//Armo el primer request
 	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
-	log_info(ptrLog, "Registro principal-> Pagina: %d - Start: %d - Offset: %d", registro->paginaProceso, start, offset);
+	t_auxiliar_registro * auxiliar = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+	auxiliar->registro = registro;
 
-	if (((start + offset) <= (marcosSize * pagina)) || (pagina == 0 && ((start + offset) <= (marcosSize * 1)))) {
+	if ((start + offset) <= marcosSize) {
 		//Es solo 1 pagina la que hay que agarrar
+		auxiliar->start = start;
+		auxiliar->offset = offset;
 		start = -1;
 		offset = -1;
+		list_add(registros, auxiliar);
 	} else {
-		offset = (start + offset) - marcosSize - (marcosSize * pagina);
-		start = (marcosSize * pagina) + marcosSize;
-		pagina++;
-	}
-	list_add(registros, registro);
+		auxiliar->start = start;
+		uint32_t offsetReal = (marcosSize - start);
+		auxiliar->offset = (marcosSize - start);
+		offset = offset - (marcosSize - start);
+		start = 0;
+		list_add(registros, auxiliar);
 
-	//Veo si tengo que armar mas request porque me pase de Pagina
-	while ((start + offset) > (marcosSize * pagina)) {
-		log_info(ptrLog, "Necesito otra pagina-> Start: %d - Offset: %d", start, offset);
-		t_registro_tabla_de_paginas * registroAdicional = buscarPaginaEnTabla(tablaDeProceso, pagina);
-		log_info(ptrLog, "Registro Adicional-> Pagina: %d - Start: %d - Offset: %d", registroAdicional->paginaProceso, start, offset);
-
-		if ((start + offset) <= (marcosSize * pagina)) {
-			//No tengo que buscar mas paginas
-			start = -1;
-			offset = -1;
-		} else {
-			offset = (start + offset) - marcosSize - (marcosSize * pagina);
-			start = (marcosSize * pagina) + marcosSize;
+		while ((start + offset) > marcosSize) {
+			pagina++;
+			t_registro_tabla_de_paginas * registroAdicional = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_auxiliar_registro * auxiliarAdicional = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+			auxiliarAdicional->registro = registroAdicional;
+			auxiliarAdicional->start = start;
+			auxiliarAdicional->offset = marcosSize;
+			offset = offset - marcosSize;
+			list_add(registros, auxiliarAdicional);
 		}
 
-		list_add(registros, registroAdicional);
-		pagina++;
+		if(offset > 0 && (start + offset) <= marcosSize) {
+			pagina++;
+			t_registro_tabla_de_paginas * registroAdicional2 = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+			auxiliarAdicional2->registro = registroAdicional2;
+			auxiliarAdicional2->start = start;
+			auxiliarAdicional2->offset = offset;
+			list_add(registros, auxiliarAdicional2);
+		}
 	}
 
 	return registros;

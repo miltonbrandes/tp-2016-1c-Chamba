@@ -294,18 +294,15 @@ char * solicitarProximaInstruccionAUMC() {
 	while (requestStart > (tamanioPagina + (tamanioPagina * contador))) {
 		contador++;
 	}
-	uint32_t paginaAPedir = contador + pcb->paginaCodigoActual;
+	uint32_t paginaAPedir = contador;
 	pcb->paginaCodigoActual = paginaAPedir;
 
 	t_solicitarBytes * solicitarBytes = malloc(sizeof(t_solicitarBytes));
 	solicitarBytes->pagina = paginaAPedir;
-	solicitarBytes->start = requestStart;
+	solicitarBytes->start = requestStart - (tamanioPagina * paginaAPedir);
 	solicitarBytes->offset = requestOffset;
-//	solicitarBytes->pagina = 0;
-//	solicitarBytes->start = 10;
-//	solicitarBytes->offset = 50;
-	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Tamanio: %d", paginaAPedir, requestOffset - requestStart, requestOffset);
 
+	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Start: %d", paginaAPedir, requestStart, requestOffset);
 
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitarBytes(solicitarBytes);
 
@@ -314,59 +311,10 @@ char * solicitarProximaInstruccionAUMC() {
 		log_error(ptrLog, "Ocurrio un error al enviar una solicitud de instruccion a CPU");
 		return NULL;
 	} else {
-		log_info(ptrLog, "Solicito instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
-
+		log_info(ptrLog, "Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
 		uint32_t operacion, id;
 		instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
 		t_enviarBytes * bytesRecibidos = deserializarEnviarBytes(instruccionRecibida);
 		return bytesRecibidos->buffer;
 	}
 }
-
-//char* solicitarProximaInstruccionAUMC() {
-//	int tamanioTotalInstruccion = 0;
-//	t_list * listaInstrucciones = list_create();
-//	t_list * requestsUMC = crearRequestsParaUMC();
-//
-//	char *message;
-//	uint32_t operation, id;
-//
-//	int i;
-//	for (i = 0; i < list_size(requestsUMC); i++) {
-//		t_solicitarBytes *request = list_get(requestsUMC, i);
-//		t_buffer_tamanio *requestSerializado = serializarSolicitarBytes(request);
-//		int bytesEnviados = enviarDatos(socketUMC, requestSerializado->buffer, requestSerializado->tamanioBuffer, LEER, CPU);
-//		if (bytesEnviados <= 0) {
-//			//Error
-//		} else {
-//			message = recibirDatos(socketUMC, &operation, &id);
-//			if (strlen(message) < 0) {
-//				//Error
-//			} else if (strlen(message) == 0) {
-//				//Error
-//			} else {
-//				if (strcmp("ERROR", message) == 0) {
-//					//Error
-//				} else {
-//					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes( message);
-//					char *datos = malloc(bytesRecibidos->tamanio);
-//					memcpy(datos, &(bytesRecibidos->buffer), bytesRecibidos->tamanio);
-//					list_add(listaInstrucciones, datos);
-//					tamanioTotalInstruccion += bytesRecibidos->tamanio;
-//				}
-//			}
-//
-//			free(message);
-//		}
-//		free(requestSerializado);
-//	}
-//
-//	char *instruccionCompleta = malloc(tamanioTotalInstruccion);
-//	int j;
-//	for (j = 0; j < list_size(listaInstrucciones); j++) {
-//		instruccionCompleta = strcpy(instruccionCompleta, list_get(listaInstrucciones, j));
-//	}
-//
-//	return instruccionCompleta;
-//}
-
