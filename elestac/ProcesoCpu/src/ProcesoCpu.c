@@ -4,17 +4,22 @@
  *  Created on: 18/4/2016
  *      Author: utnso
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <commons/log.h>
+
+#include "ProcesoCpu.h"
+
 #include <commons/collections/list.h>
 #include <commons/config.h>
+#include <commons/log.h>
+#include <parser/parser.h>
 #include <sockets/ClienteFunciones.h>
 #include <sockets/EscrituraLectura.h>
-#include <sockets/StructsUtiles.h>
 #include <sockets/OpsUtiles.h>
-#include "ProcesoCpu.h"
+#include <sockets/StructsUtiles.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "PrimitivasAnSISOP.h"
 
 #define MAX_BUFFER_SIZE 4096
@@ -129,14 +134,9 @@ int recibirMensaje(int socket) {
 	uint32_t operacion;
 
 	char *respuestaServidor = recibirDatos(socket, &operacion, &id);
-	int bytesRecibidos = strlen(respuestaServidor);
+	log_info(ptrLog, "Recibo mensaje");
 
-	if (bytesRecibidos < 0) {
-		log_error(ptrLog, "Error en al lectura del mensaje del servidor");
-		return -1;
-
-	} else if (bytesRecibidos == 0) {
-
+	if(strcmp(respuestaServidor, "ERROR") == 0) {
 		if (socket == socketNucleo) {
 			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
 			finalizarConexion(socketNucleo);
@@ -144,14 +144,8 @@ int recibirMensaje(int socket) {
 			log_info(ptrLog, "No se recibio nada de UMC, cierro conexion");
 			finalizarConexion(socketUMC);
 		}
-		return -1;
-
-	} else {
-		if (strcmp("ERROR", respuestaServidor) == 0) {
-			return -1;
-		} else {
-			manejarMensajeRecibido(id, operacion, respuestaServidor);
-		}
+	}else{
+		manejarMensajeRecibido(id, operacion, respuestaServidor);
 	}
 
 	return 0;
@@ -206,6 +200,7 @@ void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje) {
 //Manejo de mensajes recibidos
 void recibirPCB(char *mensaje) {
 	pcb = deserializar_pcb(mensaje);
+	notificarAUMCElCambioDeProceso(pcb->pcb_id);
 	comenzarEjecucionDePrograma();
 }
 
@@ -238,76 +233,59 @@ void recibirInstruccion(char *mensaje) {
 }
 //Fin manejo de mensajes recibidos
 
+void notificarAUMCElCambioDeProceso(uint32_t pid) {
+	t_cambio_proc_activo * cambioProcActivo = malloc(sizeof(uint32_t));
+	cambioProcActivo->programID = pid;
+
+	t_buffer_tamanio * buffer_tamanio = serializarCambioProcActivo(cambioProcActivo);
+
+	int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, CAMBIOPROCESOACTIVO, CPU);
+
+	if(bytesEnviados<=0) {
+		log_error(ptrLog, "Algo malo ocurrio al enviar el Cambio de Proceso a UMC.");
+	}
+}
+
+void finalizarEjecucionPorExit() {
+	t_buffer_tamanio * buffer_tamanio = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, CPU);
+	if(bytesEnviados <= 0) {
+		log_error(ptrLog, "Error al devolver el PCB por Finalizacion a Nucleo");
+	}
+}
+
 void finalizarEjecucionPorQuantum() {
 	char *message = serializar_pcb(pcb);
 	int bytesEnviados = enviarDatos(socketNucleo, message, strlen(message), QUANTUM, CPU);
 	if (bytesEnviados <= 0) {
-		log_error(ptrLog, "Error al devolver el PCB por Quantum a CPU");
+		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
 }
 
 void comenzarEjecucionDePrograma() {
+	log_info(ptrLog, "Recibo PCB");
 	int contador = 1;
+
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;
 		sleep(quantumSleep);
-	}
-	finalizarEjecucionPorQuantum();
-}
 
-char* solicitarProximaInstruccionAUMC() {
-	int tamanioTotalInstruccion = 0;
-	t_list * listaInstrucciones = list_create();
-	t_list * requestsUMC = crearRequestsParaUMC();
-
-	char *message;
-	uint32_t operation, id;
-
-	int i;
-	for (i = 0; i < list_size(requestsUMC); i++) {
-		t_solicitarBytes *request = list_get(requestsUMC, i);
-		t_buffer_tamanio *requestSerializado = serializarSolicitarBytes(request);
-		int bytesEnviados = enviarDatos(socketUMC, requestSerializado->buffer, requestSerializado->tamanioBuffer, LEER, CPU);
-		if (bytesEnviados <= 0) {
-			//Error
-		} else {
-			message = recibirDatos(socketUMC, &operation, &id);
-			if (strlen(message) < 0) {
-				//Error
-			} else if (strlen(message) == 0) {
-				//Error
-			} else {
-				if (strcmp("ERROR", message) == 0) {
-					//Error
-				} else {
-					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes( message);
-					char *datos = malloc(bytesRecibidos->tamanio);
-					memcpy(datos, &(bytesRecibidos->buffer), bytesRecibidos->tamanio);
-					list_add(listaInstrucciones, datos);
-					tamanioTotalInstruccion += bytesRecibidos->tamanio;
-				}
-			}
-
-			free(message);
+		if(pcb->PC > pcb->codigo) {
+			finalizarEjecucionPorExit();
+			return;
 		}
-		free(requestSerializado);
 	}
 
-	char *instruccionCompleta = malloc(tamanioTotalInstruccion);
-	int j;
-	for (j = 0; j < list_size(listaInstrucciones); j++) {
-		instruccionCompleta = strcpy(instruccionCompleta, list_get(listaInstrucciones, j));
-	}
+	finalizarEjecucionPorQuantum();
 
-	return instruccionCompleta;
+	free(pcb);
 }
 
-t_list * crearRequestsParaUMC() {
-	t_list * requestsParaUMC = list_create();
-
+char * solicitarProximaInstruccionAUMC() {
+	char * instruccionRecibida;
 	t_indice_codigo *indice = list_get(pcb->ind_codigo, pcb->PC);
 	uint32_t requestStart = indice->start;
 	uint32_t requestOffset = indice->offset;
@@ -316,46 +294,79 @@ t_list * crearRequestsParaUMC() {
 	while (requestStart > (tamanioPagina + (tamanioPagina * contador))) {
 		contador++;
 	}
-	uint32_t paginaAPedir = contador + pcb->posicionPrimerPaginaCodigo;
+	uint32_t paginaAPedir = contador + pcb->paginaCodigoActual;
+	pcb->paginaCodigoActual = paginaAPedir;
 
-	//Armo el primer request
-	t_solicitarBytes *request = malloc(sizeof(t_solicitarBytes));
-	request->pagina = paginaAPedir;
-	request->tamanio = requestStart;
-	if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
-		request->offset = requestOffset;
-		requestStart = -1;
-		requestOffset = -1;
+	t_solicitarBytes * solicitarBytes = malloc(sizeof(t_solicitarBytes));
+	solicitarBytes->pagina = paginaAPedir;
+	solicitarBytes->start = requestStart;
+	solicitarBytes->offset = requestOffset;
+//	solicitarBytes->pagina = 0;
+//	solicitarBytes->start = 10;
+//	solicitarBytes->offset = 50;
+	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Tamanio: %d", paginaAPedir, requestOffset - requestStart, requestOffset);
+
+
+	t_buffer_tamanio * buffer_tamanio = serializarSolicitarBytes(solicitarBytes);
+
+	int enviarBytes = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, LEER, CPU);
+	if (enviarBytes <= 0) {
+		log_error(ptrLog, "Ocurrio un error al enviar una solicitud de instruccion a CPU");
+		return NULL;
 	} else {
-		request->offset = tamanioPagina * contador;
-		requestStart = (tamanioPagina * contador) + 1;
-		requestOffset = requestOffset - tamanioPagina;
-		contador++;
+		log_info(ptrLog, "Solicito instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
+
+		uint32_t operacion, id;
+		instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
+		t_enviarBytes * bytesRecibidos = deserializarEnviarBytes(instruccionRecibida);
+		return bytesRecibidos->buffer;
 	}
-	list_add(requestsParaUMC, request);
-
-	//Veo si tengo que armar mas request porque me pase de Pagina
-	while ((requestStart + requestOffset) > tamanioPagina) {
-		paginaAPedir++;
-
-		t_solicitarBytes *requestWhile = malloc(sizeof(t_solicitarBytes));
-		requestWhile->pagina = paginaAPedir;
-		requestWhile->tamanio = requestStart;
-
-		if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
-			requestWhile->offset = requestOffset;
-			requestStart = -1;
-			requestOffset = -1;
-		} else {
-			requestWhile->offset = tamanioPagina * contador;
-			requestStart = (tamanioPagina * contador) + 1;
-			requestOffset = requestOffset - tamanioPagina;
-			contador++;
-		}
-
-		list_add(requestsParaUMC, requestWhile);
-	}
-
-	return requestsParaUMC;
 }
+
+//char* solicitarProximaInstruccionAUMC() {
+//	int tamanioTotalInstruccion = 0;
+//	t_list * listaInstrucciones = list_create();
+//	t_list * requestsUMC = crearRequestsParaUMC();
+//
+//	char *message;
+//	uint32_t operation, id;
+//
+//	int i;
+//	for (i = 0; i < list_size(requestsUMC); i++) {
+//		t_solicitarBytes *request = list_get(requestsUMC, i);
+//		t_buffer_tamanio *requestSerializado = serializarSolicitarBytes(request);
+//		int bytesEnviados = enviarDatos(socketUMC, requestSerializado->buffer, requestSerializado->tamanioBuffer, LEER, CPU);
+//		if (bytesEnviados <= 0) {
+//			//Error
+//		} else {
+//			message = recibirDatos(socketUMC, &operation, &id);
+//			if (strlen(message) < 0) {
+//				//Error
+//			} else if (strlen(message) == 0) {
+//				//Error
+//			} else {
+//				if (strcmp("ERROR", message) == 0) {
+//					//Error
+//				} else {
+//					t_enviarBytes *bytesRecibidos = deserializarEnviarBytes( message);
+//					char *datos = malloc(bytesRecibidos->tamanio);
+//					memcpy(datos, &(bytesRecibidos->buffer), bytesRecibidos->tamanio);
+//					list_add(listaInstrucciones, datos);
+//					tamanioTotalInstruccion += bytesRecibidos->tamanio;
+//				}
+//			}
+//
+//			free(message);
+//		}
+//		free(requestSerializado);
+//	}
+//
+//	char *instruccionCompleta = malloc(tamanioTotalInstruccion);
+//	int j;
+//	for (j = 0; j < list_size(listaInstrucciones); j++) {
+//		instruccionCompleta = strcpy(instruccionCompleta, list_get(listaInstrucciones, j));
+//	}
+//
+//	return instruccionCompleta;
+//}
 

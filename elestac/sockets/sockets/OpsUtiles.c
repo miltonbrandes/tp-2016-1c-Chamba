@@ -118,7 +118,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 
 	case CAMBIOPROCESOACTIVO:
-		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion, &operacion);
+		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion);
 
 		//Envio paquete
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
@@ -261,7 +261,7 @@ t_buffer_tamanio * serializarSolicitarBytes(t_solicitarBytes* solicitarBytes) {
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(solicitarBytes->offset), tmp_size);
 	offset += tmp_size;
-	memcpy(paqueteSerializado + offset, &(solicitarBytes->tamanio), tmp_size);
+	memcpy(paqueteSerializado + offset, &(solicitarBytes->start), tmp_size);
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + packageSize);
 	buffer_tamanio->tamanioBuffer = packageSize;
@@ -278,7 +278,7 @@ t_solicitarBytes* deserializarSolicitarBytes(char * message) {
 	offset += tmp_size;
 	memcpy(&(respuesta->offset), message + offset, tmp_size);
 	offset += tmp_size;
-	memcpy(&(respuesta->tamanio), message + offset, tmp_size);
+	memcpy(&(respuesta->start), message + offset, tmp_size);
 
 	return respuesta;
 }
@@ -332,14 +332,11 @@ t_enviarBytes* deserializarEnviarBytes(char* message) {
 	return respuesta;
 }
 
-t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion) {
-	int offset = 0, tmp_size = 0;
+t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
 	uint32_t packageSize = sizeof(uint32_t) * 2;
 	char * paqueteSerializado = malloc(packageSize);
 
-	tmp_size = sizeof(uint32_t);
-	memcpy(paqueteSerializado + offset, operacion, tmp_size);
-	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(cambioProcActivo->programID), tmp_size);
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + packageSize);
@@ -431,7 +428,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->PC), tmp_size);
 	offset += tmp_size;
-	memcpy(paqueteSerializado + offset, &(pcb->posicionPrimerPaginaCodigo), tmp_size);
+	memcpy(paqueteSerializado + offset, &(pcb->paginaCodigoActual), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->stackPointer), tmp_size);
 	offset += tmp_size;
@@ -479,7 +476,7 @@ t_pcb* deserializar_pcb(char* package) {
  	offset += tmp_size;
  	memcpy(&(pcb->PC), package + offset, tmp_size);
  	offset += tmp_size;
- 	memcpy(&(pcb->posicionPrimerPaginaCodigo), package + offset, tmp_size);
+ 	memcpy(&(pcb->paginaCodigoActual), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&(pcb->stackPointer), package + offset, tmp_size);
  	offset += tmp_size;

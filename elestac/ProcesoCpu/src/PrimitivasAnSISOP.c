@@ -77,7 +77,7 @@ t_valor_variable dereferenciar(t_posicion direccion_variable) {
 	t_solicitarBytes* solicitar = malloc(sizeof(t_solicitarBytes));
 	solicitar->pagina = pcb->stackPointer;
 	solicitar->offset = direccion_variable;
-	solicitar->tamanio = 5;
+	solicitar->start = 5;
 	buffer = enviarOperacion(LEER, solicitar, socketUMC);
 	if(buffer[0] == -1){
 		operacion = ERROR;

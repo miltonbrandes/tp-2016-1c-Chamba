@@ -817,16 +817,11 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg->codigoAnsisop = malloc(strlen(programa)+1);
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
-//	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
-//	rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
-//	t_nuevo_prog_en_umc* nuevoProgEnUMC;
-//	nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
-//	basePagCod = nuevoProgEnUMC->primerPaginaDeProc;
-//  basePagStack = nuevoProgEnUMC->primerPaginaStack;
+	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
+	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
+	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 
-	uint32_t basePagCod = 1, primerPaginaStack = 1;
-
-	if (basePagCod == NULL) {
+	if ((nuevoProgEnUMC->primerPaginaDeProc) > -1) {
 		log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
 		programa[0] = -2;
 		free(datos);
@@ -837,8 +832,8 @@ t_pcb* crearPCB(char* programa, int socket) {
 	} else {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
 
-		pcb->posicionPrimerPaginaCodigo = basePagCod;
-		pcb->stackPointer = primerPaginaStack;
+		pcb->paginaCodigoActual = nuevoProgEnUMC->primerPaginaDeProc;
+		pcb->stackPointer = nuevoProgEnUMC->primerPaginaStack;
 
 		pcb->PC = datos->instruccion_inicio;
 		pcb->codigo = datos->instrucciones_size;
