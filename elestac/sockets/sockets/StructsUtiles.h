@@ -20,7 +20,7 @@
 
 typedef struct _package_solicitarBytes {
 	uint32_t pagina;
-	uint32_t start;
+	uint32_t tamanio;
 	uint32_t offset;
 } t_solicitarBytes;
 typedef struct{
@@ -48,7 +48,7 @@ typedef struct pcb {
 
 typedef struct
 {
-	uint32_t idVariable;
+	char idVariable;
 	uint32_t pagina;
 	uint32_t offset;
 	uint32_t size;

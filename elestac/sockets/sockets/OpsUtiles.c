@@ -73,6 +73,104 @@ t_iniciar_programa * deserializarIniciarPrograma(char * buffer) {
 	memcpy(&(iniciarPrograma->codigoAnsisop), buffer+offset, tamCod);
 	return iniciarPrograma;
 }
+char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
+	char * buffer = malloc(50);
+	char* respuestaOperacion;
+	uint32_t id;
+	t_iniciar_programa* est;
+	t_buffer_tamanio *buffer_tamanio;
+
+	switch (operacion) {
+	case LEER:
+		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
+		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+		//####		Recibo buffer pedidos		####
+		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		int bytesRecibidos = strlen(respuestaOperacion);
+		if (bytesRecibidos < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+
+		break;
+	case ESCRIBIR:
+		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
+		buffer_tamanio = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
+
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ESCRIBIR, NUCLEO)) < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+
+		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+
+		if(strcmp(respuestaOperacion, "ERROR") == 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}else{
+			return respuestaOperacion;
+		}
+
+		break;
+
+	case CAMBIOPROCESOACTIVO:
+		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion, &operacion);
+
+		//Envio paquete
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+
+		break;
+	case NUEVOPROGRAMA:
+		est = estructuraDeOperacion;
+		uint32_t tamanioCodigo = (uint32_t)strlen(est->codigoAnsisop);
+		buffer_tamanio = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
+		//Envio paquete
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NUEVOPROGRAMA, NUCLEO)) < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+		//Recibo el valor respuesta de la operación
+		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		if(strcmp(respuestaOperacion, "ERROR") == 0) {
+			//log_error(ptrLog, "Error al recibir respuesta de UMC al solicitar paginas");
+		}else{
+			return respuestaOperacion;
+		}
+
+		break;
+	case FINALIZARPROGRAMA:
+		buffer_tamanio = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
+
+
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, NUCLEO)) < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+		//Recibo respuesta
+		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		int bytesRecibidos4 = strlen(respuestaOperacion);
+		if (bytesRecibidos4 < 0) {
+			free(buffer_tamanio);
+			return NULL;
+		}
+
+		break;
+	default:
+		printf("Operacion no admitida");
+		break;
+	}
+
+	free(buffer_tamanio);
+	return respuestaOperacion;
+}
+
 
 t_buffer_tamanio* serializarListaPaginaFrame(t_list * lista) {
 	uint32_t tamanioTotal = 0;
@@ -163,7 +261,7 @@ t_buffer_tamanio * serializarSolicitarBytes(t_solicitarBytes* solicitarBytes) {
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(solicitarBytes->offset), tmp_size);
 	offset += tmp_size;
-	memcpy(paqueteSerializado + offset, &(solicitarBytes->start), tmp_size);
+	memcpy(paqueteSerializado + offset, &(solicitarBytes->tamanio), tmp_size);
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + packageSize);
 	buffer_tamanio->tamanioBuffer = packageSize;
@@ -180,7 +278,7 @@ t_solicitarBytes* deserializarSolicitarBytes(char * message) {
 	offset += tmp_size;
 	memcpy(&(respuesta->offset), message + offset, tmp_size);
 	offset += tmp_size;
-	memcpy(&(respuesta->start), message + offset, tmp_size);
+	memcpy(&(respuesta->tamanio), message + offset, tmp_size);
 
 	return respuesta;
 }
@@ -251,7 +349,41 @@ t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcAc
 	return buffer_tamanio;
 }
 
-t_buffer_tamanio * serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion) {
+
+char* serializar_opIO(t_dispositivo_io* op_IO){
+	uint32_t longitud = strlen(op_IO->nombre) + 1;
+	uint32_t offset = 0, tmp_size = 0;
+	char * paqueteSerializado = malloc(8 + longitud);
+	tmp_size = 4;
+	memcpy(paqueteSerializado + offset, &(longitud), tmp_size);
+	offset += tmp_size;
+	tmp_size = longitud;
+	memcpy(paqueteSerializado + offset, op_IO->nombre, tmp_size);
+	offset += tmp_size;
+	tmp_size = sizeof(uint32_t);
+	memcpy(paqueteSerializado + offset, &(op_IO->tiempo), tmp_size);
+
+	return paqueteSerializado;
+}
+
+t_dispositivo_io* deserializar_opIO(char* package){
+	t_dispositivo_io* op_IO = malloc(sizeof(t_dispositivo_io));
+	int longitud, offset = 0;
+	int tmp_size = sizeof(uint32_t);
+
+	memcpy(&longitud, package + offset, tmp_size);
+	offset += tmp_size;
+	tmp_size = longitud;
+	op_IO->nombre = malloc(tmp_size);
+	memcpy(op_IO->nombre, package + offset, tmp_size);
+	offset += tmp_size;
+	tmp_size = sizeof(uint32_t);
+	memcpy(&op_IO->tiempo, package + offset, tmp_size);
+
+	return op_IO;
+}
+
+t_buffer_tamanio * serializarFinalizarPrograma(t_finalizar_programa* destruirPaginas, uint32_t *operacion) {
 	int offset = 0, tmp_size = 0;
 	uint32_t packageSize = sizeof(uint32_t) * 2;
 	char * paqueteSerializado = malloc(packageSize);
@@ -259,13 +391,13 @@ t_buffer_tamanio * serializarDestruirSegmento(t_finalizar_programa* destruirSegm
 	tmp_size = sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, operacion, tmp_size);
 	offset += tmp_size;
-	memcpy(paqueteSerializado + offset, &(destruirSegmento->programID), tmp_size);
+	memcpy(paqueteSerializado + offset, &(destruirPaginas->programID), tmp_size);
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + packageSize);
 	buffer_tamanio->tamanioBuffer = packageSize;
 	buffer_tamanio->buffer = paqueteSerializado;
 
-	return paqueteSerializado;
+	return buffer_tamanio;
 
 }
 
@@ -520,8 +652,8 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		tamanioStackParticular += cantidadArgumentos * sizeof(t_argumento);
 
 		int cantidadVariables = list_size(linea->variables);
-		tamanioTotalBuffer += cantidadVariables * sizeof(t_argumento); //tamanio de lista de variables
-		tamanioStackParticular += cantidadVariables * sizeof(t_argumento);
+		tamanioTotalBuffer += cantidadVariables * sizeof(t_variable); //tamanio de lista de variables
+		tamanioStackParticular += cantidadVariables * sizeof(t_variable);
 
 		tamanioTotalBuffer += sizeof(uint32_t); //tamanio de variable direcretorno
 		tamanioStackParticular += sizeof(uint32_t);
@@ -574,12 +706,14 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		offset += tamanioUint32;
 
 		for(p = 0; p < cantidadVariables; p++) {
-			t_argumento *argumento = list_get(stack->variables, p);
-			memcpy(buffer + offset, &(argumento->pagina), tamanioUint32);
+			t_variable *variable = list_get(stack->variables, p);
+			memcpy(buffer + offset, &(variable->idVariable), sizeof(char));
+			offset =+ sizeof(char);
+			memcpy(buffer + offset, &(variable->pagina), tamanioUint32);
 			offset =+ tamanioUint32;
-			memcpy(buffer + offset, &(argumento->offset), tamanioUint32);
+			memcpy(buffer + offset, &(variable->offset), tamanioUint32);
 			offset =+ tamanioUint32;
-			memcpy(buffer + offset, &(argumento->size), tamanioUint32);
+			memcpy(buffer + offset, &(variable->size), tamanioUint32);
 			offset =+ tamanioUint32;
 		}
 
@@ -616,7 +750,7 @@ t_list* deserializarIndiceStack(char* buffer) {
 		memcpy(&tamanioItemStack, buffer + offset, tamanioUint32);
 		offset += tamanioUint32;
 
-		t_stack * stack_item = malloc(tamanioUint32);
+		t_stack * stack_item = malloc(tamanioItemStack);
 
 		uint32_t posicion;
 		memcpy(&posicion, buffer + offset, tamanioUint32);
@@ -645,7 +779,9 @@ t_list* deserializarIndiceStack(char* buffer) {
 		memcpy(&cantidadVariablesStack, buffer + offset, tamanioUint32);
 		offset =+ tamanioUint32;
 		for(p = 0; p < cantidadVariablesStack; p++) {
-			t_argumento * varStack = malloc(sizeof(t_argumento));
+			t_variable * varStack = malloc(sizeof(t_variable));
+			memcpy(&(varStack->idVariable), buffer + offset, sizeof(char));
+			offset += sizeof(char);
 			memcpy(&(varStack->pagina), buffer + offset, tamanioUint32);
 			offset += tamanioUint32;
 			memcpy(&(varStack->offset), buffer + offset, tamanioUint32);

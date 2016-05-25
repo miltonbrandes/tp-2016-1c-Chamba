@@ -321,7 +321,7 @@ t_list * crearRequestsParaUMC() {
 	//Armo el primer request
 	t_solicitarBytes *request = malloc(sizeof(t_solicitarBytes));
 	request->pagina = paginaAPedir;
-	request->start = requestStart;
+	request->tamanio = requestStart;
 	if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
 		request->offset = requestOffset;
 		requestStart = -1;
@@ -340,7 +340,7 @@ t_list * crearRequestsParaUMC() {
 
 		t_solicitarBytes *requestWhile = malloc(sizeof(t_solicitarBytes));
 		requestWhile->pagina = paginaAPedir;
-		requestWhile->start = requestStart;
+		requestWhile->tamanio = requestStart;
 
 		if ((requestStart + requestOffset) <= (tamanioPagina * contador)) {
 			requestWhile->offset = requestOffset;

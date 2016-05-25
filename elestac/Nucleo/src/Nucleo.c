@@ -319,6 +319,27 @@ void imprimirProcesoNew(t_pcb* pcb) {
 	log_debug(ptrLog, "Proceso %d en estado NEW \n",pcb->pcb_id);
 }
 
+void cerrarConexionCliente(t_clienteCpu *unCliente) {
+	log_debug(ptrLog, "CPU %d ha cerrado la conexión", unCliente->id);
+	_Bool _sacarCliente(t_clienteCpu * elCliente) {
+		return unCliente->socket == elCliente->socket;
+	}
+	// Si tenia un pcb asignado, lo mando a la cola d exit para liberar recursos..
+	if (unCliente->fueAsignado == true && cpuAcerrar == unCliente->socket) {
+		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d",
+				unCliente->pcbAsignado->pcb_id);
+		queue_push(colaExit, unCliente->pcbAsignado);
+		sem_post(&semProgExit);
+		pthread_mutex_unlock(&mutex_exit);
+	}
+	list_remove_by_condition(listaSocketsCPUs, (void*) _sacarCliente);
+	if (cpuAcerrar == unCliente->socket) {
+		cpuAcerrar = 0;
+	} else {
+		sem_wait(&semCpuOciosa);
+	}
+}
+
 void escucharPuertos() {
 
 	int socketMaximo = obtenerSocketMaximoInicial(); //descriptor mas grande
@@ -471,6 +492,9 @@ void escucharPuertos() {
 					if (FD_ISSET(socketFor, &tempSockets)) {
 						buffer = recibirDatos(socketFor, &operacion, &id);
 						int bytesRecibidos = strlen(buffer);
+						bool recibiendo(t_clienteCpu * unCliente) {
+							return unCliente->socket == socketFor;
+						}
 						if (bytesRecibidos > 0) {
 							if (strcmp("ERROR", buffer) == 0) {
 								FD_CLR(socketFor, &tempSockets);
@@ -478,9 +502,8 @@ void escucharPuertos() {
 							} else {
 								if (id == CPU) {
 									//entonces recibio de cpu!!!
-									log_info(ptrLog, "Mensaje recibido: %s",
-											*buffer);
-									void _comprueboReciboMensajes(
+
+									void comprobarMensajesDeClientes(
 											t_clienteCpu *unCliente) {
 										unCliente->socket = socketFor;
 										if (unCliente->programaCerrado
@@ -645,11 +668,9 @@ void escucharPuertos() {
 											break;
 										}
 									}
-								} else if (id == UMC) {
-									//en algun momento puedo recibir alguna otra cosa de umc?????? creo que no
-									//entonces recibio de umc
-								} else if (id == CONSOLA) {
-									//aca me tengo que fijar que pasa si se cierra inesperadamente la consola
+								t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
+								log_info(ptrLog, "Mensaje recibido: %s",*buffer);
+								comprobarMensajesDeClientes(unCliente);
 								}
 							}
 						} else if (bytesRecibidos == 0) {
@@ -659,10 +680,31 @@ void escucharPuertos() {
 							log_info(ptrLog,
 									"No se recibio ningun byte de un socket que solicito conexion.");
 						} else if (bytesRecibidos < 0) {
-							finalizarConexion(socketFor);
-							FD_CLR(socketFor, &sockets);
-							log_info(ptrLog,
-									"Ocurrio un error al recibir los bytes de un socket");
+							if(id == CPU){
+								t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
+								cerrarConexionCliente(unCliente);
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &sockets);
+								FD_CLR(socketFor, &tempSockets);
+								log_info(ptrLog,
+										"Ocurrio un error al recibir los bytes de un socket");
+
+							}
+							if(id == CONSOLA){
+								bool _buscaCliente(t_socket_pid* unCliente) {
+									return unCliente->socket == socketFor;
+								}
+								t_socket_pid *unCliente = list_remove_by_condition(listaSocketsConsola, (void*) _buscaCliente);
+								log_error(ptrLog, "El programa:%d se ha desconectado",unCliente->pid);
+								if (unCliente->terminado == false) {
+									pcbAFinalizar = unCliente->pid;
+									sem_post(&semProgramaFinaliza);
+								}
+								finalizarConexion(socketFor);
+								FD_CLR(socketFor, &sockets);
+								FD_CLR(socketFor, &tempSockets);/*Removemos el socket del cliente del master set*/
+								//free(buffer);
+							}
 						}
 					}
 				}
@@ -744,134 +786,6 @@ void operacionesConSemaforos(char operacion, char* buffer,
 		semaforo->valor++;
 		break;
 	}
-}
-
-void cerrarConexionCliente(t_clienteCpu *unCliente) {
-	log_debug(ptrLog, "CPU %d ha cerrado la conexión", unCliente->id);
-	_Bool _sacarCliente(t_clienteCpu * elCliente) {
-		return unCliente->socket == elCliente->socket;
-	}
-	// Si tenia un pcb asignado, lo mando a la cola d exit para liberar recursos..
-	if (unCliente->fueAsignado == true && cpuAcerrar != unCliente->socket) {
-		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d",
-				unCliente->pcbAsignado->pcb_id);
-		queue_push(colaExit, unCliente->pcbAsignado);
-		sem_post(&semProgExit);
-		pthread_mutex_unlock(&mutex_exit);
-	}
-	list_remove_by_condition(listaSocketsCPUs, (void*) _sacarCliente);
-	if (cpuAcerrar == unCliente->socket) {
-		cpuAcerrar = 0;
-	} else {
-		sem_wait(&semCpuOciosa);
-	}
-}
-
-char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
-	char * buffer = malloc(50);
-	char* respuestaOperacion;
-	uint32_t id;
-	t_iniciar_programa* est;
-
-	t_buffer_tamanio *buffer_tamanio;
-
-	switch (operacion) {
-	case LEER:
-		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
-		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
-
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		//####		Recibo buffer pedidos		####
-
-		respuestaOperacion = recibirDatos(socket, NULL, &id);
-		int bytesRecibidos = strlen(respuestaOperacion);
-
-		if (bytesRecibidos < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		break;
-	case ESCRIBIR:
-		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
-		buffer_tamanio = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
-
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ESCRIBIR, NUCLEO)) < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
-
-		if(strcmp(respuestaOperacion, "ERROR") == 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}else{
-			return respuestaOperacion;
-		}
-
-		break;
-
-	case CAMBIOPROCESOACTIVO:
-		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion, &operacion);
-
-		//Envio paquete
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		break;
-	case NUEVOPROGRAMA:
-		est = estructuraDeOperacion;
-		uint32_t tamanioCodigo = (uint32_t)strlen(est->codigoAnsisop);
-		buffer_tamanio = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
-		//Envio paquete
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NUEVOPROGRAMA, NUCLEO)) < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-		//Recibo el valor respuesta de la operación
-		respuestaOperacion = recibirDatos(socketUMC, NULL, &id);
-		if(strcmp(respuestaOperacion, "ERROR") == 0) {
-			log_error(ptrLog, "Error al recibir respuesta de UMC al solicitar paginas");
-		}else{
-			return respuestaOperacion;
-		}
-
-		break;
-	case FINALIZARPROGRAMA:
-//		buffer_tamanio = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
-
-		//Envio paquete
-//		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
-		if ((enviarDatos(serverSocket, buffer, 50, NOTHING, NUCLEO)) < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		//Recibo respuesta
-
-		respuestaOperacion = recibirDatos(socket, NULL, &id);
-		int bytesRecibidos4 = strlen(respuestaOperacion);
-
-		if (bytesRecibidos4 < 0) {
-			free(buffer_tamanio);
-			return NULL;
-		}
-
-		break;
-	default:
-		printf("Operacion no admitida");
-		break;
-	}
-
-	free(buffer_tamanio);
-	return respuestaOperacion;
 }
 
 t_pcb* crearPCB(char* programa, int socket) {
@@ -1080,9 +994,9 @@ void* vaciarColaExit(void* socket){
 		t_finalizar_programa finalizarProg;
 			finalizarProg.programID=aux->pcb_id;
 			if((enviarOperacion(FINALIZARPROGRAMA,&finalizarProg,socket))<0){
-				log_error(ptrLog,"Error al borrar los segmentos del pcb con pid: %d",aux->pcb_id);
+				log_error(ptrLog,"Error al borrar las paginas del pcb con pid: %d",aux->pcb_id);
 			}else{
-				log_info(ptrLog,"Borrados los segmentos del programa:%d",aux->pcb_id);
+				log_info(ptrLog,"Borrados las paginas del programa:%d",aux->pcb_id);
 			}
 		free(aux);
 	}
@@ -1272,6 +1186,8 @@ int main() {
 		pthread_join(threadSocket, NULL);
 		pthread_join(hiloCpuOciosa, NULL);
 		pthread_join(threadPlanificador, NULL);
+		pthread_join(hiloPcbFinalizarError, NULL);
+		pthread_join(threadExit,NULL);
 
 	} else {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");

@@ -22,9 +22,9 @@
 
 //Tipos de datos
 typedef uint32_t t_posicion;
-typedef u_int32_t t_puntero;
-typedef u_int32_t t_size;
-typedef u_int32_t t_puntero_instruccion;
+typedef uint32_t t_puntero;
+typedef uint32_t t_size;
+typedef uint32_t t_puntero_instruccion;
 typedef char t_nombre_variable;
 typedef int t_valor_variable;
 typedef t_nombre_variable* t_nombre_semaforo;
