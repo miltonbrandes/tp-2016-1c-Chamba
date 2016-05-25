@@ -322,24 +322,22 @@ void recibirPeticionesCpu(int socketCpu) {
 }
 
 void enviarTamanioPaginaACPU(int socketCPU) {
-	char *buffer = malloc(sizeof(uint32_t));
-	buffer = (char *)serializarUint32(marcosSize);
-	int bytesEnviados = enviarDatos(socketCPU, buffer, sizeof(uint32_t), ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
+	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
+	int bytesEnviados = enviarDatos(socketCPU, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
 	if(bytesEnviados<=0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
-	free(buffer);
+	free(buffer_tamanio);
 }
 
 void enviarTamanioPaginaANUCLEO() {
-	char *buffer = malloc(sizeof(uint32_t));
-	buffer = (char *)serializarUint32(marcosSize);
-	int bytesEnviados = enviarDatos(socketClienteNucleo, buffer, sizeof(uint32_t), TAMANIO_PAGINAS_NUCLEO, UMC);
+	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
+	int bytesEnviados = enviarDatos(socketClienteNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, TAMANIO_PAGINAS_NUCLEO, UMC);
 	if(bytesEnviados<=0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
 	sem_post(&semEmpezarAceptarCpu);
-	free(buffer);
+	free(buffer_tamanio);
 }
 
 void aceptarConexionCpu(){
@@ -368,10 +366,9 @@ void finalizarPrograma(PID){
 }
 
 int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
-	char * iniciarProgSerializado = malloc(sizeof(uint32_t)*2);
-	iniciarProgSerializado = (char *)serializarIniciarPrograma(iniciarProg);
+	t_buffer_tamanio * iniciarProgSerializado = serializarIniciarPrograma(iniciarProg);
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
-	enviarMensajeASwap(iniciarProgSerializado, sizeof(t_iniciar_programa), NUEVOPROGRAMA); // enviar tmb el PID
+	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
 	uint32_t operacion;
 	uint32_t id;
 	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);

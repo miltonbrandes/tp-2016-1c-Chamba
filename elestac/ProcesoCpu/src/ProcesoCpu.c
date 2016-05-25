@@ -269,8 +269,8 @@ char* solicitarProximaInstruccionAUMC() {
 	int i;
 	for (i = 0; i < list_size(requestsUMC); i++) {
 		t_solicitarBytes *request = list_get(requestsUMC, i);
-		char *requestSerializado = serializarSolicitarBytes(request);
-		int bytesEnviados = enviarDatos(socketUMC, requestSerializado, sizeof(t_solicitarBytes), LEER, CPU);
+		t_buffer_tamanio *requestSerializado = serializarSolicitarBytes(request);
+		int bytesEnviados = enviarDatos(socketUMC, requestSerializado->buffer, requestSerializado->tamanioBuffer, LEER, CPU);
 		if (bytesEnviados <= 0) {
 			//Error
 		} else {

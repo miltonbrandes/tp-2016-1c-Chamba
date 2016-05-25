@@ -22,24 +22,24 @@
 #include <commons/collections/queue.h>
 #include "StructsUtiles.h"
 
-char* serializarSolicitarBytes(t_solicitarBytes* solicitarBytes);
+t_buffer_tamanio* serializarSolicitarBytes(t_solicitarBytes* solicitarBytes);
 t_solicitarBytes* deserializarSolicitarBytes(char * message);
 
-char * serializarNuevoProgEnUMC(t_nuevo_prog_en_umc * nuevoProg);
+t_buffer_tamanio * serializarNuevoProgEnUMC(t_nuevo_prog_en_umc * nuevoProg);
 t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer);
 
-char* serializarEnviarBytes(t_enviarBytes* enviarBytes);
-char* serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion);
-char* serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);
-char* serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
+t_buffer_tamanio * serializarEnviarBytes(t_enviarBytes* enviarBytes);
+t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion);
+t_buffer_tamanio * serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);
+t_buffer_tamanio * serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
 
 t_pcb* deserializar_pcb(char* package);
 t_buffer_tamanio* serializar_pcb(t_pcb* pcb);
 
-char* serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial);
+t_buffer_tamanio * serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial);
 t_EstructuraInicial* deserializar_EstructuraInicial(char* package);
 
-char* serializar_opVarCompartida(t_op_varCompartida* varCompartida);
+t_buffer_tamanio * serializar_opVarCompartida(t_op_varCompartida* varCompartida);
 t_op_varCompartida* deserializar_opVarCompartida(char* package);
 
 t_buffer_tamanio* serializadoIndiceDeCodigo(t_list* indiceCodigo);
@@ -51,13 +51,13 @@ t_list* deserializarIndiceStack(char* indice);
 t_list* llenarLista(t_intructions * indiceCodigo, t_size cantInstruc);
 t_list* llenarStack(t_list * lista, t_stack* lineaAgregar);
 
-char* serializarUint32(uint32_t number);
+t_buffer_tamanio * serializarUint32(uint32_t number);
 uint32_t deserializarUint32(char *package);
 
-char* serializarListaPaginaFrame(t_list * lista);
+t_buffer_tamanio * serializarListaPaginaFrame(t_list * lista);
 t_list * deserializarListaPaginaFrame(char * mensaje);
 
-char * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma);
+t_buffer_tamanio * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma);
 t_iniciar_programa * deserializarIniciarPrograma(char * buffer);
 
 #endif /* SOCKETS_UTILES_OPSUTILES_H_ */

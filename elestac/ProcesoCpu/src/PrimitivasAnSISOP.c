@@ -55,10 +55,8 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	return NULL;
 }
 
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
-		t_valor_variable valor) {
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {
 	int longitud = strlen(variable) + 1 + 8;
-	char* buffer;
 	log_debug(ptrLog, "Asignando el valor %d a la variable compartida '%s'",
 			valor, variable);
 	t_op_varCompartida* varCompartida = malloc(sizeof(t_op_varCompartida));
@@ -66,11 +64,11 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
 	varCompartida->nombre = malloc(strlen(variable) + 1);
 	strcpy(varCompartida->nombre, variable);
 	varCompartida->valor = valor;
-	buffer = serializar_opVarCompartida(varCompartida);
+	t_buffer_tamanio * tamanio_buffer = serializar_opVarCompartida(varCompartida);
 
-	if (enviarDatos(socketNucleo, &buffer, (uint32_t)longitud, (uint32_t)ASIG_VAR_COMPARTIDA, (uint32_t)CPU) < 0)
+	if (enviarDatos(socketNucleo, tamanio_buffer->buffer, tamanio_buffer->tamanioBuffer, (uint32_t)ASIG_VAR_COMPARTIDA, (uint32_t)CPU) < 0)
 	return -1;
-	free(buffer);
+	free(tamanio_buffer);
 	free(varCompartida->nombre);
 	free(varCompartida);
 	log_debug(ptrLog, "Valor asignado");

@@ -363,14 +363,12 @@ void escucharPuertos() {
 				estructuraInicial = malloc(sizeof(t_EstructuraInicial));
 				estructuraInicial->Quantum = quantum;
 				estructuraInicial->RetardoQuantum = quantumSleep;
-				char* envio = malloc(sizeof(t_EstructuraInicial));
-				envio = serializar_EstructuraInicial(estructuraInicial);
-				enviarDatos(cliente->socket, envio,
-						sizeof(t_EstructuraInicial), QUANTUM_PARA_CPU, NUCLEO);
+				t_buffer_tamanio * buffer_tamanio = serializar_EstructuraInicial(estructuraInicial);
+				enviarDatos(cliente->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, QUANTUM_PARA_CPU, NUCLEO);
 				sem_post(&semCpuOciosa);
 				log_debug(ptrLog, "Cliente aceptado y quantum enviado");
 				free(estructuraInicial);
-				free(envio);
+				free(buffer_tamanio);
 				FD_CLR(socketReceptorCPU, &tempSockets);
 
 			} else if (FD_ISSET(socketReceptorConsola, &tempSockets)) {
@@ -770,19 +768,20 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 }
 
 char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
-	int packageSize;
-	char *paqueteSerializado;
+	char * buffer = malloc(50);
 	char* respuestaOperacion;
 	uint32_t id;
 	t_iniciar_programa* est;
+
+	t_buffer_tamanio *buffer_tamanio;
+
 	switch (operacion) {
 	case LEER:
 		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
-		packageSize = sizeof(t_solicitarBytes) + sizeof(uint32_t);
-		paqueteSerializado = serializarSolicitarBytes(estructuraDeOperacion);
+		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
 
-		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize, NOTHING, NUCLEO)) < 0) {
-			free(paqueteSerializado);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+			free(buffer_tamanio);
 			return NULL;
 		}
 
@@ -792,24 +791,24 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		int bytesRecibidos = strlen(respuestaOperacion);
 
 		if (bytesRecibidos < 0) {
-			free(paqueteSerializado);
+			free(buffer_tamanio);
 			return NULL;
 		}
 
 		break;
 	case ESCRIBIR:
 		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
-		paqueteSerializado = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
+		buffer_tamanio = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
 
-		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize, ESCRIBIR, NUCLEO)) < 0) {
-			free(paqueteSerializado);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ESCRIBIR, NUCLEO)) < 0) {
+			free(buffer_tamanio);
 			return NULL;
 		}
 
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
 
 		if(strcmp(respuestaOperacion, "ERROR") == 0) {
-			free(paqueteSerializado);
+			free(buffer_tamanio);
 			return NULL;
 		}else{
 			return respuestaOperacion;
@@ -818,12 +817,11 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 
 	case CAMBIOPROCESOACTIVO:
-		packageSize = sizeof(t_cambio_proc_activo) + sizeof(uint32_t);
-		paqueteSerializado = serializarCambioProcActivo(estructuraDeOperacion, &operacion);
+		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion, &operacion);
 
 		//Envio paquete
-		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize, NOTHING, NUCLEO)) < 0) {
-			free(paqueteSerializado);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+			free(buffer_tamanio);
 			return NULL;
 		}
 
@@ -831,11 +829,10 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 	case NUEVOPROGRAMA:
 		est = estructuraDeOperacion;
 		uint32_t tamanioCodigo = (uint32_t)strlen(est->codigoAnsisop);
-		packageSize = sizeof(t_iniciar_programa) + sizeof(uint32_t)+ tamanioCodigo;
-		paqueteSerializado = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
+		buffer_tamanio = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
 		//Envio paquete
-		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize, NUEVOPROGRAMA, NUCLEO)) < 0) {
-			free(paqueteSerializado);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NUEVOPROGRAMA, NUCLEO)) < 0) {
+			free(buffer_tamanio);
 			return NULL;
 		}
 		//Recibo el valor respuesta de la operación
@@ -848,13 +845,12 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		break;
 	case FINALIZARPROGRAMA:
-		packageSize = sizeof(t_finalizar_programa) + sizeof(uint32_t);
-//		paqueteSerializado = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
+//		buffer_tamanio = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
 
-		//envio paquete
-		if ((enviarDatos(serverSocket, paqueteSerializado, packageSize,
-				NOTHING, NUCLEO)) < 0) {
-			free(paqueteSerializado);
+		//Envio paquete
+//		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+		if ((enviarDatos(serverSocket, buffer, 50, NOTHING, NUCLEO)) < 0) {
+			free(buffer_tamanio);
 			return NULL;
 		}
 
@@ -864,7 +860,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		int bytesRecibidos4 = strlen(respuestaOperacion);
 
 		if (bytesRecibidos4 < 0) {
-			free(paqueteSerializado);
+			free(buffer_tamanio);
 			return NULL;
 		}
 
@@ -874,7 +870,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 	}
 
-	free(paqueteSerializado);
+	free(buffer_tamanio);
 	return respuestaOperacion;
 }
 

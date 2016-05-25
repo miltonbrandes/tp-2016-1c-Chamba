@@ -231,13 +231,16 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 	//uint32_t cantidadPaginasAEscribir;
 	uint32_t resultado=paginaSolicitada;
 	uint32_t ** pid;
+
+	t_buffer_tamanio * buffer_tamanio;
+
 	switch(op){
 		case NUEVOPROGRAMA:
 			resultado=asignarMemoria(pid, paginaSolicitada);
 			if (!resultado)
 			{
-				char* paqueteAEnviar= serializarUint32(*pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t),RECHAZAR_PROCESO_A_UMC,SWAP);
+				buffer_tamanio = serializarUint32(*pid);
+				int enviado=enviarDatos(socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, RECHAZAR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje a UMC ");
@@ -253,8 +256,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 			{
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
 				log_error(ptrLog, "El proceso %d no se encuentra en el swap",pid);
-				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_FINALIZAR_PROCESO_A_UMC,SWAP);
+				buffer_tamanio = serializarUint32(pid);
+				int enviado=enviarDatos(socket,buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, RECHAZAR_FINALIZAR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje al ADM\n");
@@ -272,8 +275,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 			if(!aLeer)
 			{
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
-				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_LEER_PROCESO_A_UMC,SWAP);
+				buffer_tamanio = serializarUint32(pid);
+				int enviado=enviarDatos(socket,buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, RECHAZAR_LEER_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje a UMC\n");
@@ -282,7 +285,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 				return 0;
 			}
 			char* leido= leerProceso(aLeer,paginaSolicitada);
-			enviarDatos(socket, leido,sizeof(leido),ENVIAR_PAGINA_A_UMC,SWAP);
+			enviarDatos(socket, leido, sizeof(leido),ENVIAR_PAGINA_A_UMC,SWAP);
 			free(leido);
 		break;
 		case ESCRIBIR:
@@ -293,8 +296,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 			{
 				printf ("El proceso %d no se encuentra en el swap \n",pid);
 				log_error(ptrLog, "El proceso %d no se encuentra en el swap \n",pid);
-				char* paqueteAEnviar= serializarUint32(pid);
-				int enviado=enviarDatos(socket,paqueteAEnviar,sizeof(uint32_t), RECHAZAR_ESCRIBIR_PROCESO_A_UMC,SWAP);
+				buffer_tamanio = serializarUint32(pid);
+				int enviado=enviarDatos(socket,buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, RECHAZAR_ESCRIBIR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
 					printf("No se pudo enviar mensaje al UMC\n");
@@ -316,7 +319,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 	}
 	//si llegó hasta acá es porque esta OK
 	int i=-1;
-	i=enviarDatos(socket, resultado,sizeof(uint32_t),SUCCESS,SWAP);
+	t_buffer_tamanio * bufferPagina = serializarUint32(resultado);
+	i=enviarDatos(socket, bufferPagina->buffer, bufferPagina->tamanioBuffer, SUCCESS, SWAP);
 	if(i==-1)
 	{
 		printf("No se pudo enviar mensaje de confirmacion a UMC\n");
