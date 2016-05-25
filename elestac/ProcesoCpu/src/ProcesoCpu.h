@@ -13,8 +13,11 @@
  *  Created on: 18/4/2016
  *      Author: utnso
  */
+#include <commons/collections/list.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();
@@ -34,7 +37,9 @@ void recibirInstruccion(char *mensaje);
 
 void comenzarEjecucionDePrograma();
 char* solicitarProximaInstruccionAUMC();
+void finalizarEjecucionPorExit();
 void finalizarEjecucionPorQuantum();
+void notificarAUMCElCambioDeProceso(uint32_t pid);
 
 t_list * crearRequestsParaUMC();
 

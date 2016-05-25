@@ -29,7 +29,7 @@ t_buffer_tamanio * serializarNuevoProgEnUMC(t_nuevo_prog_en_umc * nuevoProg);
 t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer);
 
 t_buffer_tamanio * serializarEnviarBytes(t_enviarBytes* enviarBytes);
-t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo, uint32_t *operacion);
+t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo);
 t_buffer_tamanio * serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);
 t_buffer_tamanio * serializarDestruirSegmento(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
 

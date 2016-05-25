@@ -21,37 +21,9 @@
 #include <sockets/StructsUtiles.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include "UMC.h"
 
 #define SLEEP 1000000
-
-// ENTRADAS A LA TLB //
-typedef struct {
-	int pid;
-	int pagina;
-	char * direccion_fisica;
-	int marco;
-} t_tlb;
-
-//Tabla de paginas de un Proceso
-typedef struct {
-	uint32_t pID;
-	t_list * tablaDePaginas;
-} t_tabla_de_paginas;
-
-//Valor del dictionary de t_tabla_de_paginas. La clave es el numero de pagina
-typedef struct {
-	uint32_t frame;
-	uint32_t modificado; //1 modificado, 0 no modificado. Para paginas de codigo es siempre 0
-	uint32_t estaEnUMC; //1 esta, 0 no esta. Para ver si hay que pedir o no la pagina a SWAP.
-} t_registro_tabla_de_paginas;
-
-//PARA INCLUIR EN LA LIBRERIA
-typedef struct {
-	uint32_t numCpu;
-	uint32_t socket;
-	uint32_t procesoActivo; //inicializa en -1
-	pthread_t hiloCpu;
-} t_cpu;
 
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorNucleo;
@@ -72,9 +44,9 @@ char *ipSwap;
 int i = 0;
 
 //Variables frames, tlb, tablas
-t_list * framesOcupados;
-t_list * framesVacios;
 t_list * listaCpus;
+t_list * frames;
+t_list * tablaProcesosPaginas;
 
 //Variables Hilos
 pthread_t hiloConexiones;
@@ -84,35 +56,13 @@ pthread_t hiloNucleo;
 //variables semaforos
 sem_t semEmpezarAceptarCpu;
 
-char * reservarMemoria(int cantidadMarcos, int tamanioMarco);
-int crearLog();
-int iniciarUMC(t_config* config);
-int cargarValoresDeConfig();
-int init();
-void manejarConexionesRecibidas();
-void recibirPeticionesNucleo();
-void enviarTamanioPaginaANUCLEO();
-void aceptarConexionCpu();
-void recibirPeticionesCpu(t_cpu cpuEnAccion);
-void finalizarPrograma(PID);
-void enviarTamanioPaginaACPU(int socketCPU);
-int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg);
-void liberarMemoria(char * memoriaALiberar);
-void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio);
-void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, char* buffer);
-void enviarMensajeACpu(char *mensaje, int operacion, int socketCpu);
-void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion);
-void enviarMensajeANucleo(char *mensajeNucleo, int operacion);
-t_iniciar_programa* deserializarIniciarPrograma(char* mensaje);
-t_finalizar_programa* deserializarFinalizarPrograma(char * mensaje);
-t_cambio_proc_activo* deserializarCambioProcesoActivo(char * mensaje);
-t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,int presencia, int modificado);
-void inicializarProceso(t_iniciar_programa *iniciarProg);
-
 int main() {
 	if (init()) {
+		tablaProcesosPaginas = list_create();
+		frames = list_create();
+
 		sem_init(&semEmpezarAceptarCpu, 1, 0);
-		char * memoria_real = reservarMemoria(marcos,marcosSize);
+		reservarMemoria(marcos,marcosSize);
 
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
 		if (socketSwap < 0) {
@@ -135,8 +85,6 @@ int main() {
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 		manejarConexionesRecibidas();
-		//pthread_create(&hiloConexiones, NULL, (void*) manejarConexionesRecibidas, NULL);
-		//log_info(ptrLog, "Se creo el thread para manejar conexiones");
 
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
@@ -153,10 +101,15 @@ int main() {
 
 //////FUNCIONES UMC//////
 
-char * reservarMemoria(int cantidadMarcos, int tamanioMarco){
-	// calloc me la llena de \0
-	char * memoria = calloc(cantidadMarcos, tamanioMarco);
-	return memoria;
+void reservarMemoria(int cantidadMarcos, int tamanioMarco){
+	int i;
+	for(i = 0; i < cantidadMarcos; i++) {
+		t_frame * frame = malloc(sizeof(uint32_t) + tamanioMarco);
+		frame->numeroFrame = i;
+		frame->contenido = malloc(tamanioMarco);
+
+		list_add(frames, frame);
+	}
 }
 
 /////HAY QUE MODIFICAR COMO SE ENVIAN LOS MENSAJES
@@ -311,24 +264,25 @@ void recibirPeticionesNucleo(){
 
 		log_info(ptrLog, "Esperando Peticion de Nucleo");
 		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
-		log_info(ptrLog, "Se recibe Peticion de Nucleo", operacion, id);
 
-		if (operacion == NUEVOPROGRAMA) { //INICIAR
+		if (operacion == NUEVOPROGRAMA) {
 			t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
 			log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
 
-			int pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+//			int pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+			int pudoSwap = SUCCESS;
 			if (pudoSwap == SUCCESS) {
-				inicializarProceso(iniciarProg);
-				enviarMensajeANucleo("Se inicializo el programa", pudoSwap);
+				log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
+				log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
+				t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
+				notificarProcesoIniciadoANucleo(iniciarPrograma);
 			} else {
 				operacion = ERROR;
 				log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
-				enviarMensajeANucleo( "Error al inicializar programa, no hay espacio", operacion);
+				notificarProcesoNoIniciadoANucleo();
 			}
-		}
-		if (operacion == FINALIZARPROGRAMA) {
+		}else if (operacion == FINALIZARPROGRAMA) {
 			t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
 			uint32_t PID = finalizar->programID;
 			log_info(ptrLog, "Se recibio orden de finalizacion del PID: %d", PID);
@@ -343,37 +297,52 @@ void recibirPeticionesNucleo(){
 	}
 }
 
-void inicializarProceso(t_iniciar_programa *iniciarProg){
-
-	t_list *listaDeUnProceso = list_create();
-
-	t_tabla_de_paginas tablaDeUnProceso;
-	tablaDeUnProceso.pID = iniciarProg->programID;
-
-	int cantPaginas = iniciarProg->tamanio;
-	int x;
-
-	for(x = 0; x < cantPaginas; x++){
-
-//	t_list *listaDeUnaPagDeUnProceso = list_create();
-//	t_registro_tabla_de_paginas tablaDeUnaPagDeUnProceso;
-//	tablaDeUnaPagDeUnProceso.estaEnUMC = 0;
-//	tablaDeUnaPagDeUnProceso.modificado = 0;
-//	tablaDeUnaPagDeUnProceso.frame = NULL; //NULL?????
-//	tablaDeUnProceso.tablaDePaginas = listaDeUnaPagDeUnProceso;
-//	list_add(listaDeUnProceso, tablaDeUnProceso);
-//	list_add(listaDeUnaPagDeUnProceso, tablaDeUnaPagDeUnProceso);
-
-	list_add(listaDeUnProceso,crearRegistroPag(x,-1, 0 , 0));
-
+void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma) {
+	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
+	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	if(enviarRespuesta <= 0) {
+		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
 	}
 }
 
-t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,
-		int presencia, int modificado) {
-	t_registro_tabla_de_paginas * regPagina = malloc(
-			sizeof(t_registro_tabla_de_paginas));
-	// Y LA PAGINA DONDE LA METO?
+void notificarProcesoNoIniciadoANucleo() {
+	t_nuevo_prog_en_umc * nuevoPrograma = malloc(sizeof(t_nuevo_prog_en_umc));
+	nuevoPrograma->primerPaginaDeProc = -1;
+	nuevoPrograma->primerPaginaStack = -1;
+
+	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
+	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	if(enviarRespuesta <= 0) {
+		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
+	}
+}
+
+t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg){
+	t_list * tablaDePaginas = list_create();
+
+	int i;
+	for(i = 0; i < iniciarProg->tamanio; i++) {
+		t_registro_tabla_de_paginas * registro = crearRegistroPag(i, -1, 0, 0);
+		list_add(tablaDePaginas, registro);
+	}
+
+	t_tabla_de_paginas * tablaDeUnProceso = malloc(sizeof(uint32_t) + (sizeof(t_registro_tabla_de_paginas) * list_size(tablaDePaginas)));
+	tablaDeUnProceso->pID = iniciarProg->programID;
+	tablaDeUnProceso->tablaDePaginas = tablaDePaginas;
+
+	list_add(tablaProcesosPaginas, tablaDeUnProceso);
+
+	t_nuevo_prog_en_umc * nuevoPrograma = malloc(sizeof(t_nuevo_prog_en_umc));
+	nuevoPrograma->primerPaginaDeProc = 0;
+	nuevoPrograma->primerPaginaStack = iniciarProg->tamanio - 2;
+
+	return nuevoPrograma;
+}
+
+t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presencia, int modificado) {
+	t_registro_tabla_de_paginas * regPagina = malloc(sizeof(t_registro_tabla_de_paginas));
+
+	regPagina->paginaProceso = pagina;
 	regPagina->frame = marco;
 	regPagina->modificado = modificado;
 	regPagina->estaEnUMC = presencia;
@@ -402,28 +371,26 @@ void aceptarConexionCpu(){
 	}
 }
 
-void recibirPeticionesCpu(t_cpu cpuEnAccion) {
+void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 	uint32_t operacion;
 	uint32_t id;
-	uint32_t socketCpu = cpuEnAccion.socket;
+	uint32_t socketCpu = cpuEnAccion->socket;
 
 	while(1){
-		log_debug(ptrLog, "Esperando pedidos de una cpu de lectura o escritura de pagina");
+		log_debug(ptrLog, "A la espera de alguna solicitud de la CPU %d", cpuEnAccion->numCpu);
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
 		if (operacion == LEER) {
-			t_solicitarBytes *leer;
-			leer = deserializarSolicitarBytes(mensajeRecibido);
+			t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
 
-			uint32_t pagina;
-			pagina = leer->pagina;
-			uint32_t start;
-			start = leer->start;
-			uint32_t offset;
-			offset = leer->offset;
-		}
+			uint32_t pagina = leer->pagina;
+			uint32_t start = leer->start;
+			uint32_t offset = leer->offset;
+			log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
 
-		if (operacion == ESCRIBIR) {
+			enviarDatoACPU(cpuEnAccion, pagina, start, offset);
+
+		}else if (operacion == ESCRIBIR) {
 			t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
 
 			uint32_t pagina = escribir->pagina;
@@ -431,15 +398,14 @@ void recibirPeticionesCpu(t_cpu cpuEnAccion) {
 			uint32_t offset = escribir->offset;
 			char* codigoAnsisop = escribir->buffer;
 
-		}
-
-		if (operacion == CAMBIOPROCESOACTIVO){
+		}else if (operacion == CAMBIOPROCESOACTIVO){
 			t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
 
 			//ACA SE HACE FLUSH
 
 			uint32_t PID_Activo = procesoActivo->programID;
-			cpuEnAccion.procesoActivo = PID_Activo;
+			log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
+			cpuEnAccion->procesoActivo = PID_Activo;
 
 		} else {
 			operacion = ERROR;
@@ -448,6 +414,87 @@ void recibirPeticionesCpu(t_cpu cpuEnAccion) {
 			break;
 		}
 	}
+}
+
+void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset) {
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
+	if (tablaDeProceso != NULL) {
+		log_info(ptrLog, "Se encontro la Tabla del Proceso %d", cpu->procesoActivo);
+
+		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso, pagina, start, offset);
+
+		if(listaRegistros != NULL) {
+			log_info(ptrLog, "Paginas involucradas en Solicitud: %d", list_size(listaRegistros));
+			int i;
+			for(i = 0; i < list_size(listaRegistros); i++) {
+				t_registro_tabla_de_paginas * registro = list_get(listaRegistros, i);
+				log_info(ptrLog, "Registro involucrado-> Pagina: %d - Esta: %d - Modif: %d - Frame: %d", registro->paginaProceso, registro->estaEnUMC, registro->modificado, registro->frame);
+			}
+		}
+	}
+}
+
+t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset) {
+	log_info(ptrLog, "Tamanio de Marcos: %d", marcosSize);
+	t_list * registros = list_create();
+
+	//Armo el primer request
+	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
+	log_info(ptrLog, "Registro principal-> Pagina: %d - Start: %d - Offset: %d", registro->paginaProceso, start, offset);
+
+	if (((start + offset) <= (marcosSize * pagina)) || (pagina == 0 && ((start + offset) <= (marcosSize * 1)))) {
+		//Es solo 1 pagina la que hay que agarrar
+		start = -1;
+		offset = -1;
+	} else {
+		offset = (start + offset) - marcosSize - (marcosSize * pagina);
+		start = (marcosSize * pagina) + marcosSize;
+		pagina++;
+	}
+	list_add(registros, registro);
+
+	//Veo si tengo que armar mas request porque me pase de Pagina
+	while ((start + offset) > (marcosSize * pagina)) {
+		log_info(ptrLog, "Necesito otra pagina-> Start: %d - Offset: %d", start, offset);
+		t_registro_tabla_de_paginas * registroAdicional = buscarPaginaEnTabla(tablaDeProceso, pagina);
+		log_info(ptrLog, "Registro Adicional-> Pagina: %d - Start: %d - Offset: %d", registroAdicional->paginaProceso, start, offset);
+
+		if ((start + offset) <= (marcosSize * pagina)) {
+			//No tengo que buscar mas paginas
+			start = -1;
+			offset = -1;
+		} else {
+			offset = (start + offset) - marcosSize - (marcosSize * pagina);
+			start = (marcosSize * pagina) + marcosSize;
+		}
+
+		list_add(registros, registroAdicional);
+		pagina++;
+	}
+
+	return registros;
+}
+
+t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla, uint32_t pagina) {
+	int i;
+	for(i = 0; i < list_size(tabla->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas, i);
+		if(registro->paginaProceso == pagina) {
+			return registro;
+		}
+	}
+	return NULL;
+}
+
+t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId) {
+	int i;
+	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
+		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
+		if(tabla->pID == procesoId) {
+			return tabla;
+		}
+	}
+	return NULL;
 }
 
 void enviarTamanioPaginaACPU(int socketCPU) {
@@ -469,7 +516,7 @@ void enviarTamanioPaginaANUCLEO(){
 	free(buffer_tamanio);
 }
 
-void finalizarPrograma(PID){
+void finalizarPrograma(uint32_t PID){
 }
 
 int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
@@ -497,15 +544,6 @@ void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, 
 }
 
 //PROBAR SI ESTO ESTA BIEN//////////////////////////////////////////////////
-t_iniciar_programa* deserializarIniciarPrograma(char* mensaje){
-	t_iniciar_programa *respuesta = malloc(sizeof(t_iniciar_programa));
-	int offset = 0, tmp_size = sizeof(uint32_t);
-	memcpy(&(respuesta->programID), mensaje + offset, tmp_size);
-	offset += tmp_size;
-	memcpy(&(respuesta->tamanio), mensaje + offset, tmp_size);
-	return respuesta;
-}
-
 t_finalizar_programa* deserializarFinalizarPrograma(char * mensaje) {
 	t_finalizar_programa *respuesta = malloc(sizeof(t_finalizar_programa));
 	int offset = 0, tmp_size = sizeof(uint32_t);

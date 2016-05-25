@@ -42,7 +42,7 @@ typedef struct pcb {
 	t_list* ind_stack;
 	char* ind_etiq;
 	uint32_t PC;
-	uint32_t posicionPrimerPaginaCodigo;
+	uint32_t paginaCodigoActual;
 	uint32_t stackPointer;
 } t_pcb;
 
