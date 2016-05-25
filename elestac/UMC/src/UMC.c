@@ -71,7 +71,7 @@ char *algoritmoReemplazo;
 char *ipSwap;
 int i = 0;
 
-//Variables frames, tlb
+//Variables frames, tlb, tablas
 t_list * framesOcupados;
 t_list * framesVacios;
 t_list * listaCpus;
@@ -106,7 +106,8 @@ void enviarMensajeANucleo(char *mensajeNucleo, int operacion);
 t_iniciar_programa* deserializarIniciarPrograma(char* mensaje);
 t_finalizar_programa* deserializarFinalizarPrograma(char * mensaje);
 t_cambio_proc_activo* deserializarCambioProcesoActivo(char * mensaje);
-
+t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,int presencia, int modificado);
+void inicializarProceso(t_iniciar_programa *iniciarProg);
 
 int main() {
 	if (init()) {
@@ -319,6 +320,7 @@ void recibirPeticionesNucleo(){
 
 			int pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
 			if (pudoSwap == SUCCESS) {
+				inicializarProceso(iniciarProg);
 				enviarMensajeANucleo("Se inicializo el programa", pudoSwap);
 			} else {
 				operacion = ERROR;
@@ -339,6 +341,44 @@ void recibirPeticionesNucleo(){
 			break;
 		}
 	}
+}
+
+void inicializarProceso(t_iniciar_programa *iniciarProg){
+
+	t_list *listaDeUnProceso = list_create();
+
+	t_tabla_de_paginas tablaDeUnProceso;
+	tablaDeUnProceso.pID = iniciarProg->programID;
+
+	int cantPaginas = iniciarProg->tamanio;
+	int x;
+
+	for(x = 0; x < cantPaginas; x++){
+
+//	t_list *listaDeUnaPagDeUnProceso = list_create();
+//	t_registro_tabla_de_paginas tablaDeUnaPagDeUnProceso;
+//	tablaDeUnaPagDeUnProceso.estaEnUMC = 0;
+//	tablaDeUnaPagDeUnProceso.modificado = 0;
+//	tablaDeUnaPagDeUnProceso.frame = NULL; //NULL?????
+//	tablaDeUnProceso.tablaDePaginas = listaDeUnaPagDeUnProceso;
+//	list_add(listaDeUnProceso, tablaDeUnProceso);
+//	list_add(listaDeUnaPagDeUnProceso, tablaDeUnaPagDeUnProceso);
+
+	list_add(listaDeUnProceso,crearRegistroPag(x,-1, 0 , 0));
+
+	}
+}
+
+t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,
+		int presencia, int modificado) {
+	t_registro_tabla_de_paginas * regPagina = malloc(
+			sizeof(t_registro_tabla_de_paginas));
+	// Y LA PAGINA DONDE LA METO?
+	regPagina->frame = marco;
+	regPagina->modificado = modificado;
+	regPagina->estaEnUMC = presencia;
+
+	return regPagina;
 }
 
 void aceptarConexionCpu(){
