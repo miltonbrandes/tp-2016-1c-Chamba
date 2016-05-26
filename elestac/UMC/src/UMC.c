@@ -365,10 +365,12 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 		escribirEnSwap->pid = iniciarProg->programID;
 
 		if(offset + marcosSize < longitudCodigo) {
+			escribirEnSwap->contenido = malloc(marcosSize);
 			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize);
 			offset += marcosSize;
 		}else{
 			uint32_t longitudACopiar = longitudCodigo - offset;
+			escribirEnSwap->contenido = malloc(longitudACopiar);
 			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, longitudACopiar);
 			break;
 		}
@@ -490,13 +492,24 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 					offsetMemcpy += auxiliar->offset;
 				}else{
 					log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
-					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, registro->paginaProceso);
 					memcpy(datosParaCPU, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
 					offsetMemcpy += auxiliar->offset;
 				}
 			}
 		}
 	}
+
+//	char * barraCero = '\0';
+//	memcpy(datosParaCPU + offset, barraCero, 1);
+	log_info(ptrLog, "La instruccion que pidio CPU es: %s", datosParaCPU);
+
+	t_instruccion * instruccion = malloc(strlen(datosParaCPU));
+	instruccion->instruccion = datosParaCPU;
+
+	t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, strlen(datosParaCPU));
+
+	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -541,7 +554,6 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 		list_add(registros, auxiliar);
 	} else {
 		auxiliar->start = start;
-		uint32_t offsetReal = (marcosSize - start);
 		auxiliar->offset = (marcosSize - start);
 		offset = offset - (marcosSize - start);
 		start = 0;

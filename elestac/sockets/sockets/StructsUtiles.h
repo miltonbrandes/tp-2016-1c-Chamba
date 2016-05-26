@@ -175,6 +175,10 @@ typedef struct {
 	uint32_t cantidadDePaginas;
 } t_check_espacio;
 
+typedef struct {
+	char * instruccion;
+} t_instruccion;
+
 //auxiliares
 typedef struct {
 	uint32_t tamanioStack;

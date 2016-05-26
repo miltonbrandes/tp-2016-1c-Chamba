@@ -13,6 +13,38 @@
 #include "OpsUtiles.h"
 #include "StructsUtiles.h"
 
+t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, uint32_t tamanioInstruccion) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	char * buffer = malloc(tamanioInstruccion);
+
+	memcpy(buffer,&tamanioInstruccion , tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, (instruccion->instruccion), tamanioInstruccion);
+
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioInstruccion);
+	buffer_tamanio->tamanioBuffer = tamanioInstruccion;
+	buffer_tamanio->buffer = buffer;
+
+	return buffer_tamanio;
+}
+
+t_instruccion * deserializarInstruccion(char * message) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	uint32_t longitud;
+
+	memcpy(&longitud, message, tmp_size);
+	offset += tmp_size;
+
+	char * instruccion = malloc(longitud);
+	memcpy(instruccion, message + offset, longitud);
+
+	t_pagina_de_swap * paginaSwap = malloc(longitud);
+	paginaSwap->paginaSolicitada = malloc(longitud);
+	memcpy(paginaSwap->paginaSolicitada, instruccion, longitud);
+
+	return paginaSwap;
+}
+
 t_buffer_tamanio * serializarCheckEspacio(t_check_espacio * check) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
 	char * buffer = malloc(sizeof(t_check_espacio));
@@ -41,7 +73,7 @@ t_check_espacio * deserializarCheckEspacio(char * buffer) {
 
 t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
-	uint32_t longPag = strlen(escribirEnSwap->contenido);
+	uint32_t longPag = strlen(escribirEnSwap->contenido) + 1;
 	char * buffer = malloc(longPag + (sizeof(uint32_t) * 3));
 
 	memcpy(buffer, &(escribirEnSwap->pid), tmp_size);
@@ -75,27 +107,26 @@ t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer) {
 	offset += tmp_size;
 
 	char * pagina = malloc(tamanioBuffer);
-	memcpy(pagina, buffer + offset, tamanioBuffer);
+	memcpy(pagina, buffer + offset, tamanioBuffer - 1);
 
 	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + tamanioBuffer);
 	escribirEnSwap->pid = pid;
 	escribirEnSwap->paginaProceso = paginaProceso;
-	escribirEnSwap->contenido = buffer;
+	escribirEnSwap->contenido = pagina;
 
 	return escribirEnSwap;
 }
 
-t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina) {
+t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina, uint32_t tamanioPagina) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
-	uint32_t longitudPag = strlen(pagina->paginaSolicitada);
-	char * buffer = malloc(longitudPag);
+	char * buffer = malloc(tamanioPagina + 1);
 
-	memcpy(buffer,&longitudPag , tmp_size);
+	memcpy(buffer,&tamanioPagina , tmp_size);
 	offset += tmp_size;
-	memcpy(buffer + offset, (pagina->paginaSolicitada), longitudPag);
+	memcpy(buffer + offset, (pagina->paginaSolicitada), tamanioPagina);
 
-	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + longitudPag);
-	buffer_tamanio->tamanioBuffer = longitudPag;
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioPagina + 1);
+	buffer_tamanio->tamanioBuffer = tamanioPagina;
 	buffer_tamanio->buffer = buffer;
 
 	return buffer_tamanio;
@@ -112,6 +143,7 @@ t_pagina_de_swap * deserializarPaginaDeSwap(char * message) {
 	memcpy(pagina, message + offset, longitudPag);
 
 	t_pagina_de_swap * paginaSwap = malloc(longitudPag);
+	paginaSwap->paginaSolicitada = malloc(longitudPag);
 	memcpy(paginaSwap->paginaSolicitada, pagina, longitudPag);
 
 	return paginaSwap;
@@ -171,7 +203,7 @@ t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer) {
 
 t_buffer_tamanio * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma) {
 	int tmp_size = sizeof(uint32_t), offset = 0;
-	uint32_t tamanioCodigo = strlen(iniciarPrograma->codigoAnsisop);
+	uint32_t tamanioCodigo = strlen(iniciarPrograma->codigoAnsisop) + 1;
 	uint32_t tamanioBuffer = (sizeof(uint32_t) * 2) + tamanioCodigo;
 	char * buffer = malloc(tamanioBuffer);
 
@@ -200,7 +232,8 @@ t_iniciar_programa * deserializarIniciarPrograma(char * buffer) {
 	offset += tmp_size;
 	memcpy(&(iniciarPrograma->tamanio), buffer + offset, tmp_size);
 	offset+=tmp_size;
-	memcpy(&(iniciarPrograma->codigoAnsisop), buffer+offset, tamCod);
+	iniciarPrograma->codigoAnsisop = malloc(tamCod);
+	memcpy(iniciarPrograma->codigoAnsisop, buffer + offset, tamCod - 1);
 	return iniciarPrograma;
 }
 

@@ -314,7 +314,7 @@ char * solicitarProximaInstruccionAUMC() {
 		log_info(ptrLog, "Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
 		uint32_t operacion, id;
 		instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
-		t_enviarBytes * bytesRecibidos = deserializarEnviarBytes(instruccionRecibida);
-		return bytesRecibidos->buffer;
+		t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
+		return instruccion->instruccion;
 	}
 }
