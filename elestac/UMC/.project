@@ -5,6 +5,7 @@
 	<projects>
 		<project>commons</project>
 		<project>sockets</project>
+		<project>parser</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

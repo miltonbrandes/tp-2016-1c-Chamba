@@ -26,14 +26,15 @@ endif
 all: UMC
 
 dependents:
-	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) all
-	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+	-cd /home/utnso/workspace/sockets/Debug && $(MAKE) clean all
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) clean all
+	-cd /home/utnso/workspace/parser/Debug && $(MAKE) clean all
 
 # Tool invocations
-UMC: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so
+UMC: $(OBJS) $(USER_OBJS) /home/utnso/workspace/sockets/Debug/libsockets.so /home/utnso/workspace/commons/Debug/libcommons.so /home/utnso/workspace/parser/Debug/libparser.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "UMC" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/parser/Debug" -L"/home/utnso/workspace/commons/Debug" -L"/home/utnso/workspace/sockets/Debug" -o "UMC" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -46,5 +47,6 @@ clean:
 .SECONDARY:
 /home/utnso/workspace/sockets/Debug/libsockets.so:
 /home/utnso/workspace/commons/Debug/libcommons.so:
+/home/utnso/workspace/parser/Debug/libparser.so:
 
 -include ../makefile.targets

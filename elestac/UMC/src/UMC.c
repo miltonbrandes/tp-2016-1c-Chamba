@@ -114,8 +114,6 @@ char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t oper
 	return mensajeDeSwap;
 }
 
-//////FUNCIONES UMC//////
-
 void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 	int i;
 	for(i = 0; i < cantidadMarcos; i++) {
@@ -129,7 +127,7 @@ void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 
 /////HAY QUE MODIFICAR COMO SE ENVIAN LOS MENSAJES
 void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
- 	log_info(ptrLog, "Envio mensaje a Swap: %s", mensajeNucleo);
+ 	log_info(ptrLog, "Envio mensaje a Nucleo: %s", mensajeNucleo);
  	int tamanio = strlen(mensajeNucleo);
  	enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion,UMC);
  }
@@ -328,7 +326,7 @@ void notificarProcesoNoIniciadoANucleo() {
 	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
 	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
 	if(enviarRespuesta <= 0) {
-		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
+		log_error(ptrLog, "Error al notificar a Nucleo de Proceso No Iniciado");
 	}
 }
 
@@ -531,7 +529,7 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		frame->contenido = paginaSwap->paginaSolicitada;
 		return frame;
 		//Aca hay que hacer el algoritmo que me devuelva el Frame pero
-		//teniendo en cuenta ya todo el reemplazo, osea, me devuelve un Frame
+		//teniendo en cuenta ya todoo el reemplazo, osea, me devuelve un Frame
 		//que solicito y metio en memoria
 	}
 	return NULL;
@@ -625,7 +623,16 @@ void enviarTamanioPaginaANUCLEO(){
 	free(buffer_tamanio);
 }
 
+///////ESTO ES POSIBLE QUE NO ESTE DEL TODOOO BIEN
 void finalizarPrograma(uint32_t PID){
+	t_tabla_de_paginas tablaAEliminar = buscarTablaDelProceso(PID);
+	uint32_t pudoSwapEliminar = enviarYRecibirMensajeSwap(PID, FINALIZARPROGRAMA);
+	if(pudoSwapEliminar == SUCCESS){
+		free(tablaAEliminar);
+		///CONFIRMAR A NUCLEO?
+	} else {
+		//AVISAR ERROR A NUCLEO?
+	}
 }
 
 uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
