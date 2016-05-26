@@ -65,7 +65,7 @@ void aceptarConexionCpu();
 void recibirPeticionesCpu(t_cpu * cpuEnAccion);
 void finalizarPrograma(uint32_t PID);
 void enviarTamanioPaginaACPU(int socketCPU);
-int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg);
+uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg);
 void liberarMemoria(char * memoriaALiberar);
 void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio);
 void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, char* buffer);

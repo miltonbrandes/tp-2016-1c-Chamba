@@ -60,4 +60,16 @@ t_list * deserializarListaPaginaFrame(char * mensaje);
 t_buffer_tamanio * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma);
 t_iniciar_programa * deserializarIniciarPrograma(char * buffer);
 
+t_buffer_tamanio * serializarSolicitudPagina(t_solicitud_pagina * solicitud);
+t_solicitud_pagina * deserializarSolicitudPagina(char * buffer);
+
+t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina);
+t_pagina_de_swap * deserializarPaginaDeSwap(char * message);
+
+t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap);
+t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer);
+
+t_buffer_tamanio * serializarCheckEspacio(t_check_espacio * check);
+t_check_espacio * deserializarCheckEspacio(char * buffer);
+
 #endif /* SOCKETS_UTILES_OPSUTILES_H_ */

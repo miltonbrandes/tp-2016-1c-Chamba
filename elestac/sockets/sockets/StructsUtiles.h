@@ -155,6 +155,26 @@ typedef struct {
 	uint32_t primerPaginaStack;
 } t_nuevo_prog_en_umc;
 
+typedef struct {
+	uint32_t pid;
+	uint32_t paginaProceso;
+} t_solicitud_pagina;
+
+typedef struct {
+	char * paginaSolicitada;
+} t_pagina_de_swap;
+
+typedef struct {
+	uint32_t pid;
+	uint32_t paginaProceso;
+	char * contenido;
+} t_escribir_en_swap;
+
+typedef struct {
+	uint32_t pid;
+	uint32_t cantidadDePaginas;
+} t_check_espacio;
+
 //auxiliares
 typedef struct {
 	uint32_t tamanioStack;

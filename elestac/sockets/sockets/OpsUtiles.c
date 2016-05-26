@@ -13,6 +13,136 @@
 #include "OpsUtiles.h"
 #include "StructsUtiles.h"
 
+t_buffer_tamanio * serializarCheckEspacio(t_check_espacio * check) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	char * buffer = malloc(sizeof(t_check_espacio));
+
+	memcpy(buffer, &(check->pid), tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, &(check->cantidadDePaginas), tmp_size);
+
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + sizeof(t_check_espacio));
+	buffer_tamanio->tamanioBuffer = sizeof(t_check_espacio);
+	buffer_tamanio->buffer = buffer;
+
+	return buffer_tamanio;
+}
+
+t_check_espacio * deserializarCheckEspacio(char * buffer) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	t_check_espacio * solicitudPagina = malloc(sizeof(t_check_espacio));
+
+	memcpy(&(solicitudPagina->pid), buffer, tmp_size);
+	offset += tmp_size;
+	memcpy(&(solicitudPagina->cantidadDePaginas), buffer + offset, tmp_size);
+
+	return solicitudPagina;
+}
+
+t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	uint32_t longPag = strlen(escribirEnSwap->contenido);
+	char * buffer = malloc(longPag + (sizeof(uint32_t) * 3));
+
+	memcpy(buffer, &(escribirEnSwap->pid), tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, &(escribirEnSwap->paginaProceso), tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, &longPag, tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, escribirEnSwap->contenido, longPag);
+
+	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 4) + longPag);
+	buffer_tamanio->tamanioBuffer = longPag + (sizeof(uint32_t) * 3);
+	buffer_tamanio->buffer = buffer;
+
+	return buffer_tamanio;
+}
+
+t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+
+	uint32_t pid;
+	memcpy(&pid, buffer, tmp_size);
+	offset += tmp_size;
+
+	uint32_t paginaProceso;
+	memcpy(&paginaProceso, buffer + offset, tmp_size);
+	offset += tmp_size;
+
+	uint32_t tamanioBuffer;
+	memcpy(&tamanioBuffer, buffer + offset, tmp_size);
+	offset += tmp_size;
+
+	char * pagina = malloc(tamanioBuffer);
+	memcpy(pagina, buffer + offset, tamanioBuffer);
+
+	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + tamanioBuffer);
+	escribirEnSwap->pid = pid;
+	escribirEnSwap->paginaProceso = paginaProceso;
+	escribirEnSwap->contenido = buffer;
+
+	return escribirEnSwap;
+}
+
+t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	uint32_t longitudPag = strlen(pagina->paginaSolicitada);
+	char * buffer = malloc(longitudPag);
+
+	memcpy(buffer,&longitudPag , tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, (pagina->paginaSolicitada), longitudPag);
+
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + longitudPag);
+	buffer_tamanio->tamanioBuffer = longitudPag;
+	buffer_tamanio->buffer = buffer;
+
+	return buffer_tamanio;
+}
+
+t_pagina_de_swap * deserializarPaginaDeSwap(char * message) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	uint32_t longitudPag;
+
+	memcpy(&longitudPag, message, tmp_size);
+	offset += tmp_size;
+
+	char * pagina = malloc(longitudPag);
+	memcpy(pagina, message + offset, longitudPag);
+
+	t_pagina_de_swap * paginaSwap = malloc(longitudPag);
+	memcpy(paginaSwap->paginaSolicitada, pagina, longitudPag);
+
+	return paginaSwap;
+}
+
+t_buffer_tamanio * serializarSolicitudPagina(t_solicitud_pagina * solicitud) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	char * buffer = malloc(sizeof(t_solicitud_pagina));
+
+	memcpy(buffer, &(solicitud->pid), tmp_size);
+	offset += tmp_size;
+	memcpy(buffer + offset, &(solicitud->paginaProceso), tmp_size);
+
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + sizeof(t_solicitud_pagina));
+	buffer_tamanio->tamanioBuffer = sizeof(t_solicitud_pagina);
+	buffer_tamanio->buffer = buffer;
+
+	return buffer_tamanio;
+}
+
+t_solicitud_pagina * deserializarSolicitudPagina(char * buffer) {
+	int offset = 0, tmp_size = sizeof(uint32_t);
+	t_solicitud_pagina * solicitudPagina = malloc(sizeof(t_solicitud_pagina));
+
+	memcpy(&(solicitudPagina->pid), buffer, tmp_size);
+	offset += tmp_size;
+	memcpy(&(solicitudPagina->paginaProceso), buffer + offset, tmp_size);
+
+	return solicitudPagina;
+}
+
 t_buffer_tamanio * serializarNuevoProgEnUMC(t_nuevo_prog_en_umc * nuevoProg) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
 	char * buffer = malloc(sizeof(t_nuevo_prog_en_umc));
@@ -73,6 +203,7 @@ t_iniciar_programa * deserializarIniciarPrograma(char * buffer) {
 	memcpy(&(iniciarPrograma->codigoAnsisop), buffer+offset, tamCod);
 	return iniciarPrograma;
 }
+
 char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
 	char * buffer = malloc(50);
 	char* respuestaOperacion;

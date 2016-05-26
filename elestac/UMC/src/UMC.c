@@ -285,8 +285,8 @@ void recibirPeticionesNucleo(){
 
 			log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
 
-//			int pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
-			int pudoSwap = SUCCESS;
+			uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+
 			if (pudoSwap == SUCCESS) {
 				log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
 				log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
@@ -351,7 +351,34 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg){
 	nuevoPrograma->primerPaginaDeProc = 0;
 	nuevoPrograma->primerPaginaStack = iniciarProg->tamanio - 2;
 
+	enviarPaginasASwap(iniciarProg);
+
 	return nuevoPrograma;
+}
+
+void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
+	int i, offset = 0;
+	uint32_t longitudCodigo = strlen(iniciarProg->codigoAnsisop);
+	for(i = 0; i < iniciarProg->tamanio; i++) {
+		t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
+		escribirEnSwap->paginaProceso = i;
+		escribirEnSwap->pid = iniciarProg->programID;
+
+		if(offset + marcosSize < longitudCodigo) {
+			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize);
+			offset += marcosSize;
+		}else{
+			uint32_t longitudACopiar = longitudCodigo - offset;
+			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, longitudACopiar);
+			break;
+		}
+
+		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap);
+		enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
+
+		free(escribirEnSwap);
+		free(buffer_tamanio);
+	}
 }
 
 t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presencia, int modificado) {
@@ -477,12 +504,19 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 	solicitudPagina->pid = cpu->procesoActivo;
 	solicitudPagina->paginaProceso = pagina;
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(solicitudPagina);
-	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, 1);
+	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, LEER);
 
 	if(strcmp(mensajeDeSwap, "ERROR") == 0) {
 		log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
+		return NULL;
 	}else{
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
+		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
+
+		//Agrego siempre en el Frame 0.
+		t_frame * frame = list_get(frames, 0);
+		frame->contenido = paginaSwap->paginaSolicitada;
+		return frame;
 		//Aca hay que hacer el algoritmo que me devuelva el Frame pero
 		//teniendo en cuenta ya todo el reemplazo, osea, me devuelve un Frame
 		//que solicito y metio en memoria
@@ -582,15 +616,21 @@ void enviarTamanioPaginaANUCLEO(){
 void finalizarPrograma(uint32_t PID){
 }
 
-int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
-	t_buffer_tamanio * iniciarProgSerializado = serializarIniciarPrograma(iniciarProg);
+uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
+	t_check_espacio * check = malloc(sizeof(t_check_espacio));
+	check->pid = iniciarProg->programID;
+	check->cantidadDePaginas = iniciarProg->tamanio;
+
+	t_buffer_tamanio * iniciarProgSerializado = serializarCheckEspacio(check);
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
 	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
 	uint32_t operacion;
 	uint32_t id;
+
 	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
-	uint32_t pudoSwap = operacion;
+	uint32_t pudoSwap = deserializarUint32(hayEspacio);
+
 	free(iniciarProgSerializado);
 	return pudoSwap;
 }
@@ -598,12 +638,6 @@ int checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 void liberarMemoria(char * memoriaALiberar){
 	free(memoriaALiberar);
 	log_info(ptrLog, "Memoria Liberada");
-}
-
-void solicitarBytesDePagina(uint32_t pagina, uint32_t offset, uint32_t tamanio){
-}
-
-void almacenarBytesEnPagina(uint32_t pagina, uint32_t offset, uint32_t tamanio, char* buffer){
 }
 
 //PROBAR SI ESTO ESTA BIEN//////////////////////////////////////////////////
