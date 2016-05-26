@@ -81,10 +81,12 @@ void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma);
 void notificarProcesoNoIniciadoANucleo();
 
 void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset);
+void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer);
 
 t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla, uint32_t pagina);
 t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId);
 t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset);
+t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina);
 
 char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion);
 

@@ -410,12 +410,12 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			uint32_t pagina = escribir->pagina;
 			uint32_t tamanio = escribir->tamanio;
 			uint32_t offset = escribir->offset;
-			char* codigoAnsisop = escribir->buffer;
+			char* buffer = escribir->buffer;
+			log_debug(ptrLog, "Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s", cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
 
+			escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 		}else if (operacion == CAMBIOPROCESOACTIVO){
 			t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
-
-			//ACA SE HACE FLUSH
 
 			uint32_t PID_Activo = procesoActivo->programID;
 			log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
@@ -426,6 +426,20 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
 			enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
 			break;
+		}
+	}
+}
+
+void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer) {
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
+	if(tablaDeProceso != NULL) {
+		t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
+		if(registro->estaEnUMC == 1) {
+			t_frame * frame = list_get(frames, registro->frame);
+			memcpy((frame->contenido) + offset, buffer, tamanio);
+		}else{
+			t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+			memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
 		}
 	}
 }
@@ -449,10 +463,31 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 					offsetMemcpy += auxiliar->offset;
 				}else{
 					log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+					memcpy(datosParaCPU, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+					offsetMemcpy += auxiliar->offset;
 				}
 			}
 		}
 	}
+}
+
+t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
+	t_solicitud_pagina * solicitudPagina = malloc(sizeof(t_solicitud_pagina));
+	solicitudPagina->pid = cpu->procesoActivo;
+	solicitudPagina->paginaProceso = pagina;
+	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(solicitudPagina);
+	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, 1);
+
+	if(strcmp(mensajeDeSwap, "ERROR") == 0) {
+		log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
+	}else{
+		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
+		//Aca hay que hacer el algoritmo que me devuelva el Frame pero
+		//teniendo en cuenta ya todo el reemplazo, osea, me devuelve un Frame
+		//que solicito y metio en memoria
+	}
+	return NULL;
 }
 
 t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset) {
