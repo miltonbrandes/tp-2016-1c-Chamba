@@ -13,6 +13,10 @@
 #include <commons/log.h>
 #include <sockets/EscrituraLectura.h>
 #include <sockets/OpsUtiles.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 
 #define MAX_BUFFER_SIZE 4096
 //Socket que recibe conexiones de Nucleo y CPU
@@ -53,11 +57,20 @@ int retardoCompactacion;
 char* nombreSwap;
 int tamanoPagina;
 int cantidadPaginas;
+char* nombre_archivo;
 
 uint32_t paginaAEnviar;
-
-char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer);
-
+espacioLibre* encontrarHueco(t_list* listaDeLibres, int pagsRequeridas);
+uint32_t ocupar(espacioLibre* hueco, t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido,  int pagsRequeridas);
+void liberarMemoria(t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido);
+espacioOcupado* encontrarLugarAsignadoAProceso(t_list* listaDeOcupados, uint32_t pidRecibido);
+void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres);
+int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas, t_list* listaDeLibres, t_list* listaDeOcupados);
+void inicializarArchivo(void);
+char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados);
+void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, uint32_t pid);
+void cerrarSwap(void);
+int interpretarMensajeRecibido(char* buffer,int op, int socket, t_list* listaDeLibres, t_list* listaDeOcupados);
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
 	ptrLog = log_create(getenv("SWAP_LOG"), "Swap", 1, 0);
@@ -95,6 +108,13 @@ int cargarValoresDeConfig() {
 
 		if (config_has_property(config, "CANTIDAD_PAGINAS")) {
 			cantidadPaginas = config_get_int_value(config, "CANTIDAD_PAGINAS");
+		} else {
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave CANTIDAD_PAGINAS");
+			return 0;
+		}
+		if (config_has_property(config, "CANTIDAD_PAGINAS")) {
+			nombre_archivo = config_get_string_value(config, "NOMBRE_ARCHIVO");
 		} else {
 			log_info(ptrLog,
 					"El archivo de configuracion no contiene la clave CANTIDAD_PAGINAS");
@@ -160,7 +180,7 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
-void manejarConexionesRecibidas(int socketUMC) {
+void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* listaDeOcupados) {
 	do {
 		log_info(ptrLog, "Esperando recibir alguna peticion");
 		char* buffer;
@@ -183,7 +203,10 @@ void manejarConexionesRecibidas(int socketUMC) {
 			if (strcmp("ERROR", buffer) == 0) {
 				return;
 			} else {
-				interpretarMensajeRecibido(buffer, operacion, socketUMC);
+				int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);
+				if(!interpretado){
+					return;
+				}
 			}
 		}
 
@@ -191,7 +214,6 @@ void manejarConexionesRecibidas(int socketUMC) {
 }
 
 int crearArchivoControlMemoria() {
-	char nombre_archivo[30];
 	strcpy(nombre_archivo, nombreSwap);
 	archivo_control = fopen(nombre_archivo, "w+");
 	if (archivo_control == 0) {
@@ -223,23 +245,23 @@ void cerrarSwap(void) //no cierra los sockets
 	exit(-1);
 }
 
-int interpretarMensajeRecibido(char* buffer,int op, int socket){
-	espacioOcupado* aBorrar;
+int interpretarMensajeRecibido(char* buffer,int op, int socket, t_list* listaDeLibres, t_list* listaDeOcupados){
+	/*espacioOcupado* aBorrar;
 	espacioOcupado*aEscribir;
-	espacioOcupado* aLeer;
+	espacioOcupado* aLeer;*/
 	uint32_t paginaSolicitada;
 	//uint32_t cantidadPaginasAEscribir;
 	uint32_t resultado=paginaSolicitada;
-	uint32_t ** pid;
+	uint32_t  pid=0;
 
 	t_buffer_tamanio * buffer_tamanio;
 
 	switch(op){
 		case NUEVOPROGRAMA:
-			resultado=asignarMemoria(pid, paginaSolicitada);
+			resultado=asignarMemoria(pid, paginaSolicitada, listaDeLibres, listaDeOcupados);
 			if (!resultado)
 			{
-				buffer_tamanio = serializarUint32(*pid);
+				buffer_tamanio = serializarUint32(pid);
 				int enviado=enviarDatos(socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, RECHAZAR_PROCESO_A_UMC,SWAP);
 				if(enviado==-1)
 				{
@@ -250,7 +272,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 			}
 		break;
 		case FINALIZARPROGRAMA:
-			aBorrar=ocupado;
+			/*aBorrar=ocupado;
 			while (aBorrar && aBorrar->pid != pid) aBorrar= aBorrar->sgte;
 			if(!aBorrar)
 			{
@@ -265,12 +287,12 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 				}
 				return 0;
 			}
-			//printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);
-			liberarMemoria(aBorrar);
+			//printf("Se libero la memoria del proceso de pid %u \n", aBorrar->pid);*/
+			liberarMemoria(listaDeLibres, listaDeOcupados, pid);
 		break;
 		case LEER:
 			sleep(retardoCompactacion);
-			aLeer=ocupado;
+			/*aLeer=ocupado;
 			while(aLeer && aLeer->pid !=pid) aLeer=aLeer->sgte;
 			if(!aLeer)
 			{
@@ -283,14 +305,14 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 					log_error(ptrLog, "No se pudo enviar mensaje a UMC");
 				}
 				return 0;
-			}
-			char* leido= leerProceso(aLeer,paginaSolicitada);
+			}*/
+			char* leido= leerProceso(paginaSolicitada, pid, listaDeOcupados);
 			enviarDatos(socket, leido, sizeof(leido),ENVIAR_PAGINA_A_UMC,SWAP);
 			free(leido);
 		break;
 		case ESCRIBIR:
 			sleep(retardoCompactacion);
-			aEscribir=ocupado;
+			/*aEscribir=ocupado;
 			while(aEscribir && aEscribir->pid != pid) aEscribir=aEscribir->sgte;
 			if(!aEscribir)
 			{
@@ -305,8 +327,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 					cerrarSwap();
 				}
 				return 0;
-			}
-			escribirProceso(aEscribir, paginaSolicitada, buffer);
+			}*/
+			escribirProceso(paginaSolicitada,buffer, listaDeOcupados,pid);
 			buffer=NULL;
 			break;
 
@@ -330,9 +352,9 @@ int interpretarMensajeRecibido(char* buffer,int op, int socket){
 	return 1;
 }
 
-char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como 0 a la pos inicial
+char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados)//pagALeer tiene como 0 a la pos inicial
 {//leemos una pagina del archivo de swap
-	char* buffer=NULL;
+	/*char* buffer=NULL;
 	buffer= calloc(tamanoPagina, 1);//es como el malloc pero inicializa en \0
 	if(!buffer)
 	{
@@ -348,10 +370,25 @@ char* leerProceso(espacioOcupado* aLeer, uint32_t pagALeer)//pagALeer tiene como
 	bufferLogueo[tamanoPagina]='\0';
 	log_info(ptrLog, "El proceso de pid %u lee %u bytes comenzando en el byte %u y leyo: %s", aLeer->pid, strlen(buffer)*sizeof(char), (aLeer->posicion_inicial -1) * tamanoPagina +  pagALeer * tamanoPagina, bufferLogueo); //EN EL BYTE DESDE QUE COMIENZ AGREGO EL NUM PAG
 	return buffer;
+*/
+
+	espacioOcupado* espacioDelProceso = encontrarLugarAsignadoAProceso(listaDeOcupados, pid);
+	FILE* swap = fopen(nombre_archivo,"r");
+	fseek(swap,tamanoPagina* (pagina+ espacioDelProceso->posicion_inicial),SEEK_SET);
+	char* contLeido = malloc(tamanoPagina);
+	int readed=fread(contLeido,tamanoPagina,1,swap);
+	if(!readed){
+		return 0;
+	}
+	espacioDelProceso->leido++;
+	sleep(retardoCompactacion);
+	log_info(ptrLog, "Se leyeron %d bytes en la página %d (número de byte inicial: %d) del proceso %d. Su contenido es: %s", strlen(contLeido), pagina, (pagina*tamanoPagina), pid, contLeido);
+	fclose(swap);
+	return contLeido;
 }
-void escribirProceso(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* texto)// 0 mal 1 bien. pagAEscribir comienza en 0
+void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, uint32_t pid)// 0 mal 1 bien. pagAEscribir comienza en 0
 {//escribimos en el archivo de swap
-	fseek(archivo_control,((aEscribir->posicion_inicial -1) * tamanoPagina) +  (pagAEscribir * tamanoPagina), SEEK_SET);
+	/*fseek(archivo_control,((aEscribir->posicion_inicial -1) * tamanoPagina) +  (pagAEscribir * tamanoPagina), SEEK_SET);
 	fwrite(texto, sizeof(char), tamanoPagina, archivo_control);
 	aEscribir->escrito= aEscribir->escrito +1;//el proceso lee una pagina y lo documentamos
 	char bufferLogueo[tamanoPagina +1];//esto va a ser para meterle un \0 por las dudas
@@ -360,7 +397,27 @@ void escribirProceso(espacioOcupado* aEscribir, uint32_t pagAEscribir, char* tex
 	log_info(ptrLog, "El proceso de pid %u escribe %u bytes comenzando en el byte %u y escribe: %s",
 			aEscribir->pid, strlen(texto)*sizeof(char), ((aEscribir->posicion_inicial -1) * tamanoPagina) +
 			(pagAEscribir * tamanoPagina), bufferLogueo);
-	return;
+	return;*/
+	int fd = open(nombre_archivo,O_RDWR);
+	char* data =mmap((caddr_t)0, cantidadPaginas*tamanoPagina, PROT_READ|PROT_WRITE ,MAP_SHARED, fd, 0);
+	espacioOcupado* espacioDelProceso = encontrarLugarAsignadoAProceso(listaDeOcupados, pid);
+	memset(data+((espacioDelProceso->posicion_inicial+paginaProceso)* tamanoPagina), '\0', tamanoPagina);
+	memcpy(data+((espacioDelProceso->posicion_inicial+paginaProceso)* tamanoPagina), info, strlen(info) );
+	if (msync(data, cantidadPaginas*tamanoPagina, MS_SYNC) == -1)
+	{
+		log_info(ptrLog,"No se pudo acceder al archivo en disco");
+	}
+	munmap(data, cantidadPaginas*tamanoPagina);
+	close(fd);
+	espacioDelProceso->escrito++;
+	sleep(retardoCompactacion);
+	log_info(ptrLog,
+			"Se escribieron %d bytes en la página %d (número de byte inicial: %d) del proceso %d. Su contenido es: %s.",
+			strlen(info),
+			paginaProceso,
+			(paginaProceso*tamanoPagina),
+			pid,
+			info);
 }
 void inicializarArchivo(void) { //lo llenamos con el caracter correspondiente
 	int tamanoArchivo = (cantidadPaginas) * (tamanoPagina);
@@ -371,8 +428,8 @@ void inicializarArchivo(void) { //lo llenamos con el caracter correspondiente
 }
 
 //funciones para asignar memoria
-int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria al proceso nuevo
-	int inicio;
+int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas, t_list* listaDeLibres, t_list* listaDeOcupados) { //le damos memoria al proceso nuevo
+	/*int inicio;
 	inicio = hayEspacio(cantidad_paginas);
 	if (!inicio) {
 		if (alcanzanPaginas(cantidad_paginas)) //si las paginas libres totales alcanzan, que desfragmente
@@ -395,25 +452,60 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas) { //le damos memoria
 			"Se asignan %u bytes de memoria al proceso de pid %u desde el byte %u",
 			cantidad_paginas * tamanoPagina, pid, (inicio - 1) * tamanoPagina); //CANTIDAD DE BYTES ES NPAG*TMANIOPAGINA
 	return posicion;
-}
+	*/
 
-int hayEspacio(int espacio) //espacio esta en paginas
-{ //te dice si hay un nodo libre con es el espacio requerido
-	int posicion;
-	espacioLibre* raiz = libre; //para no cambiar al puntero
-	while (raiz) {
-		if (raiz->cantidad_paginas >= espacio) {
-			posicion = raiz->posicion_inicial; //el posicion_inicial minimo es 1
-			ocupar(posicion, espacio); //ocupamos el espacio requerido por el proceso
-			return posicion; //devolvemos la posicion inicial del espacio
-		}
-		raiz = raiz->sgte;
+	if(!hayEspacio(cantidad_paginas,listaDeLibres))
+	{
+		return 0;
 	}
-	return 0;
+	espacioLibre* hueco = encontrarHueco(listaDeLibres, cantidad_paginas);
+
+	if(hueco == NULL)
+	{
+		desfragmentar(listaDeOcupados, listaDeLibres);
+		hueco = encontrarHueco(listaDeLibres, cantidad_paginas);
+	}
+
+	uint32_t comienzoProceso = ocupar(hueco,listaDeLibres, listaDeOcupados, pid, cantidad_paginas);
+	log_info(ptrLog,
+			"Se ubicó correctamente el proceso %d partiendo del byte %d y ocupando %d bytes.",
+			pid,
+			(comienzoProceso*tamanoPagina), (cantidad_paginas*tamanoPagina));
+	return 1;
+}
+espacioLibre* encontrarHueco(t_list* listaDeLibres, int pagsRequeridas)
+{
+	bool condicionBloqueEncontrado(espacioLibre* hueco) {
+			return (hueco->cantidad_paginas >= pagsRequeridas);
+	}
+
+	espacioLibre* hueco;
+	hueco=list_find( listaDeLibres, (void*) condicionBloqueEncontrado);
+	if(hueco == NULL)
+	{
+		log_info(ptrLog,"Fallé al encontrar hueco.");
+
+	}
+	return hueco;
+}
+int espacioLibrePorHueco(espacioLibre* listaLibre)
+{
+	return listaLibre->cantidad_paginas;
 }
 
-void ocupar(int posicion, int espacio) { //cambia un espacio libre a ocupado
-	espacioLibre* aux = libre;
+void iniciarProceso(int comienzo, int pags)
+{		int fd = open(nombre_archivo,O_RDWR);
+		char* data =mmap((caddr_t)0, cantidadPaginas*tamanoPagina, PROT_READ|PROT_WRITE ,MAP_SHARED, fd, 0);
+		memset(data+(comienzo*tamanoPagina),'\0', pags*tamanoPagina);
+		if (msync(data, cantidadPaginas*tamanoPagina, MS_SYNC) == -1)
+		{
+		 log_info(ptrLog,"No se pudo acceder al archivo de disco");
+		}
+		munmap(data, cantidadPaginas*tamanoPagina);
+		close(fd);
+}
+uint32_t ocupar(espacioLibre* hueco, t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido,  int pagsRequeridas) { //cambia un espacio libre a ocupado
+	/*espacioLibre* aux = libre;
 	while (aux->posicion_inicial != posicion) //vamos al nodo a ocupar
 	{
 		aux = aux->sgte;
@@ -442,10 +534,39 @@ void ocupar(int posicion, int espacio) { //cambia un espacio libre a ocupado
 	fseek(archivo_control, (posicion - 1) * tamanoPagina, SEEK_SET); //vamos al inicio de ocupado
 	fwrite(s, sizeof(char), (espacio * tamanoPagina), archivo_control);
 	free(s);
-	return;
+	return;*/
+		//VARIABLES PARA LA FUNCION BOOL ES ESTE HUECO Y PARA GUARDAR LOS VALORES DEL HUECO
+		int comienzoAux= hueco->posicion_inicial;
+		int cantAux = hueco ->cantidad_paginas;
+
+		iniciarProceso(comienzoAux, pagsRequeridas);
+		espacioOcupado* procesoNuevo=malloc(sizeof(espacioOcupado));
+		procesoNuevo-> pid = pidRecibido;
+		procesoNuevo-> posicion_inicial = comienzoAux;
+		procesoNuevo-> cantidad_paginas = pagsRequeridas;
+		procesoNuevo-> leido = 0;
+		procesoNuevo-> escrito = 0;
+		list_add(listaDeOcupados, procesoNuevo);
+
+		bool esEsteHueco (espacioLibre* huecos)
+		{
+
+			return (huecos->cantidad_paginas== cantAux && huecos->posicion_inicial == comienzoAux);
+		}
+
+		if(pagsRequeridas == hueco->cantidad_paginas)
+		{
+			list_remove_by_condition(listaDeLibres,(void*) esEsteHueco);
+		}
+		else
+		{
+			hueco->posicion_inicial = comienzoAux +pagsRequeridas;
+			hueco->cantidad_paginas = cantAux-pagsRequeridas;
+		}
+		return procesoNuevo->posicion_inicial;
 }
 
-int alcanzanPaginas(int pagsNecesarias) //0 no alcanzan, 1 alcanzan
+/*int alcanzanPaginas(int pagsNecesarias) //0 no alcanzan, 1 alcanzan
 { //nos dice si vale la pena desfragmentar (si hay paginas libres suficientes)
 	espacioLibre* auxL = libre;
 	int pagsTotales = 0;
@@ -458,10 +579,45 @@ int alcanzanPaginas(int pagsNecesarias) //0 no alcanzan, 1 alcanzan
 		return 0;
 	}
 	return 1;
-}
+}*/
 
-void desfragmentar(void) { //movemos los nodos ocupados y juntamos los espacios libres en uno solo
-	int sizeLibres = 0;
+void ordenarLista(t_list* listaDeLibres)
+{
+	bool compararComienzos(espacioLibre* hueco1, espacioLibre* hueco2)
+	{
+		return(hueco1->posicion_inicial < hueco2->posicion_inicial);
+	}
+	list_sort(listaDeLibres, (void*) compararComienzos);
+}
+int hayEspacio(/*int espacio*/ int cantidadPaginasRequeridas, t_list* listaDeLibres) //espacio esta en paginas
+{
+	/*//te dice si hay un nodo libre con es el espacio requerido
+	int posicion;
+	espacioLibre* raiz = libre; //para no cambiar al puntero
+	while (raiz) {
+		if (raiz->cantidad_paginas >= espacio) {
+			posicion = raiz->posicion_inicial; //el posicion_inicial minimo es 1
+			ocupar(posicion, espacio); //ocupamos el espacio requerido por el proceso
+			return posicion; //devolvemos la posicion inicial del espacio
+		}
+		raiz = raiz->sgte;
+	}
+	return 0;
+	*/
+
+	t_list* libreMapeado= list_map(listaDeLibres, (void*) *espacioLibrePorHueco);
+	int auxSuma=0;
+	while(libreMapeado->head!=NULL)
+	{
+		auxSuma +=(int)libreMapeado->head->data;
+		libreMapeado->head= libreMapeado->head->next;
+
+	}
+	list_destroy(libreMapeado);
+	return cantidadPaginasRequeridas <= auxSuma;
+}
+void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres) { //movemos los nodos ocupados y juntamos los espacios libres en uno solo
+	/*int sizeLibres = 0;
 	espacioLibre* auxLibre = libre;
 	espacioOcupado* auxO = ocupado;
 	while (auxLibre) //contamos cuantos espacios libres hay
@@ -489,10 +645,52 @@ void desfragmentar(void) { //movemos los nodos ocupados y juntamos los espacios 
 			sizeLibres--;
 		}
 	}
-	return;
+	return;*/
+	ordenarLista(listaDeOcupados);
+	int fd = open(nombre_archivo,O_RDWR);
+	char* data =mmap((caddr_t)0, cantidadPaginas*tamanoPagina, PROT_READ|PROT_WRITE ,MAP_SHARED, fd, 0);
+	t_link_element* aux = listaDeOcupados->head;
+
+	if(!list_is_empty(listaDeOcupados))
+	{
+		int paginasOcupadas = 0;
+		espacioOcupado* actual= aux->data;
+		memcpy(data,data+(tamanoPagina*(actual->posicion_inicial)), tamanoPagina*(actual->cantidad_paginas)); //COPIAR EL PRIMERO AL PRINCIPIO
+		actual->posicion_inicial=0;
+		int paginasUltimo= actual->cantidad_paginas;
+		paginasOcupadas+=paginasUltimo;
+		aux= aux->next;
+
+		while(aux!=NULL)
+
+		{ actual=aux->data;
+		  memcpy(data+(tamanoPagina*paginasOcupadas),data+(tamanoPagina*(actual->posicion_inicial)), tamanoPagina*(actual->cantidad_paginas)); //COPIAR EL PRIMERO AL PRINCIPIO
+		  actual->posicion_inicial= paginasOcupadas;
+		  paginasUltimo= actual->cantidad_paginas;
+		  paginasOcupadas+=paginasUltimo;
+		  aux = aux->next;
+		}
+		list_clean(listaDeLibres);
+		espacioLibre* huecoLibre = malloc(sizeof(espacioLibre));
+		huecoLibre->posicion_inicial = paginasOcupadas;
+		huecoLibre->cantidad_paginas = cantidadPaginas-paginasOcupadas;
+		list_add(listaDeLibres, huecoLibre);
+
+		memset(data+(huecoLibre->posicion_inicial*tamanoPagina),'\0', tamanoPagina*huecoLibre->cantidad_paginas);// RELLENAR CON \0
+
+		if (msync(data, tamanoPagina*paginasOcupadas, MS_SYNC) == -1)
+		{log_info(ptrLog,"No se pudo acceder al archvo en disco");
+		}
+		munmap(data, tamanoPagina*paginasOcupadas);
+		close(fd);
+		}
+
+	sleep(retardoCompactacion);
+
+	log_info(ptrLog, "La compactación finalizó.");
 }
 
-void unirBloquesLibres(void) { //une dos nodos libres en uno solo mas grande
+/*void unirBloquesLibres(void) { //une dos nodos libres en uno solo mas grande
 	espacioLibre* nodoABorrar = libre->sgte;
 	libre->cantidad_paginas = libre->cantidad_paginas
 			+ nodoABorrar->cantidad_paginas;
@@ -506,21 +704,24 @@ void unirBloquesLibres(void) { //une dos nodos libres en uno solo mas grande
 	libre->sgte = nodoABorrar->sgte;
 	free(nodoABorrar);
 	return;
-}
+}*/
 
 void moverInformacion(int inicioDe, int cantidad_paginass, int inicioA) // puse unos -1 alguien que me confime que tiene sentido
 { //intercambia lo escrito en el swap para cuando movemos un nodo ocupado al desfragmentar
 	char buffer[cantidad_paginass * tamanoPagina]; //creamos el buffer
 	fseek(archivo_control, (inicioDe - 1) * tamanoPagina, SEEK_SET); //vamos al inicio de ocupado
-	fread(buffer, sizeof(char), (cantidad_paginass * tamanoPagina),
-			archivo_control); //leemos
+	int readed=fread(buffer, sizeof(char), (cantidad_paginass * tamanoPagina),
+			archivo_control);//leemos
+	if(!readed){
+		return;
+	}
 	fseek(archivo_control, (inicioA - 1) * tamanoPagina, SEEK_SET); //vamos a libre
 	fwrite(buffer, sizeof(char), (cantidad_paginass * tamanoPagina),
 			archivo_control); //escribimos
 	return; //en el "nuevo" libre ahora hay basura
 }
 
-int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,int posicion_inicial) //LOS NODOS OCUPADOS SE APILAN SIN ORDEN
+/*int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,int posicion_inicial) //LOS NODOS OCUPADOS SE APILAN SIN ORDEN
 { //llega un proceso nuevo y le asignamos un nodo correspondiente
 	espacioOcupado* aux = ocupado;
 	while (aux && aux->sgte) //vamos al ultimo nodo si hay una lista
@@ -548,10 +749,59 @@ int agregarOcupado(uint32_t pid, uint32_t cantidad_paginas,int posicion_inicial)
 	aux->sgte = nuevo; //si habia
 	return nuevo->posicion_inicial;
 }
-
+*/
 //funciones para liberar memoria
-int liberarMemoria(espacioOcupado* aBorrar) { //se va un proceso y borramos su nodo ocupado y agregamos un libre
-	int anteriorVar = anterior(aBorrar);
+espacioOcupado* encontrarLugarAsignadoAProceso(t_list* listaDeOcupados, uint32_t pidRecibido)
+{
+	bool esEsteElProceso(espacioOcupado* proceso)
+	{
+		return(proceso->pid== pidRecibido);
+	}
+
+	return list_find(listaDeOcupados, (void*) esEsteElProceso);
+}
+void consolidarHueco(t_list* listaDeLibres)
+{
+	ordenarLista(listaDeLibres);
+	t_link_element* aux = listaDeLibres->head;
+	while(aux!=NULL)
+		{
+		espacioLibre* actual= aux->data;
+		int comienzoActual= actual->posicion_inicial;
+		int paginasActual= actual->cantidad_paginas;
+		int terminaActual/*+1*/= comienzoActual+ paginasActual;
+		if(aux->next!=NULL){
+		espacioLibre* siguiente= aux->next->data;
+		int comienzoSig= siguiente->posicion_inicial;
+			if(terminaActual==comienzoSig)
+			{
+				actual->cantidad_paginas= paginasActual+siguiente->cantidad_paginas;
+
+				t_link_element* temp= aux->next;
+				aux->next=temp->next;
+				free(temp);
+				listaDeLibres->elements_count--;
+			}
+		}
+		aux=aux->next;
+
+		}
+}
+void sacarDelArchivo(int comienzoProceso, int paginas){
+
+ int archivo = open(nombre_archivo, O_RDWR);
+ char* data =mmap((caddr_t)0, cantidadPaginas*tamanoPagina , PROT_READ|PROT_WRITE ,MAP_SHARED, archivo, 0);
+ memset(data+(tamanoPagina*comienzoProceso),'\0', paginas*tamanoPagina);
+
+ if (msync(data, paginas*tamanoPagina, MS_SYNC) == -1)
+ {
+  log_info(ptrLog,"No se pudo acceder al archivo en disco");
+ }
+ munmap(data, paginas*tamanoPagina);
+ close(archivo);
+}
+void liberarMemoria(t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido) { //se va un proceso y borramos su nodo ocupado y agregamos un libre
+	/*int anteriorVar = anterior(aBorrar);
 	int posteriorVar = posterior(aBorrar);
 	log_info(ptrLog,
 			"Se liberan %u bytes de memoria del proceso de pid %u desde el byte %u. El proceso leyo %u paginas y escribio %u.",
@@ -772,10 +1022,27 @@ int liberarMemoria(espacioOcupado* aBorrar) { //se va un proceso y borramos su n
 		borrarNodoOcupado(aBorrar);
 		return 1;
 	}
-	return 0;
+	return 0;*/
+	espacioOcupado* proceso= encontrarLugarAsignadoAProceso(listaDeOcupados, pidRecibido);
+	espacioLibre* huecoProceso=malloc(sizeof(espacioLibre));
+	int comienzoAux = proceso->posicion_inicial;
+	int paginasAux = proceso->cantidad_paginas;
+	huecoProceso->posicion_inicial= comienzoAux;
+	huecoProceso->cantidad_paginas= paginasAux;
+	list_add(listaDeLibres,huecoProceso);
+	consolidarHueco(listaDeLibres);
+
+	bool esEsteElProceso(espacioOcupado* proceso)
+		{
+			return(proceso->pid== pidRecibido);
+		}
+
+	sacarDelArchivo(comienzoAux, paginasAux);
+	list_remove_by_condition(listaDeOcupados,  (void*) esEsteElProceso);
+	log_info(ptrLog, "Se quitó el proceso %d, que comenzaba en el byte %d. %d bytes liberados.", pidRecibido, (comienzoAux*tamanoPagina), (paginasAux*tamanoPagina));
 }
 
-void borrarNodoOcupado(espacioOcupado* aBorrar)
+/*void borrarNodoOcupado(espacioOcupado* aBorrar)
 {//se va un proceso y borramos su nodo
 	if(aBorrar->ant)
 	{
@@ -797,7 +1064,7 @@ void borrarNodoOcupado(espacioOcupado* aBorrar)
 	return;
 }
 
-int anterior(espacioOcupado* nodo) //0 no hay nada 1 libre 2 ocupado
+/*int anterior(espacioOcupado* nodo) //0 no hay nada 1 libre 2 ocupado
 { //recibe un nodo ocupado y nos dice si la pagina de atras es libre u ocupada
 	int comienzo = nodo->posicion_inicial;
 	espacioLibre* libreAux = libre;
@@ -839,15 +1106,28 @@ int posterior(espacioOcupado* nodo) // 0 no hay nada 1 libre 2 ocupado
 		ocupadoAux = ocupadoAux->sgte;
 	}
 	return 0;
+}*/
+
+t_list* crearListaLibre(int cantPaginas)
+{
+ t_list* listaLibres = list_create();
+ espacioLibre* particionCompleta=malloc(sizeof(espacioLibre));
+ particionCompleta->posicion_inicial = 0;
+ particionCompleta->cantidad_paginas = cantPaginas;
+ list_add(listaLibres, particionCompleta);
+ return listaLibres;
+}
+
+t_list* crearListaOcupados()
+{
+	 t_list* listaOcupados = list_create();
+	 return listaOcupados;
 }
 
 int main() {
 	if (init()) {
-		libre = NULL;
-		ocupado = NULL;
-		char* mensaje;
-		uint32_t operacion;
-		uint32_t id;
+		t_list* listaDeOcupados = crearListaOcupados();
+		t_list* listaDeLibres = crearListaLibre(cantidadPaginas);
 		socketReceptorUMC = AbrirSocketServidor(puertoTCPRecibirConexiones);
 		if (socketReceptorUMC < 0) {
 			log_info(ptrLog, "No se pudo abrir el Socket Servidor Swap");
@@ -869,7 +1149,7 @@ int main() {
 			log_info(ptrLog, "Esperando conexiones");
 			int socketUMC = AceptarConexionCliente(socketReceptorUMC);
 			log_info(ptrLog, "Conexion de UMC aceptada");
-			manejarConexionesRecibidas(socketUMC);
+			manejarConexionesRecibidas(socketUMC,listaDeLibres, listaDeOcupados);
 
 
 		} while (1);
