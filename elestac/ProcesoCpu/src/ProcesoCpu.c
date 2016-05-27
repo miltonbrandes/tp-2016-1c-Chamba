@@ -292,7 +292,7 @@ void comenzarEjecucionDePrograma() {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 		limpiarInstruccion(proximaInstruccion);
 		log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
-		analizadorLinea(strdup(proximaInstruccion), &functions, &kernel_functions);
+		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;
 		//le pongo /100 para que no tarde tanto en ejecutar la proxima instruccion
@@ -322,6 +322,18 @@ void comenzarEjecucionDePrograma() {
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
 	free(pcb);
+}
+
+void limpiarInstruccion(char * instruccion) {
+    char *p2 = instruccion;
+    while(*instruccion != '\0') {
+    	if(*instruccion != '\t' && *instruccion != '\n') {
+    		*p2++ = *instruccion++;
+    	} else {
+    		++instruccion;
+    	}
+    }
+    *p2 = '\0';
 }
 
 char * solicitarProximaInstruccionAUMC() {
