@@ -268,6 +268,9 @@ void comenzarEjecucionDePrograma() {
 
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+
+		limpiarInstruccion(proximaInstruccion);
+
 		log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
@@ -283,6 +286,18 @@ void comenzarEjecucionDePrograma() {
 	finalizarEjecucionPorQuantum();
 
 	free(pcb);
+}
+
+void limpiarInstruccion(char * instruccion) {
+    char *p2 = instruccion;
+    while(*instruccion != '\0') {
+    	if(*instruccion != '\t' && *instruccion != '\n') {
+    		*p2++ = *instruccion++;
+    	} else {
+    		++instruccion;
+    	}
+    }
+    *p2 = '\0';
 }
 
 char * solicitarProximaInstruccionAUMC() {

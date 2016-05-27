@@ -36,6 +36,7 @@ void recibirValorVariableCompartida(char *mensaje);
 void recibirInstruccion(char *mensaje);
 
 void comenzarEjecucionDePrograma();
+void limpiarInstruccion(char * instruccion);
 char* solicitarProximaInstruccionAUMC();
 void finalizarEjecucionPorExit();
 void finalizarEjecucionPorQuantum();
