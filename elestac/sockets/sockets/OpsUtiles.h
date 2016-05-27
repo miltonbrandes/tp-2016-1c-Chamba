@@ -68,7 +68,7 @@ t_solicitud_pagina * deserializarSolicitudPagina(char * buffer);
 t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina, uint32_t tamanioPagina);
 t_pagina_de_swap * deserializarPaginaDeSwap(char * message);
 
-t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap);
+t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap, uint32_t marcoSize);
 t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer);
 
 t_buffer_tamanio * serializarCheckEspacio(t_check_espacio * check);

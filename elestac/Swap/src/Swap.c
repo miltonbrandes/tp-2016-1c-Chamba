@@ -285,7 +285,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			char* leido= leerProceso(solicitudPagina->paginaProceso, solicitudPagina->pid, listaDeOcupados);
 			paginaDeSwap = malloc(tamanoPagina);
 			paginaDeSwap->paginaSolicitada = malloc(tamanoPagina);
-			memcpy(paginaDeSwap->paginaSolicitada, leido, tamanoPagina);
+			memcpy(paginaDeSwap->paginaSolicitada, leido, tamanoPagina - 1);
 
 			buffer_tamanio = serializarPaginaDeSwap(paginaDeSwap, tamanoPagina);
 			int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_PAGINA_A_UMC, SWAP);
@@ -328,12 +328,12 @@ char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados)//pagAL
 	FILE* swap = fopen(nombre_swap,"r");
 	fseek(swap,tamanoPagina* (pagina+ espacioDelProceso->posicion_inicial),SEEK_SET);
 	char* contLeido = malloc(tamanoPagina);
-	int readed=fread(contLeido,tamanoPagina,1,swap);
+	int readed=fread(contLeido, tamanoPagina - 1, 1, swap);
 	if(!readed){
 		return 0;
 	}
 	espacioDelProceso->leido++;
-	log_info(ptrLog, "Se leyeron %d bytes en la página %d (número de byte inicial: %d) del proceso %d. Su contenido es: %s", strlen(contLeido), pagina, (pagina*tamanoPagina), pid, contLeido);
+	log_info(ptrLog, "Se leyeron %d bytes en la página %d (número de byte inicial: %d) del proceso %d. Su contenido es: %s", tamanoPagina, pagina, (pagina*tamanoPagina), pid, contLeido);
 	fclose(swap);
 	return contLeido;
 }
@@ -343,7 +343,7 @@ void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, ui
 	char* data =mmap((caddr_t)0, cantidadPaginas*tamanoPagina, PROT_READ|PROT_WRITE ,MAP_SHARED, fd, 0);
 	espacioOcupado* espacioDelProceso = encontrarLugarAsignadoAProceso(listaDeOcupados, pid);
 	memset(data+((espacioDelProceso->posicion_inicial+paginaProceso)* tamanoPagina), '\0', tamanoPagina);
-	memcpy(data+((espacioDelProceso->posicion_inicial+paginaProceso)* tamanoPagina), info, strlen(info) );
+	memcpy(data+((espacioDelProceso->posicion_inicial+paginaProceso)* tamanoPagina), info, tamanoPagina );
 	if (msync(data, cantidadPaginas*tamanoPagina, MS_SYNC) == -1)
 	{
 		log_info(ptrLog,"No se pudo acceder al archivo en disco");
@@ -351,13 +351,16 @@ void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, ui
 	munmap(data, cantidadPaginas*tamanoPagina);
 	close(fd);
 	espacioDelProceso->escrito++;
+
+	char * escrito = malloc(tamanoPagina + 1);
+	memcpy(escrito, info, tamanoPagina);
 	log_info(ptrLog,
 			"Se escribieron %d bytes en la página %d (número de byte inicial: %d) del proceso %d. Su contenido es: %s.",
-			strlen(info),
+			tamanoPagina,
 			paginaProceso,
 			(paginaProceso*tamanoPagina),
 			pid,
-			info);
+			escrito);
 }
 
 //funciones para asignar memoria

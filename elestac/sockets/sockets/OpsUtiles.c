@@ -17,12 +17,12 @@ t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, uint32_t t
 	int offset = 0, tmp_size = sizeof(uint32_t);
 	char * buffer = malloc(tamanioInstruccion);
 
-	memcpy(buffer,&tamanioInstruccion , tmp_size);
+	memcpy(buffer, &tamanioInstruccion, tmp_size);
 	offset += tmp_size;
 	memcpy(buffer + offset, (instruccion->instruccion), tamanioInstruccion);
 
-	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioInstruccion);
-	buffer_tamanio->tamanioBuffer = tamanioInstruccion;
+	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 2) + tamanioInstruccion);
+	buffer_tamanio->tamanioBuffer = tmp_size + tamanioInstruccion;
 	buffer_tamanio->buffer = buffer;
 
 	return buffer_tamanio;
@@ -71,9 +71,9 @@ t_check_espacio * deserializarCheckEspacio(char * buffer) {
 	return solicitudPagina;
 }
 
-t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap) {
+t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap, uint32_t marcoSize) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
-	uint32_t longPag = strlen(escribirEnSwap->contenido) + 1;
+	uint32_t longPag = marcoSize;
 	char * buffer = malloc(longPag + (sizeof(uint32_t) * 3));
 
 	memcpy(buffer, &(escribirEnSwap->pid), tmp_size);
@@ -82,7 +82,7 @@ t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap)
 	offset += tmp_size;
 	memcpy(buffer + offset, &longPag, tmp_size);
 	offset += tmp_size;
-	memcpy(buffer + offset, escribirEnSwap->contenido, longPag);
+	memcpy(buffer + offset, escribirEnSwap->contenido, longPag - 1);
 
 	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 4) + longPag);
 	buffer_tamanio->tamanioBuffer = longPag + (sizeof(uint32_t) * 3);
@@ -119,14 +119,14 @@ t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer) {
 
 t_buffer_tamanio * serializarPaginaDeSwap(t_pagina_de_swap * pagina, uint32_t tamanioPagina) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
-	char * buffer = malloc(tamanioPagina + 1);
+	char * buffer = malloc(sizeof(uint32_t) + tamanioPagina);
 
-	memcpy(buffer,&tamanioPagina , tmp_size);
+	memcpy(buffer, &tamanioPagina, tmp_size);
 	offset += tmp_size;
 	memcpy(buffer + offset, (pagina->paginaSolicitada), tamanioPagina);
 
-	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioPagina + 1);
-	buffer_tamanio->tamanioBuffer = tamanioPagina;
+	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 2) + tamanioPagina);
+	buffer_tamanio->tamanioBuffer = tamanioPagina + sizeof(uint32_t);
 	buffer_tamanio->buffer = buffer;
 
 	return buffer_tamanio;
@@ -140,11 +140,10 @@ t_pagina_de_swap * deserializarPaginaDeSwap(char * message) {
 	offset += tmp_size;
 
 	char * pagina = malloc(longitudPag);
-	memcpy(pagina, message + offset, longitudPag);
+	memcpy(pagina, message + offset, longitudPag - 1);
 
 	t_pagina_de_swap * paginaSwap = malloc(longitudPag);
-	paginaSwap->paginaSolicitada = malloc(longitudPag);
-	memcpy(paginaSwap->paginaSolicitada, pagina, longitudPag);
+	paginaSwap->paginaSolicitada = pagina;
 
 	return paginaSwap;
 }

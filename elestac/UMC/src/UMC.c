@@ -23,8 +23,6 @@
 #include <semaphore.h>
 #include "UMC.h"
 
-#define SLEEP 1000000
-
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorNucleo;
 int socketReceptorCPU;
@@ -364,16 +362,16 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 
 		if(offset + marcosSize < longitudCodigo) {
 			escribirEnSwap->contenido = malloc(marcosSize);
-			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize);
-			offset += marcosSize;
+			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize - 1);
+			offset += marcosSize - 1;
 		}else{
 			uint32_t longitudACopiar = longitudCodigo - offset;
 			escribirEnSwap->contenido = malloc(longitudACopiar);
 			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, longitudACopiar);
-			break;
+			i = iniciarProg->tamanio;
 		}
 
-		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap);
+		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
 		enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
 
 		free(escribirEnSwap);
@@ -473,7 +471,9 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 
 void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset) {
 	uint32_t offsetMemcpy = 0;
-	char * datosParaCPU = malloc(offset + 1);
+
+	t_list * datosParaCPU = list_create();
+
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
 		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso, pagina, start, offset);
@@ -486,31 +486,40 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 				log_info(ptrLog, "Start del Registro: %d - Offset del Registro: %d", auxiliar->start, auxiliar->offset);
 				if(registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
-					memcpy(datosParaCPU, (frame->contenido) + (auxiliar->start), auxiliar->offset);
-					offsetMemcpy += auxiliar->offset;
+					char * bufferAux = malloc(auxiliar->offset + 2);
+					memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+					bufferAux[auxiliar->offset + 1] = '\0';
+					list_add(datosParaCPU, bufferAux);
+					offsetMemcpy += auxiliar->offset + 1;
 				}else{
 					log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, registro->paginaProceso);
-					memcpy(datosParaCPU, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
-					offsetMemcpy += auxiliar->offset;
+					char * bufferAux = malloc(auxiliar->offset + 2);
+					memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+					bufferAux[auxiliar->offset + 1] = '\0';
+					list_add(datosParaCPU, bufferAux);
+					offsetMemcpy += auxiliar->offset + 1;
 				}
 			}
 			free(listaRegistros);
 		}
 	}
 
-	log_info(ptrLog, "La instruccion que pidio CPU es: %s", datosParaCPU);
+	//Falta concatenar todas las instrucciones que estan en la lista datosParaCPU, y mandarle eso
+	char * instruccionPosta = malloc(50); //Cualquier malloc
 
-	t_instruccion * instruccion = malloc(strlen(datosParaCPU));
+	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
+	t_instruccion * instruccion = malloc(50);
 	instruccion->instruccion = datosParaCPU;
 
-	t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, strlen(datosParaCPU));
+	t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, offset + 5);
 
 	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
 	free(buffer_tamanio);
 	free(instruccion);
 	free(datosParaCPU);
+	free(instruccionPosta);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -577,7 +586,7 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 			auxiliarAdicional2->registro = registroAdicional2;
 			auxiliarAdicional2->start = start;
-			auxiliarAdicional2->offset = offset;
+			auxiliarAdicional2->offset = offset + 1;
 			list_add(registros, auxiliarAdicional2);
 		}
 	}
@@ -701,12 +710,6 @@ void liberarMemoria(char * memoriaALiberar){
 }
 
 //PROBAR SI ESTO ESTA BIEN//////////////////////////////////////////////////
-t_finalizar_programa* deserializarFinalizarPrograma(char * mensaje) {
-	t_finalizar_programa *respuesta = malloc(sizeof(t_finalizar_programa));
-	int offset = 0, tmp_size = sizeof(uint32_t);
-	memcpy(&(respuesta->programID), mensaje + offset, tmp_size);
-	return respuesta;
-}
 
 t_cambio_proc_activo* deserializarCambioProcesoActivo(char * mensaje) {
 	t_cambio_proc_activo *respuesta = malloc(sizeof(t_cambio_proc_activo));
