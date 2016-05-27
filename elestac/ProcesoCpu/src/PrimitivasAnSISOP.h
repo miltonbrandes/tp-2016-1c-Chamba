@@ -38,7 +38,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable);
 void asignar(t_puntero	direccion_variable,	t_valor_variable valor);
 t_valor_variable obtenerValorCompartida(t_nombre_compartida	variable);
 t_valor_variable asignarValorCompartida(t_nombre_compartida	variable, t_valor_variable valor);
-void irAlLabel(t_nombre_etiqueta etiqueta);
+t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta);
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar);
 void retornar(t_valor_variable retorno);
 void imprimir(t_valor_variable valor_mostrar);

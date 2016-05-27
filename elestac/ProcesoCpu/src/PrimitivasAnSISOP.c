@@ -64,24 +64,26 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	//me posiciono al inicio de esta linea del stack
 	//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
-	for(i = 0; i<list_size(lineaActualStack->variables); i++){
+	if(list_size(lineaActualStack->variables > 0)){
+		for(i = 0; i<list_size(lineaActualStack->variables); i++){
 
-		variable = list_get(lineaActualStack->variables, i);
-		if(variable->idVariable == identificador_variable ){
-			log_debug(ptrLog, "La posicion de '%c' es %u", variable, variable->offset);
-			//tengo que devolver la pag offset y size de la variable
-			t_posicion_stack pos;
-			pos.pagina = variable->pagina;
-			pos.offset = variable->offset;
-			pos.size = variable->size;
-			//deberia devolver una estructura con las 3 cosas
-			//ver bien aca que deberia devolver
-			free(variable);
-			free(nom);
-			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca la variable a buscar
-			uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
-			return pos;
-			log_debug(ptrLog, "Llamada a obtenerPosicionVariable");
+			variable = list_get(lineaActualStack->variables, i);
+			if(variable->idVariable == identificador_variable ){
+				log_debug(ptrLog, "La posicion de '%c' es %u", variable, variable->offset);
+				//tengo que devolver la pag offset y size de la variable
+				t_posicion_stack pos;
+				pos.pagina = variable->pagina;
+				pos.offset = variable->offset;
+				pos.size = variable->size;
+				//deberia devolver una estructura con las 3 cosas
+				//ver bien aca que deberia devolver
+				free(variable);
+				free(nom);
+				//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca la variable a buscar
+				uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
+				return posicionRet;
+				log_debug(ptrLog, "Llamada a obtenerPosicionVariable");
+			}
 		}
 	}
 	//devuelvo -1
@@ -195,7 +197,7 @@ t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta) {
 	//devuelvo la primer instruccion ejecutable de etiqueta o -1 en caso de error
 	//necesito el tamanio de etiquetas, lo tendria que agregar al pcb
 	//en vez de devolverla me conviene agregarla al program counter
-	uint32_t numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
+	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	if(numeroInstr > -1){
 		pcb->PC = numeroInstr;
 	}
@@ -203,7 +205,7 @@ t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta) {
 	return numeroInstr;
 }
 
-void llamarConRetorno(t_nombre_etiqueta etiqueta, t_posicion_stack donde_retornar) {
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	log_debug(ptrLog, "Llamada a llamarFuncion");
 	return;
 }

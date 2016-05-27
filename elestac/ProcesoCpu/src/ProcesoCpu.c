@@ -57,7 +57,6 @@ int crearLog() {
 		return 0;
 	}
 }
-
 int main() {
 	crearLog();
 
@@ -269,6 +268,8 @@ void comenzarEjecucionDePrograma() {
 
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+		//log_debug("la proxima instruccion es: %s", proximaInstruccion);
+		printf(proximaInstruccion);
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;
@@ -286,7 +287,7 @@ void comenzarEjecucionDePrograma() {
 }
 
 char * solicitarProximaInstruccionAUMC() {
-	char * instruccionRecibida;
+
 	t_indice_codigo *indice = list_get(pcb->ind_codigo, pcb->PC);
 	uint32_t requestStart = indice->start;
 	uint32_t requestOffset = indice->offset;
@@ -314,7 +315,7 @@ char * solicitarProximaInstruccionAUMC() {
 	} else {
 		log_info(ptrLog, "Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
 		uint32_t operacion, id;
-		instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
+		char* instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
 		t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
 		return instruccion->instruccion;
 	}
