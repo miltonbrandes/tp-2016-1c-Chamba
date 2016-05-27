@@ -38,7 +38,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable);
 void asignar(t_puntero	direccion_variable,	t_valor_variable valor);
 t_valor_variable obtenerValorCompartida(t_nombre_compartida	variable);
 t_valor_variable asignarValorCompartida(t_nombre_compartida	variable, t_valor_variable valor);
-t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta);
+void irAlLabel(t_nombre_etiqueta etiqueta);
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar);
 void retornar(t_valor_variable retorno);
 void imprimir(t_valor_variable valor_mostrar);
@@ -46,5 +46,8 @@ void imprimirTexto(char*	texto);
 void entradaSalida(t_nombre_dispositivo dispositivo, int	tiempo);
 void wait(t_nombre_semaforo	identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
-
+extern int socketNucleo;
+extern int socketNucleo;
+extern int socketUMC;
+extern uint32_t operacion;
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */

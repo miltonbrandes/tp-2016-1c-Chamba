@@ -25,7 +25,8 @@ typedef enum {
 	ASIG_VAR_COMPARTIDA,
 	WAIT,
 	SIGNAL,
-	SIGUSR
+	SIGUSR,
+	SIGUSR1
 } cpu_ops;
 typedef enum {
 	ENVIAR_TAMANIO_PAGINA_A_CPU,

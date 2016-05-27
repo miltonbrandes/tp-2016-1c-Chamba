@@ -18,7 +18,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <commons/log.h>
+#include <commons/config.h>
 uint32_t tamanioPagina;
+t_log* ptrLog;
+t_config* config;
+uint32_t operacion;
+
+int socketNucleo, socketUMC;
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();
 int manejarPrimeraConexionConUMC();
@@ -34,7 +41,7 @@ void recibirSignalSemaforo(char *mensaje);
 void recibirAsignacionVariableCompartida(char *mensaje);
 void recibirValorVariableCompartida(char *mensaje);
 void recibirInstruccion(char *mensaje);
-
+void limpiarInstruccion(char * instruccion);
 void comenzarEjecucionDePrograma();
 char* solicitarProximaInstruccionAUMC();
 void finalizarEjecucionPorExit();

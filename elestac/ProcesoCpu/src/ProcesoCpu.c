@@ -23,11 +23,7 @@
 #include "PrimitivasAnSISOP.h"
 
 #define MAX_BUFFER_SIZE 4096
-t_log* ptrLog;
-t_config* config;
-
 t_pcb *pcb;
-int socketNucleo, socketUMC;
 uint32_t quantum, quantumSleep;
 //uint32_t tamanioPagina;
 
@@ -248,9 +244,23 @@ void notificarAUMCElCambioDeProceso(uint32_t pid) {
 
 void finalizarEjecucionPorExit() {
 	t_buffer_tamanio * buffer_tamanio = serializar_pcb(pcb);
-	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, CPU);
+	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, EXIT, CPU);
 	if(bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Finalizacion a Nucleo");
+	}
+}
+void finalizarEjecucionPorIO(){
+	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, IO, CPU);
+	if(bytesEnviados <= 0){
+		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por io a nucleo");
+	}
+}
+void finalizarEjecucionPorWait(){
+	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, WAIT, CPU);
+	if(bytesEnviados <= 0){
+		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por wait a nucleo");
 	}
 }
 
@@ -261,6 +271,18 @@ void finalizarEjecucionPorQuantum() {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
 }
+void limpiarInstruccion(char * instruccion) {
+     char *p2 = instruccion;
+     while(*instruccion != '\0') {
+     	if(*instruccion != '\t' && *instruccion != '\n') {
+     		*p2++ = *instruccion++;
+     	} else {
+     		++instruccion;
+     	}
+     }
+     *p2 = '\0';
+ }
+
 
 void comenzarEjecucionDePrograma() {
 	log_info(ptrLog, "Recibo PCB");
@@ -268,21 +290,37 @@ void comenzarEjecucionDePrograma() {
 
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
-		//log_debug("la proxima instruccion es: %s", proximaInstruccion);
-		printf(proximaInstruccion);
-		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+		limpiarInstruccion(proximaInstruccion);
+		log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
+		analizadorLinea(strdup(proximaInstruccion), &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;
-		sleep(quantumSleep);
-
+		//le pongo /100 para que no tarde tanto en ejecutar la proxima instruccion
+		sleep(quantumSleep/100);
+		t_stack* item = list_get(pcb->ind_stack, 0);
+		t_variable* var1 = list_get(item->variables, 0);
+		t_variable* var2 = list_get(item->variables, 1);
+		log_debug(ptrLog, "se guardo la variable, %c en el stack en la pagina %i offset %i size %i", var1->idVariable, var1->pagina, var1->offset, var1->size);
+		log_debug(ptrLog, "se guardo la variable, %c en el stack en la pagina %i offset %i size %i", var2->idVariable, var2->pagina, var2->offset, var2->size);
 		if(pcb->PC > pcb->codigo) {
 			finalizarEjecucionPorExit();
 			return;
 		}
+		switch(operacion){
+			case IO:
+				log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
+				finalizarEjecucionPorIO();
+				break;
+			case WAIT:
+				log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
+				finalizarEjecucionPorWait();
+				break;
+			default:
+				break;
+		}
 	}
-
+	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
-
 	free(pcb);
 }
 
@@ -304,7 +342,7 @@ char * solicitarProximaInstruccionAUMC() {
 	solicitarBytes->start = requestStart - (tamanioPagina * paginaAPedir);
 	solicitarBytes->offset = requestOffset;
 
-	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Start: %d", paginaAPedir, requestStart, requestOffset);
+	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Start: %d", paginaAPedir, requestStart, solicitarBytes->offset);
 
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitarBytes(solicitarBytes);
 

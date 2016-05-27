@@ -713,7 +713,7 @@ void escucharPuertos() {
 	}
 }
 
-void operacionesConSemaforos(char operacion, char* buffer,
+void operacionesConSemaforos(uint32_t operacion, char* buffer,
 		t_clienteCpu *unCliente) {
 	log_debug(ptrLog, "Se ingresa a operacionConSemaforos");
 	_Bool _obtenerSemaforo(t_semaforo *unSemaforo) {
@@ -739,7 +739,7 @@ void operacionesConSemaforos(char operacion, char* buffer,
 			enviarDatos(unCliente->socket, buffer, sizeof(buffer), WAIT, NUCLEO);
 			unPcbBlocked = malloc(sizeof(t_pcbBlockedSemaforo));
 
-			bufferPCB = recibirDatos(socket, NULL, &id);
+			bufferPCB = recibirDatos(unCliente->socket, &operacion, &id);
 			int bytesRecibidos = strlen(bufferPCB);
 
 			unPcbBlocked->nombreSemaforo = semaforo->nombre;
