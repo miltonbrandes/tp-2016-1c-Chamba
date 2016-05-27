@@ -506,8 +506,11 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 	}
 
 	//Falta concatenar todas las instrucciones que estan en la lista datosParaCPU, y mandarle eso
-	char * instruccionPosta = malloc(50); //Cualquier malloc
-
+	char *instruccionPosta = calloc(list_size(datosParaCPU), 50);
+	for(i = 0; i < list_size(datosParaCPU); i++) {
+		char * aux = list_get(datosParaCPU, i);
+		strcat(instruccionPosta, aux);
+	}
 	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
 	t_instruccion * instruccion = malloc(50);
 	instruccion->instruccion = datosParaCPU;
