@@ -4,12 +4,11 @@
  *  Created on: 17/5/2016
  *      Author: utnso
  */
-//TODO: ver como sacar el offset
 #include "PrimitivasAnSISOP.h"
 #include <sockets/EscrituraLectura.h>
 #include <sockets/OpsUtiles.h>
 
-#define TAMANIO_VARIABLE 5
+#define TAMANIO_VARIABLE 4
 extern int socketNucleo;
 extern t_log* ptrLog;
 extern t_pcb* pcb;
@@ -17,54 +16,48 @@ extern int socketNucleo;
 extern int socketUMC;
 
 t_posicion definirVariable(t_nombre_variable identificador_variable) {
+	//ver bien que devuelvo....
 	t_posicion offset = 0;
-	char * buffer = malloc(TAMANIO_VARIABLE);
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
-	buffer[0] = identificador_variable;
-	t_enviarBytes* enviar = malloc(sizeof(t_enviarBytes));
-	t_variable* nuevaVar;
+	t_variable* nuevaVar = malloc(sizeof(t_variable));
+	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	//obtengo la posicion de la ultima variable agregada para ver cual va a ser la posicion de mi variable a agregar
+	t_variable* ultimaVar = list_get(lineaStack->variables, list_size(lineaStack->variables)-1);
 	nuevaVar->idVariable = identificador_variable;
-	nuevaVar->pagina = pcb->stackPointer;
-	//nuevaVar->offset = pcb->stackPointer + sizeof(pcb->ind_stack) * TAMANIO_VARIABLE;
-	//ver bien como se en que posicion estoy del stack....
+	nuevaVar->pagina = pcb->paginaStackActual;
 	nuevaVar->size = TAMANIO_VARIABLE;
-	enviar->pid = pcb->pcb_id;
-	enviar->pagina = pcb->stackPointer;
-	enviar->tamanio = TAMANIO_VARIABLE;
-	enviar->buffer = buffer;
-	//enviar->offset =
-	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
-	if(resp[0] == -1){
-		free(resp);
-		free(buffer);
-		free(enviar);
-	}
-
-	//el program counter es igual a la linea del stack en la que estoy parado????
-	t_stack* lineaStack = list_get(pcb->ind_stack,pcb->PC);
+	nuevaVar->offset = ultimaVar->offset + ultimaVar->size;
+	pcb->stackPointer += nuevaVar->offset + nuevaVar->size;
 	list_add(lineaStack->variables, nuevaVar);
+	offset = pcb->stackPointer - nuevaVar->size;
+	free(nuevaVar);
 	return offset;
 }
 
 t_posicion obtenerPosicionVariable(t_nombre_variable identificador_variable) {
+	//ver bien que deberia devolver aca, como calcular el stack pointer...
 	t_variable* variable = malloc(sizeof(t_variable));
 	int i = 0;
-	int j = 0;
 	char* nom = malloc(2);
 	nom[0] = identificador_variable;
 	nom[1] = '\0';
+	uint32_t posDevolver;
 	log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
 	//obtengo la linea del stack del contexto de ejecucion actual...
-	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->stackPointer);
+	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	//me posiciono al inicio de esta linea del stack, calculando con la posicion del stack actual - las listas me situo al inicio de la linea del stack
+	posDevolver = pcb->stackPointer - ((list_size(lineaActualStack->argumentos))*3*sizeof(uint32_t));
 	//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
 	for(i = 0; i<list_size(lineaActualStack->variables); i++){
+
 		variable = list_get(lineaActualStack->variables, i);
 		if(variable->idVariable == identificador_variable ){
 			log_debug(ptrLog, "La posicion de '%c' es %u", variable, variable->offset);
 			free(nom);
-			return variable->offset;
+			return posDevolver;
 			log_debug(ptrLog, "Llamada a obtenerPosicionVariable");
 		}
+		posDevolver += (sizeof(uint32_t)*3)+sizeof(char);
 	}
 	return -1;
 }
@@ -75,9 +68,9 @@ t_valor_variable dereferenciar(t_posicion direccion_variable) {
 	t_valor_variable valor = 0;
 	log_debug(ptrLog, "Llamada a dereferenciar %d", direccion_variable);
 	t_solicitarBytes* solicitar = malloc(sizeof(t_solicitarBytes));
-	solicitar->pagina = pcb->stackPointer;
-	solicitar->offset = direccion_variable;
-	solicitar->start = 5;
+	solicitar->pagina = pcb->paginaStackActual;
+	solicitar->offset = TAMANIO_VARIABLE;
+	solicitar->start = direccion_variable;
 	buffer = enviarOperacion(LEER, solicitar, socketUMC);
 	if(buffer[0] == -1){
 		operacion = ERROR;
@@ -97,7 +90,7 @@ void asignar(t_posicion direccion_variable, t_valor_variable valor) {
 	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
 	t_enviarBytes* enviar = malloc(sizeof(t_enviarBytes));
 	uint32_t operacion;
-	enviar->pagina = pcb->stackPointer;
+	enviar->pagina = pcb->paginaStackActual;
 	enviar->offset = direccion_variable;
 	enviar->tamanio = sizeof(uint32_t);
 	enviar->pid = pcb->pcb_id;
@@ -161,17 +154,19 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	return valor;
 }
 
-t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta) {
+void irAlLabel(t_nombre_etiqueta etiqueta) {
 	//devuelvo la primer instruccion ejecutable de etiqueta o -1 en caso de error
 	//necesito el tamanio de etiquetas, lo tendria que agregar al pcb
-	t_puntero_instruccion ret;
-	//pcb->PC = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, )
+	//en vez de devolverla me conviene agregarla al program counter
+	pcb->PC = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	log_debug(ptrLog, "Llamada a irAlLabel");
-	return ret;
+	return;
+	//return ret;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_posicion donde_retornar) {
 	log_debug(ptrLog, "Llamada a llamarFuncion");
+	return;
 }
 
 void retornar(t_valor_variable retorno) {

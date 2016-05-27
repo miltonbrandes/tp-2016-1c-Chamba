@@ -55,7 +55,7 @@ uint32_t handshakeumv = 0;
 uint32_t pcbAFinalizar;
 uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
 uint32_t tamanioStack;
-uint32_t tamanioMarcos = 4;
+uint32_t tamanioMarcos;
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado);
 void operacionesConSemaforos(char operacion, char* buffer,
 		t_clienteCpu *unCliente);

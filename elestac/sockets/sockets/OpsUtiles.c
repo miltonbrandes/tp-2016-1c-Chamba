@@ -573,7 +573,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	if (pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
 		tamanioPCB += strlen(pcb->ind_etiq);
 	}
-	tamanioPCB += (sizeof(uint32_t) * 5); //Cantidad de uint32_t que tiene PCB
+	tamanioPCB += (sizeof(uint32_t) * 8); //Cantidad de uint32_t que tiene PCB
 	tamanioPCB += sizeof(uint32_t); //Para indicar tamanio de PCBs
 
 	//Comienzo serializacion
@@ -585,7 +585,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &tamanioPCB, tmp_size);
 	offset += tmp_size;
 
-	//Serializo los 5 uint32_t del PCB
+	//Serializo los 8 uint32_t del PCB
 	memcpy(paqueteSerializado + offset, &(pcb->pcb_id), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->codigo), tmp_size);
@@ -596,6 +596,11 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->stackPointer), tmp_size);
 	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->tamanioEtiquetas), tmp_size);
+	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->numeroContextoEjecucionActualStack), tmp_size);
+	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->paginaStackActual), tmp_size);
 
 	//Serializo Indice de Codigo
 	memcpy(paqueteSerializado + offset, indcod->buffer, indcod->tamanioBuffer);
@@ -607,10 +612,10 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 
 	//Serializo Indice de Etiquetas
 	if(pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
-		uint32_t longitudIndiceEtiquetas = strlen(pcb->ind_etiq);
+		uint32_t longitudIndiceEtiquetas = pcb->tamanioEtiquetas;
 		memcpy(paqueteSerializado + offset, &longitudIndiceEtiquetas, tmp_size);
 		offset += tmp_size;
-		memcpy(paqueteSerializado + offset, pcb->ind_etiq, strlen(pcb->ind_etiq));
+		memcpy(paqueteSerializado + offset, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	}else{
 		uint32_t longitudIndiceEtiquetas = 0;
 		memcpy(paqueteSerializado + offset, &longitudIndiceEtiquetas, tmp_size);
@@ -633,7 +638,7 @@ t_pcb* deserializar_pcb(char* package) {
   	offset += tmp_size;
   	printf("");
 
-  	//Tomo los 5 uint32_t del PCB
+  	//Tomo los 8 uint32_t del PCB
  	memcpy(&(pcb->pcb_id), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&(pcb->codigo), package + offset, tmp_size);
@@ -644,6 +649,11 @@ t_pcb* deserializar_pcb(char* package) {
  	offset += tmp_size;
  	memcpy(&(pcb->stackPointer), package + offset, tmp_size);
  	offset += tmp_size;
+ 	memcpy(&(pcb->tamanioEtiquetas), package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&(pcb->numeroContextoEjecucionActualStack), package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&(pcb->paginaStackActual), package + offset, tmp_size);
 
  	//Tomo Indice de Codigo
  	uint32_t itemsIndiceDeCodigo;
@@ -805,9 +815,6 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		t_stack* linea = list_get(indiceStack, a);
 		tamanioStackParticular = 0;
 
-		tamanioTotalBuffer += sizeof(uint32_t); //tamanio de variable posicion
-		tamanioStackParticular += sizeof(uint32_t);
-
 		int cantidadArgumentos = list_size(linea->argumentos);
 		tamanioTotalBuffer += cantidadArgumentos * sizeof(t_argumento); //tamanio de lista de argumentos
 		tamanioStackParticular += cantidadArgumentos * sizeof(t_argumento);
@@ -843,9 +850,6 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		offset += tamanioUint32;
 
 		t_stack * stack = linea->stack;
-
-		memcpy(buffer + offset, &(stack->posicion), tamanioUint32);
-		offset += tamanioUint32;
 
 		uint32_t cantidadArgumentos = list_size(stack->argumentos);
 		memcpy(buffer + offset, &cantidadArgumentos, tamanioUint32);
@@ -912,11 +916,6 @@ t_list* deserializarIndiceStack(char* buffer) {
 		offset += tamanioUint32;
 
 		t_stack * stack_item = malloc(tamanioItemStack);
-
-		uint32_t posicion;
-		memcpy(&posicion, buffer + offset, tamanioUint32);
-		offset += tamanioUint32;
-		stack_item->posicion = posicion;
 
 		t_list * argumentosStack = list_create();
 		uint32_t cantidadArgumentosStack;
@@ -986,8 +985,6 @@ t_list* llenarLista(t_intructions * indiceCodigo, t_size cantInstruc) {
 }
 
 t_list* llenarStack(t_list * lista, t_stack* lineaAgregar) {
-	if (lineaAgregar->posicion >= 0) {
 		list_add(lista, lineaAgregar);
-	}
 	return lista;
 }

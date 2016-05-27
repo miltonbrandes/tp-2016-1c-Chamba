@@ -29,7 +29,6 @@ typedef struct{
 	uint32_t size;
 }t_argumento;
 typedef struct stack{
-	uint32_t posicion;
 	t_list* argumentos;
 	t_list* variables;
 	uint32_t direcretorno;
@@ -44,6 +43,9 @@ typedef struct pcb {
 	uint32_t PC;
 	uint32_t paginaCodigoActual;
 	uint32_t stackPointer;
+	uint32_t paginaStackActual;
+	uint32_t tamanioEtiquetas;
+	uint32_t numeroContextoEjecucionActualStack;
 } t_pcb;
 
 typedef struct

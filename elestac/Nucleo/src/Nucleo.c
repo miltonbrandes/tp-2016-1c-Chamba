@@ -796,13 +796,13 @@ t_pcb* crearPCB(char* programa, int socket) {
 	//Obtengo la metadata utilizando el preprocesador del parser
 	datos = metadata_desde_literal(programa);
 
-	uint32_t tamanioPCB = 5 * sizeof(uint32_t);
+	uint32_t tamanioPCB = 7 * sizeof(uint32_t);
 	tamanioPCB += datos->instrucciones_size * (sizeof(t_puntero_instruccion) + sizeof(size_t));
 	tamanioPCB += tamanioStack * tamanioMarcos;
 	if(datos->cantidad_de_etiquetas  == 0 && datos->cantidad_de_funciones == 0){
 		//No se suma nada
 	}else{
-		tamanioPCB += strlen(datos->etiquetas);
+		tamanioPCB += datos->etiquetas_size;
 	}
 	t_pcb* pcb = malloc(tamanioPCB);
 
@@ -813,7 +813,12 @@ t_pcb* crearPCB(char* programa, int socket) {
 	log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
 	t_iniciar_programa * iniciarProg = malloc((sizeof(uint32_t) * 2) + strlen(programa) + 1);
 	iniciarProg->programID = pcb->pcb_id;
-	iniciarProg->tamanio = ((strlen(programa + 1)) / tamanioMarcos) + tamanioStack;
+	if(strlen(programa+1)%tamanioMarcos != 0){
+		iniciarProg->tamanio = ((strlen(programa+1)) / tamanioMarcos) + 1 + tamanioStack;
+	}
+	else{
+		iniciarProg->tamanio = ((strlen(programa+1) / tamanioMarcos) + tamanioStack);
+	}
 	iniciarProg->codigoAnsisop = malloc(strlen(programa)+1);
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
@@ -832,15 +837,15 @@ t_pcb* crearPCB(char* programa, int socket) {
 	} else {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
 
-		pcb->paginaCodigoActual = nuevoProgEnUMC->primerPaginaDeProc;
-		pcb->stackPointer = iniciarProg->tamanio - tamanioStack;
-
+		pcb->paginaCodigoActual = 0;
+		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack;
+		pcb->stackPointer = 0;
 		pcb->PC = datos->instruccion_inicio;
 		pcb->codigo = datos->instrucciones_size;
-
 		t_list * pcbStack = list_create();
 		pcb->ind_stack = pcbStack;
-
+		pcb->numeroContextoEjecucionActualStack = 0;
+		pcb->tamanioEtiquetas = datos->etiquetas_size;
 		//Cargo Indice de Codigo
 		t_list * listaIndCodigo = llenarLista(datos->instrucciones_serializado, datos->instrucciones_size);
 		pcb->ind_codigo = listaIndCodigo;
