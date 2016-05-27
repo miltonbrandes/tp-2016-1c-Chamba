@@ -15,84 +15,122 @@ extern t_pcb* pcb;
 extern int socketNucleo;
 extern int socketUMC;
 
-t_posicion definirVariable(t_nombre_variable identificador_variable) {
+
+t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	//ver bien que devuelvo....
-	t_posicion offset = 0;
+	t_posicion_stack posicionDevolver;
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
 	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	//obtengo la posicion de la ultima variable agregada para ver cual va a ser la posicion de mi variable a agregar
-	t_variable* ultimaVar = list_get(lineaStack->variables, list_size(lineaStack->variables)-1);
-	nuevaVar->idVariable = identificador_variable;
-	nuevaVar->pagina = pcb->paginaStackActual;
-	nuevaVar->size = TAMANIO_VARIABLE;
-	nuevaVar->offset = ultimaVar->offset + ultimaVar->size;
-	pcb->stackPointer += nuevaVar->offset + nuevaVar->size;
-	list_add(lineaStack->variables, nuevaVar);
-	offset = pcb->stackPointer - nuevaVar->size;
+	//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
+	if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
+		nuevaVar->idVariable = identificador_variable;
+		pcb->paginaStackActual++;
+		nuevaVar->pagina = pcb->paginaStackActual;
+		nuevaVar->size = TAMANIO_VARIABLE;
+		nuevaVar->offset = 0;
+		pcb->stackPointer += TAMANIO_VARIABLE;
+		list_add(lineaStack->variables, nuevaVar);
+		//devuelvo el offset desde el inicio de la nueva pagina
+		posicionDevolver.pagina = nuevaVar->pagina;
+		posicionDevolver.offset = nuevaVar->offset;
+		posicionDevolver.size = nuevaVar->size;
+	}else{//8
+		nuevaVar->idVariable = identificador_variable;
+		nuevaVar->pagina = pcb->paginaStackActual;
+		nuevaVar->size = TAMANIO_VARIABLE;
+		nuevaVar->offset = pcb->stackPointer;
+		pcb->stackPointer+= TAMANIO_VARIABLE;
+		list_add(lineaStack->variables, nuevaVar);
+		posicionDevolver.pagina = nuevaVar->pagina;
+		posicionDevolver.offset = nuevaVar->offset;
+		posicionDevolver.size = nuevaVar->size;
+	}
+	//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
+	uint32_t posicionRet = ((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
 	free(nuevaVar);
-	return offset;
+	return posicionRet;
 }
 
-t_posicion obtenerPosicionVariable(t_nombre_variable identificador_variable) {
+t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	//ver bien que deberia devolver aca, como calcular el stack pointer...
 	t_variable* variable = malloc(sizeof(t_variable));
 	int i = 0;
 	char* nom = malloc(2);
 	nom[0] = identificador_variable;
 	nom[1] = '\0';
-	uint32_t posDevolver;
 	log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
 	//obtengo la linea del stack del contexto de ejecucion actual...
 	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	//me posiciono al inicio de esta linea del stack, calculando con la posicion del stack actual - las listas me situo al inicio de la linea del stack
-	posDevolver = pcb->stackPointer - ((list_size(lineaActualStack->argumentos))*3*sizeof(uint32_t));
+	//me posiciono al inicio de esta linea del stack
 	//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
 	for(i = 0; i<list_size(lineaActualStack->variables); i++){
 
 		variable = list_get(lineaActualStack->variables, i);
 		if(variable->idVariable == identificador_variable ){
 			log_debug(ptrLog, "La posicion de '%c' es %u", variable, variable->offset);
+			//tengo que devolver la pag offset y size de la variable
+			t_posicion_stack pos;
+			pos.pagina = variable->pagina;
+			pos.offset = variable->offset;
+			pos.size = variable->size;
+			//deberia devolver una estructura con las 3 cosas
+			//ver bien aca que deberia devolver
+			free(variable);
 			free(nom);
-			return posDevolver;
+			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca la variable a buscar
+			uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
+			return pos;
 			log_debug(ptrLog, "Llamada a obtenerPosicionVariable");
 		}
-		posDevolver += (sizeof(uint32_t)*3)+sizeof(char);
 	}
-	return -1;
+	//devuelvo -1
+	uint32_t posicionRetError = -1;
+	free(variable);
+	free(nom);
+	return posicionRetError;
 }
 
-t_valor_variable dereferenciar(t_posicion direccion_variable) {
-	char* buffer;
-	uint32_t operacion;
+t_valor_variable dereferenciar(t_puntero direccion_variable) {
+
+	//uint32_t operacion;
+	//calculo el la posicion de la variable en el stack mediante el desplazamiento
+	t_posicion_stack posicionRet;
+	posicionRet.pagina = (direccion_variable/tamanioPagina)+pcb->primerPaginaStack;
+	posicionRet.offset = direccion_variable%tamanioPagina;
+	posicionRet.size = TAMANIO_VARIABLE;
+			//((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
 	t_valor_variable valor = 0;
 	log_debug(ptrLog, "Llamada a dereferenciar %d", direccion_variable);
 	t_solicitarBytes* solicitar = malloc(sizeof(t_solicitarBytes));
-	solicitar->pagina = pcb->paginaStackActual;
+	solicitar->pagina = posicionRet.pagina;
 	solicitar->offset = TAMANIO_VARIABLE;
-	solicitar->start = direccion_variable;
-	buffer = enviarOperacion(LEER, solicitar, socketUMC);
+	solicitar->start = posicionRet.offset;
+	char* buffer = enviarOperacion(LEER, solicitar, socketUMC);
 	if(buffer[0] == -1){
-		operacion = ERROR;
-		free(buffer);
+		//operacion = ERROR;
 		free(solicitar);
 		return -1;
 	}
 	memcpy(&valor, buffer + 1, sizeof(t_valor_variable));
 	log_debug(ptrLog, "El valor es %d", valor);
-	free(buffer);
 	free(solicitar);
 	return valor;
 }
 
-void asignar(t_posicion direccion_variable, t_valor_variable valor) {
+void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	//corroborar que esto este bien
 	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
 	t_enviarBytes* enviar = malloc(sizeof(t_enviarBytes));
 	uint32_t operacion;
-	enviar->pagina = pcb->paginaStackActual;
-	enviar->offset = direccion_variable;
-	enviar->tamanio = sizeof(uint32_t);
+	//calculo el la posicion de la variable en el stack mediante el desplazamiento
+	t_posicion_stack posicionRet;
+	posicionRet.pagina = (direccion_variable/tamanioPagina)+pcb->primerPaginaStack;
+	posicionRet.offset = direccion_variable%tamanioPagina;
+	posicionRet.size = TAMANIO_VARIABLE;
+	enviar->pagina = posicionRet.pagina;
+	enviar->offset = posicionRet.offset;
+	enviar->tamanio = TAMANIO_VARIABLE;
 	enviar->pid = pcb->pcb_id;
 	uint32_t valorVar = (uint32_t)valor;
 	enviar->buffer = malloc(sizeof(uint32_t));
@@ -100,7 +138,6 @@ void asignar(t_posicion direccion_variable, t_valor_variable valor) {
 	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
 	if(resp[0] == -1){
 		operacion = ERROR;
-		free(resp);
 		free(enviar->buffer);
 		free(enviar);
 		return;
@@ -154,17 +191,19 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	return valor;
 }
 
-void irAlLabel(t_nombre_etiqueta etiqueta) {
+t_puntero_instruccion irAlLabel(t_nombre_etiqueta etiqueta) {
 	//devuelvo la primer instruccion ejecutable de etiqueta o -1 en caso de error
 	//necesito el tamanio de etiquetas, lo tendria que agregar al pcb
 	//en vez de devolverla me conviene agregarla al program counter
-	pcb->PC = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
+	uint32_t numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
+	if(numeroInstr > -1){
+		pcb->PC = numeroInstr;
+	}
 	log_debug(ptrLog, "Llamada a irAlLabel");
-	return;
-	//return ret;
+	return numeroInstr;
 }
 
-void llamarConRetorno(t_nombre_etiqueta etiqueta, t_posicion donde_retornar) {
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_posicion_stack donde_retornar) {
 	log_debug(ptrLog, "Llamada a llamarFuncion");
 	return;
 }

@@ -796,7 +796,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	//Obtengo la metadata utilizando el preprocesador del parser
 	datos = metadata_desde_literal(programa);
 
-	uint32_t tamanioPCB = 8 * sizeof(uint32_t);
+	uint32_t tamanioPCB = 9 * sizeof(uint32_t);
 	tamanioPCB += datos->instrucciones_size * (sizeof(t_puntero_instruccion) + sizeof(size_t));
 	tamanioPCB += tamanioStack * tamanioMarcos;
 	if(datos->cantidad_de_etiquetas == 0 && datos->cantidad_de_funciones == 0){
@@ -840,6 +840,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 
 		pcb->paginaCodigoActual = 0;
 		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack;
+		pcb->primerPaginaStack = pcb->paginaStackActual;
 		pcb->stackPointer = 0;
 		pcb->PC = datos->instruccion_inicio;
 		pcb->codigo = datos->instrucciones_size;

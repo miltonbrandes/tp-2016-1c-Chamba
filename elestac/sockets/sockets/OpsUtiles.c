@@ -576,7 +576,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	if (pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
 		tamanioPCB += strlen(pcb->ind_etiq);
 	}
-	tamanioPCB += (sizeof(uint32_t) * 8); //Cantidad de uint32_t que tiene PCB
+	tamanioPCB += (sizeof(uint32_t) * 9); //Cantidad de uint32_t que tiene PCB
 	tamanioPCB += sizeof(uint32_t); //Para indicar tamanio de PCBs
 
 	//Comienzo serializacion
@@ -588,7 +588,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &tamanioPCB, tmp_size);
 	offset += tmp_size;
 
-	//Serializo los 8 uint32_t del PCB
+	//Serializo los 9 uint32_t del PCB
 	memcpy(paqueteSerializado + offset, &(pcb->pcb_id), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->codigo), tmp_size);
@@ -604,6 +604,9 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &(pcb->numeroContextoEjecucionActualStack), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->paginaStackActual), tmp_size);
+	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->primerPaginaStack), tmp_size);
+	offset += tmp_size;
 
 	//Serializo Indice de Codigo
 	memcpy(paqueteSerializado + offset, indcod->buffer, indcod->tamanioBuffer);
@@ -641,7 +644,7 @@ t_pcb* deserializar_pcb(char* package) {
   	offset += tmp_size;
   	printf("");
 
-  	//Tomo los 8 uint32_t del PCB
+  	//Tomo los 9 uint32_t del PCB
  	memcpy(&(pcb->pcb_id), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&(pcb->codigo), package + offset, tmp_size);
@@ -657,6 +660,9 @@ t_pcb* deserializar_pcb(char* package) {
  	memcpy(&(pcb->numeroContextoEjecucionActualStack), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&(pcb->paginaStackActual), package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&(pcb->primerPaginaStack), package + offset, tmp_size);
+ 	offset += tmp_size;
 
  	//Tomo Indice de Codigo
  	uint32_t itemsIndiceDeCodigo;

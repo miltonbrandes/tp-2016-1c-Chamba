@@ -17,7 +17,11 @@
 #include <commons/collections/queue.h>
 #include <commons/config.h>
 #include <commons/log.h>
-
+typedef struct{
+	uint32_t pagina;
+	uint32_t offset;
+	uint32_t size;
+}t_posicion_stack;
 typedef struct _package_solicitarBytes {
 	uint32_t pagina;
 	uint32_t start;
@@ -46,6 +50,7 @@ typedef struct pcb {
 	uint32_t paginaStackActual;
 	uint32_t tamanioEtiquetas;
 	uint32_t numeroContextoEjecucionActualStack;
+	uint32_t primerPaginaStack;
 } t_pcb;
 
 typedef struct

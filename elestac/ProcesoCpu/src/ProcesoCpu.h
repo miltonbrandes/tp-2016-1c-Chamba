@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+uint32_t tamanioPagina;
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();
 int manejarPrimeraConexionConUMC();

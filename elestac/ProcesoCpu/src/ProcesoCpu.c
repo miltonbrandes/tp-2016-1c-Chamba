@@ -28,7 +28,8 @@ t_config* config;
 
 t_pcb *pcb;
 int socketNucleo, socketUMC;
-uint32_t quantum, quantumSleep, tamanioPagina;
+uint32_t quantum, quantumSleep;
+//uint32_t tamanioPagina;
 
 AnSISOP_funciones functions = {
 		.AnSISOP_asignar = asignar,
