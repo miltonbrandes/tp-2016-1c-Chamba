@@ -310,7 +310,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		break;
 	case FINALIZARPROGRAMA:
-		buffer_tamanio = serializarFinalizarPrograma(estructuraDeOperacion, &operacion);
+		buffer_tamanio = serializarFinalizarPrograma(estructuraDeOperacion);
 
 
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, NUCLEO)) < 0) {
@@ -544,22 +544,26 @@ t_dispositivo_io* deserializar_opIO(char* package){
 	return op_IO;
 }
 
-t_buffer_tamanio * serializarFinalizarPrograma(t_finalizar_programa* destruirPaginas, uint32_t *operacion) {
-	int offset = 0, tmp_size = 0;
-	uint32_t packageSize = sizeof(uint32_t) * 2;
-	char * paqueteSerializado = malloc(packageSize);
+t_buffer_tamanio * serializarFinalizarPrograma(t_finalizar_programa* destruirPaginas) {
+	int tmp_size = sizeof(uint32_t);
+	char * paqueteSerializado = malloc(sizeof(t_finalizar_programa));
 
-	tmp_size = sizeof(uint32_t);
-	memcpy(paqueteSerializado + offset, operacion, tmp_size);
-	offset += tmp_size;
-	memcpy(paqueteSerializado + offset, &(destruirPaginas->programID), tmp_size);
+	memcpy(paqueteSerializado, &(destruirPaginas->programID), tmp_size);
 
-	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + packageSize);
-	buffer_tamanio->tamanioBuffer = packageSize;
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + sizeof(t_finalizar_programa));
+	buffer_tamanio->tamanioBuffer = sizeof(t_finalizar_programa);
 	buffer_tamanio->buffer = paqueteSerializado;
 
 	return buffer_tamanio;
+}
 
+t_finalizar_programa * deserializarFinalizarPrograma(char * buffer) {
+	int tmp_size = sizeof(uint32_t);
+	t_finalizar_programa * finalizarPrograma = malloc(sizeof(t_finalizar_programa));
+
+	memcpy(&(finalizarPrograma->programID), buffer, tmp_size);
+
+	return finalizarPrograma;
 }
 
 t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {

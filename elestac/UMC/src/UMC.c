@@ -495,11 +495,10 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 					offsetMemcpy += auxiliar->offset;
 				}
 			}
+			free(listaRegistros);
 		}
 	}
 
-//	char * barraCero = '\0';
-//	memcpy(datosParaCPU + offset, barraCero, 1);
 	log_info(ptrLog, "La instruccion que pidio CPU es: %s", datosParaCPU);
 
 	t_instruccion * instruccion = malloc(strlen(datosParaCPU));
@@ -508,6 +507,10 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 	t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, strlen(datosParaCPU));
 
 	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
+
+	free(buffer_tamanio);
+	free(instruccion);
+	free(datosParaCPU);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -604,6 +607,17 @@ t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId) {
 	return NULL;
 }
 
+int indiceDeTablaDelProceso(uint32_t procesoId) {
+	int i;
+	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
+		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
+		if(tabla->pID == procesoId) {
+			return i;
+		}
+	}
+	return i;
+}
+
 void enviarTamanioPaginaACPU(int socketCPU) {
 	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
 	int bytesEnviados = enviarDatos(socketCPU, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
@@ -625,14 +639,41 @@ void enviarTamanioPaginaANUCLEO(){
 
 ///////ESTO ES POSIBLE QUE NO ESTE DEL TODOOO BIEN
 void finalizarPrograma(uint32_t PID){
-	t_tabla_de_paginas tablaAEliminar = buscarTablaDelProceso(PID);
-	uint32_t pudoSwapEliminar = enviarYRecibirMensajeSwap(PID, FINALIZARPROGRAMA);
-	if(pudoSwapEliminar == SUCCESS){
-		free(tablaAEliminar);
-		///CONFIRMAR A NUCLEO?
+	t_finalizar_programa * finalizarProg = malloc(sizeof(t_finalizar_programa));
+	finalizarProg->programID = PID;
+
+	t_buffer_tamanio * buffer_tamanio = serializarFinalizarPrograma(finalizarProg);
+
+	char * respuestaSwap = enviarYRecibirMensajeSwap(buffer_tamanio, FINALIZARPROGRAMA);
+	uint32_t respuesta = deserializarUint32(respuestaSwap);
+
+	if(respuesta == SUCCESS){
+		borrarEstructurasDeProceso(PID);
+		log_info(ptrLog, "Se borraron las estructuras relacionadas al Proceso %d", PID);
 	} else {
-		//AVISAR ERROR A NUCLEO?
+		log_info(ptrLog, "Ocurrio un error al borrar las estructuras relacionadas al Proceso %d", PID);
 	}
+
+	free(buffer_tamanio);
+	free(finalizarProg);
+	free(respuestaSwap);
+}
+
+void borrarEstructurasDeProceso(uint32_t pid) {
+	t_tabla_de_paginas * tablaAEliminar = buscarTablaDelProceso(pid);
+	int i;
+	for(i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tablaAEliminar->tablaDePaginas, i);
+		if(registro->estaEnUMC == 1) {
+			t_frame * frame = list_get(frames, registro->frame);
+			free(frame);
+		}
+		free(registro);
+	}
+
+	int indexDeTablaAEliminar = indiceDeTablaDelProceso(pid);
+	list_remove(tablaProcesosPaginas, indexDeTablaAEliminar);
+	free(tablaAEliminar);
 }
 
 uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){

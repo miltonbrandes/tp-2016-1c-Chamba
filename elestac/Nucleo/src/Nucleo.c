@@ -796,10 +796,10 @@ t_pcb* crearPCB(char* programa, int socket) {
 	//Obtengo la metadata utilizando el preprocesador del parser
 	datos = metadata_desde_literal(programa);
 
-	uint32_t tamanioPCB = 7 * sizeof(uint32_t);
+	uint32_t tamanioPCB = 8 * sizeof(uint32_t);
 	tamanioPCB += datos->instrucciones_size * (sizeof(t_puntero_instruccion) + sizeof(size_t));
 	tamanioPCB += tamanioStack * tamanioMarcos;
-	if(datos->cantidad_de_etiquetas  == 0 && datos->cantidad_de_funciones == 0){
+	if(datos->cantidad_de_etiquetas == 0 && datos->cantidad_de_funciones == 0){
 		//No se suma nada
 	}else{
 		tamanioPCB += datos->etiquetas_size;
@@ -831,6 +831,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		programa[0] = -2;
 		free(datos);
 		free(iniciarProg);
+		free(nuevoProgEnUMC);
 		queue_push(colaExit, pcb);
 		sem_post(&semProgExit);
 		return NULL;
@@ -859,6 +860,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		}
 		free(datos);
 		free(iniciarProg);
+		free(nuevoProgEnUMC);
 
 		return pcb;
 	}
@@ -985,15 +987,14 @@ void* mensajesPrograma(void) {
 	return 0;
 }
 
-void* vaciarColaExit(void* socket){
-	int socketUMC=(int)socket;
+void* vaciarColaExit(){
 	while(1){
 		sem_wait(&semProgExit);/*Esperamos a que se envie algun PCB a la cola exit*/
 		t_pcb *aux=queue_pop(colaExit);
 		pthread_mutex_lock(&mutex_exit);
 		t_finalizar_programa finalizarProg;
 			finalizarProg.programID=aux->pcb_id;
-			if((enviarOperacion(FINALIZARPROGRAMA,&finalizarProg,socket))<0){
+			if((enviarOperacion(FINALIZARPROGRAMA,&finalizarProg,socketUMC))<0){
 				log_error(ptrLog,"Error al borrar las paginas del pcb con pid: %d",aux->pcb_id);
 			}else{
 				log_info(ptrLog,"Borrados las paginas del programa:%d",aux->pcb_id);
@@ -1157,7 +1158,7 @@ int main() {
 		} else {
 			log_debug(ptrLog, "Hilo para enviar mensajes a clientes creado");
 		}
-		if (pthread_create(&threadExit, NULL, vaciarColaExit, (void*) socketUMC)!= 0) {
+		if (pthread_create(&threadExit, NULL, vaciarColaExit, NULL)!= 0) {
 					perror("No se pudo crear el thread para ir vaciando la cola de programas a finalizar");
 		}else{
 			log_debug(ptrLog, "Hilo para vaciar los programas finalizados creado");

@@ -31,7 +31,9 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 t_buffer_tamanio * serializarEnviarBytes(t_enviarBytes* enviarBytes);
 t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcActivo);
 t_buffer_tamanio * serializarCrearSegmento(t_iniciar_programa* crearSegmento, uint32_t *operacion);
-t_buffer_tamanio * serializarFinalizarPrograma(t_finalizar_programa* destruirSegmento, uint32_t *operacion);
+
+t_buffer_tamanio * serializarFinalizarPrograma(t_finalizar_programa* destruirSegmento);
+t_finalizar_programa * deserializarFinalizarPrograma(char * buffer);
 
 t_pcb* deserializar_pcb(char* package);
 t_buffer_tamanio* serializar_pcb(t_pcb* pcb);

@@ -230,6 +230,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 	t_solicitud_pagina * solicitudPagina;
 	t_pagina_de_swap * paginaDeSwap;
 	t_escribir_en_swap * escritura;
+	t_finalizar_programa * finalizarPrograma;
 
 	switch(op){
 		case NUEVOPROGRAMA:
@@ -261,9 +262,20 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			}
 		break;
 		case FINALIZARPROGRAMA:
-			//TODO: Falta este caso
+			sleep(retardoAcceso);
 			log_info(ptrLog, "UMC Solicita la finalizacion del Proceso %d", 10);
-//			liberarMemoria(listaDeLibres, listaDeOcupados, pid);
+			finalizarPrograma = deserializarFinalizarPrograma(buffer);
+
+			liberarMemoria(listaDeLibres, listaDeOcupados, finalizarPrograma->programID);
+
+			buffer_tamanio = serializarUint32(SUCCESS);
+			int bytesEnviadosFinalizar = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, SWAP);
+			if(bytesEnviadosFinalizar <= 0) {
+				log_error(ptrLog, "Ocurrio un error al Notificar a UMC que se finalizo el Proceso %d.", finalizarPrograma->programID);
+			}
+			free(buffer);
+			free(finalizarPrograma);
+			free(buffer_tamanio);
 		break;
 		case LEER:
 			sleep(retardoAcceso);
@@ -280,6 +292,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			if(bytesEnviados <= 0) {
 				log_error(ptrLog, "Ocurrio un error al enviar a UMC la Pagina %d del Proceso %d.", solicitudPagina->paginaProceso, solicitudPagina->pid);
 			}
+			free(buffer);
 			free(paginaDeSwap);
 			free(buffer_tamanio);
 			free(leido);

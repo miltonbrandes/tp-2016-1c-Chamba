@@ -90,4 +90,6 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina);
 
 char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion);
 
+void borrarEstructurasDeProceso(uint32_t pid);
+
 #endif /* UMC_H_ */
