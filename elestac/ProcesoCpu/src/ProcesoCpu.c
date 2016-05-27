@@ -268,8 +268,7 @@ void comenzarEjecucionDePrograma() {
 
 	while (contador <= quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
-		//log_debug("la proxima instruccion es: %s", proximaInstruccion);
-		printf(proximaInstruccion);
+		log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;

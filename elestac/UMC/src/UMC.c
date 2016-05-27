@@ -512,8 +512,8 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 		strcat(instruccionPosta, aux);
 	}
 	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
-	t_instruccion * instruccion = malloc(50);
-	instruccion->instruccion = datosParaCPU;
+	t_instruccion * instruccion = calloc(list_size(datosParaCPU), 50);
+	instruccion->instruccion = instruccionPosta;
 
 	t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, offset + 5);
 
