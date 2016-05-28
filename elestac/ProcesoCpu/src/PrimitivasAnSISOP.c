@@ -10,8 +10,11 @@
 
 #define TAMANIO_VARIABLE 4
 extern t_log* ptrLog;
-extern t_pcb* pcb;
+t_pcb* pcb;
 
+void setPCB(t_pcb * pcbDeCPU) {
+	pcb = pcbDeCPU;
+}
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	t_posicion_stack posicionDevolver;
@@ -61,9 +64,8 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	}
 	//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
 	uint32_t posicionRet = ((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
-	nuevaVar = list_get(lineaStack->variables, 0);
+//	t_variable * otraVar = list_get(lineaStack->variables, 0);
 	log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
-	free(nuevaVar);
 	return posicionRet;
 }
 
@@ -71,9 +73,8 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	//ver bien que deberia devolver aca, como calcular el stack pointer...
 	t_variable* variable = malloc(sizeof(t_variable));
 	int i = 0;
-	char* nom = malloc(2);
+	char* nom = calloc(1, 2);
 	nom[0] = identificador_variable;
-	nom[1] = '\0';
 	log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
 	//obtengo la linea del stack del contexto de ejecucion actual...
 	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
@@ -92,7 +93,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 				pos.size = variable->size;
 				//deberia devolver una estructura con las 3 cosas
 				//ver bien aca que deberia devolver
-				free(variable);
 				free(nom);
 				//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca la variable a buscar
 				uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;

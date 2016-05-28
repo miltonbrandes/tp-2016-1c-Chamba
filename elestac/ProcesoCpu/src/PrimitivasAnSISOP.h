@@ -50,4 +50,7 @@ extern int socketNucleo;
 extern int socketNucleo;
 extern int socketUMC;
 extern uint32_t operacion;
+
+void setPCB(t_pcb * pcbDeCPU);
+
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */

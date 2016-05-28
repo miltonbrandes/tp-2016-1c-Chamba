@@ -196,6 +196,7 @@ void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje) {
 //Manejo de mensajes recibidos
 void recibirPCB(char *mensaje) {
 	pcb = deserializar_pcb(mensaje);
+	setPCB(pcb);
 	notificarAUMCElCambioDeProceso(pcb->pcb_id);
 	comenzarEjecucionDePrograma();
 }
