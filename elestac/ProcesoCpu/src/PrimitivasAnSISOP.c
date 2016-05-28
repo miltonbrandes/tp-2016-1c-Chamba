@@ -85,7 +85,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 			variable = list_get(lineaActualStack->variables, i);
 			if(variable->idVariable == identificador_variable ){
-				log_debug(ptrLog, "La posicion de '%c' es %u", variable, variable->offset);
+				log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
 				//tengo que devolver la pag offset y size de la variable
 				t_posicion_stack pos;
 				pos.pagina = variable->pagina;
@@ -150,9 +150,10 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	enviar->pid = pcb->pcb_id;
 	uint32_t valorVar = (uint32_t)valor;
 	enviar->buffer = malloc(sizeof(uint32_t));
-	memcpy(enviar->buffer, &valorVar, sizeof(uint32_t));
+	sprintf(enviar->buffer, "%d", valor);
+//	memcpy(enviar->buffer, &valorVar, sizeof(uint32_t));
 	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
-	if(resp[0] == -1){
+	if(resp != NULL && resp[0] == -1){
 		operacion = ERROR;
 		free(enviar->buffer);
 		free(enviar);

@@ -429,6 +429,8 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
 
 			enviarDatoACPU(cpuEnAccion, pagina, start, offset);
+
+			free(leer);
 		}else if (operacion == ESCRIBIR) {
 			t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
 
@@ -439,6 +441,8 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			log_debug(ptrLog, "Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s", cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
 
 			escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
+
+			free(escribir);
 		}else if (operacion == CAMBIOPROCESOACTIVO){
 			t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
 
@@ -446,12 +450,15 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
 			cpuEnAccion->procesoActivo = PID_Activo;
 
+			free(procesoActivo);
 		} else {
 			operacion = ERROR;
 			log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
 			enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
 			break;
 		}
+
+		free(mensajeRecibido);
 	}
 }
 
@@ -516,10 +523,10 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 
 	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
-	free(buffer_tamanio);
-	free(instruccion);
-	free(datosParaCPU);
-	free(instruccionPosta);
+//	free(buffer_tamanio);
+//	free(instruccion);
+//	free(datosParaCPU);
+//	free(instruccionPosta);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -536,7 +543,7 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
 		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
 
-		//Agrego siempre en el Frame 0.
+		//Agrego siempre en el Frame 0. Esto se modifica cuando hagamos el algoritmo
 		t_frame * frame = list_get(frames, 0);
 		frame->contenido = paginaSwap->paginaSolicitada;
 		return frame;

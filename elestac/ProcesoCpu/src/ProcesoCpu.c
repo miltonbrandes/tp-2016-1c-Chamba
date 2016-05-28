@@ -300,13 +300,7 @@ void comenzarEjecucionDePrograma() {
 		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 		contador++;
 		pcb->PC = (pcb->PC) + 1;
-		//le pongo /100 para que no tarde tanto en ejecutar la proxima instruccion
-		sleep(quantumSleep/100);
-		t_stack* item = list_get(pcb->ind_stack, 0);
-		t_variable* var1 = list_get(item->variables, 0);
-		t_variable* var2 = list_get(item->variables, 1);
-		log_debug(ptrLog, "se guardo la variable, %c en el stack en la pagina %i offset %i size %i", var1->idVariable, var1->pagina, var1->offset, var1->size);
-		log_debug(ptrLog, "se guardo la variable, %c en el stack en la pagina %i offset %i size %i", var2->idVariable, var2->pagina, var2->offset, var2->size);
+//		sleep(quantumSleep);
 		if(pcb->PC > pcb->codigo) {
 			finalizarEjecucionPorExit();
 			return;

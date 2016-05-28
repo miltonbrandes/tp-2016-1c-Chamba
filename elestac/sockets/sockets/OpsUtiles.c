@@ -483,10 +483,11 @@ t_enviarBytes* deserializarEnviarBytes(char* message) {
 	memcpy(&tamanio, message + offsetMemcpy, tmp_size);
 	offsetMemcpy += tmp_size;
 	tmp_size = tamanio;
-	char *datos = malloc(tamanio);
-	memcpy(datos, message + offsetMemcpy, tmp_size);
+	char *datos = malloc(tamanio + 1);
+	memcpy(datos, message + offsetMemcpy, tamanio);
 
 	t_enviarBytes * respuesta = malloc((sizeof(uint32_t) * 4) + tamanio);
+	respuesta->pid = pid;
 	respuesta->buffer = datos;
 	respuesta->offset = offset;
 	respuesta->pagina = pagina;
