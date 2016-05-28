@@ -18,8 +18,6 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include "Swap.h"
-
-#define MAX_BUFFER_SIZE 4096
 //Socket que recibe conexiones de Nucleo y CPU
 int socketReceptorUMC;
 //Archivo de Log
@@ -284,8 +282,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 
 			char* leido= leerProceso(solicitudPagina->paginaProceso, solicitudPagina->pid, listaDeOcupados);
 			paginaDeSwap = malloc(tamanoPagina);
-			paginaDeSwap->paginaSolicitada = malloc(tamanoPagina);
-			memcpy(paginaDeSwap->paginaSolicitada, leido, tamanoPagina - 1);
+			paginaDeSwap->paginaSolicitada = leido;
 
 			buffer_tamanio = serializarPaginaDeSwap(paginaDeSwap, tamanoPagina);
 			int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_PAGINA_A_UMC, SWAP);
@@ -327,7 +324,7 @@ char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados)//pagAL
 	espacioOcupado* espacioDelProceso = encontrarLugarAsignadoAProceso(listaDeOcupados, pid);
 	FILE* swap = fopen(nombre_swap,"r");
 	fseek(swap,tamanoPagina* (pagina+ espacioDelProceso->posicion_inicial),SEEK_SET);
-	char* contLeido = malloc(tamanoPagina);
+	char* contLeido = calloc(1, tamanoPagina);
 	int readed=fread(contLeido, tamanoPagina - 1, 1, swap);
 	if(!readed){
 		return 0;

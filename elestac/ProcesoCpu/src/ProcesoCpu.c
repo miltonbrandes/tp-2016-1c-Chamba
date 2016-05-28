@@ -243,6 +243,7 @@ void notificarAUMCElCambioDeProceso(uint32_t pid) {
 }
 
 void finalizarEjecucionPorExit() {
+	operacion = NOTHING;
 	t_buffer_tamanio * buffer_tamanio = serializar_pcb(pcb);
 	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, EXIT, CPU);
 	if(bytesEnviados <= 0) {
@@ -250,6 +251,7 @@ void finalizarEjecucionPorExit() {
 	}
 }
 void finalizarEjecucionPorIO(){
+	operacion = NOTHING;
 	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
 	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, IO, CPU);
 	if(bytesEnviados <= 0){
@@ -257,6 +259,7 @@ void finalizarEjecucionPorIO(){
 	}
 }
 void finalizarEjecucionPorWait(){
+	operacion = NOTHING;
 	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
 	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, WAIT, CPU);
 	if(bytesEnviados <= 0){
@@ -265,8 +268,9 @@ void finalizarEjecucionPorWait(){
 }
 
 void finalizarEjecucionPorQuantum() {
-	char *message = serializar_pcb(pcb);
-	int bytesEnviados = enviarDatos(socketNucleo, message, strlen(message), QUANTUM, CPU);
+	operacion = NOTHING;
+	t_buffer_tamanio * message = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, message->buffer, message->tamanioBuffer, QUANTUM, CPU);
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
@@ -310,11 +314,11 @@ void comenzarEjecucionDePrograma() {
 			case IO:
 				log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
 				finalizarEjecucionPorIO();
-				break;
+				return;
 			case WAIT:
 				log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
 				finalizarEjecucionPorWait();
-				break;
+				return;
 			default:
 				break;
 		}
@@ -322,18 +326,6 @@ void comenzarEjecucionDePrograma() {
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
 	free(pcb);
-}
-
-void limpiarInstruccion(char * instruccion) {
-    char *p2 = instruccion;
-    while(*instruccion != '\0') {
-    	if(*instruccion != '\t' && *instruccion != '\n') {
-    		*p2++ = *instruccion++;
-    	} else {
-    		++instruccion;
-    	}
-    }
-    *p2 = '\0';
 }
 
 char * solicitarProximaInstruccionAUMC() {

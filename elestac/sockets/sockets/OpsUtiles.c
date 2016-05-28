@@ -139,7 +139,7 @@ t_pagina_de_swap * deserializarPaginaDeSwap(char * message) {
 	memcpy(&longitudPag, message, tmp_size);
 	offset += tmp_size;
 
-	char * pagina = malloc(longitudPag);
+	char * pagina = calloc(1, longitudPag);
 	memcpy(pagina, message + offset, longitudPag - 1);
 
 	t_pagina_de_swap * paginaSwap = malloc(longitudPag);

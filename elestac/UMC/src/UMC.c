@@ -486,17 +486,15 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offse
 				log_info(ptrLog, "Start del Registro: %d - Offset del Registro: %d", auxiliar->start, auxiliar->offset);
 				if(registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
-					char * bufferAux = malloc(auxiliar->offset + 2);
-					memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
-					bufferAux[auxiliar->offset + 1] = '\0';
+					char * bufferAux = calloc(1, auxiliar->offset + 2);
+					memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
 					list_add(datosParaCPU, bufferAux);
 					offsetMemcpy += auxiliar->offset + 1;
 				}else{
 					log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, registro->paginaProceso);
-					char * bufferAux = malloc(auxiliar->offset + 2);
-					memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
-					bufferAux[auxiliar->offset + 1] = '\0';
+					char * bufferAux = calloc(1, auxiliar->offset + 2);
+					memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start) + 1, auxiliar->offset);
 					list_add(datosParaCPU, bufferAux);
 					offsetMemcpy += auxiliar->offset + 1;
 				}
@@ -557,16 +555,16 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 	t_auxiliar_registro * auxiliar = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 	auxiliar->registro = registro;
 
-	if ((start + offset) <= marcosSize) {
+	if ((start + offset) < marcosSize) {
 		//Es solo 1 pagina la que hay que agarrar
 		auxiliar->start = start;
-		auxiliar->offset = offset;
+		auxiliar->offset = offset + 1;
 		start = -1;
 		offset = -1;
 		list_add(registros, auxiliar);
 	} else {
 		auxiliar->start = start;
-		auxiliar->offset = (marcosSize - start);
+		auxiliar->offset = (marcosSize - start) - 1;
 		offset = offset - (marcosSize - start);
 		start = 0;
 		list_add(registros, auxiliar);
@@ -582,13 +580,17 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			list_add(registros, auxiliarAdicional);
 		}
 
-		if(offset > 0 && (start + offset) <= marcosSize) {
+		if(offset >= 0 && (start + offset) < marcosSize) {
 			pagina++;
 			t_registro_tabla_de_paginas * registroAdicional2 = buscarPaginaEnTabla(tablaDeProceso, pagina);
 			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 			auxiliarAdicional2->registro = registroAdicional2;
-			auxiliarAdicional2->start = start;
-			auxiliarAdicional2->offset = offset + 1;
+			auxiliarAdicional2->start = -1;
+			if(offset == 0) {
+				auxiliarAdicional2->offset = offset + 2;
+			}else{
+				auxiliarAdicional2->offset = offset + 1;
+			}
 			list_add(registros, auxiliarAdicional2);
 		}
 	}
