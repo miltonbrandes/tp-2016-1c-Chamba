@@ -45,7 +45,8 @@ int i = 0;
 t_list * listaCpus;
 t_list * frames;
 t_list * tablaProcesosPaginas;
-t_tlb * TLB;
+t_list * TLB;
+
 int indiceTLB;
 
 //Variables Hilos
@@ -475,13 +476,19 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
 	if(tablaDeProceso != NULL) {
 		t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
-		if(registro->estaEnUMC == 1) {
-			t_frame * frame = list_get(frames, registro->frame);
-			memcpy((frame->contenido) + offset, buffer, tamanio);
+		if(registro != NULL) {
+			if(registro->estaEnUMC == 1) {
+				t_frame * frame = list_get(frames, registro->frame);
+				memcpy((frame->contenido) + offset, buffer, tamanio);
+			}else{
+				t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+				memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+			}
 		}else{
-			t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
-			memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
 		}
+	}else{
+		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas", cpu->procesoActivo);
 	}
 }
 
@@ -489,62 +496,54 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 	uint32_t offsetMemcpy = 0;
 	t_list * datosParaCPU = list_create();
 
-	int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, pagina);
-	if (entradaTLB != -1) {
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
+	if (tablaDeProceso != NULL) {
+		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso, pagina, start, offset);
+		if (listaRegistros != NULL) {
+			int i;
+			for (i = 0; i < list_size(listaRegistros); i++) {
+				t_auxiliar_registro * auxiliar = list_get(listaRegistros,i);
+				t_registro_tabla_de_paginas * registro = auxiliar->registro;
+				log_info(ptrLog, "Registro involucrado-> Pagina: %d - Esta: %d - Modif: %d - Frame: %d", registro->paginaProceso, registro->estaEnUMC, registro->modificado, registro->frame);
+				log_info(ptrLog, "Start del Registro: %d - Offset del Registro: %d", auxiliar->start, auxiliar->offset);
 
-		int frame = TLB[entradaTLB].numFrame;
-		//ME DA EL NRO DE FRAME; COMO OBTENGO LO QUE DEBO ENVIAR?
+				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
+				if (entradasTLB > 0 && entradaTLB != -1) {
+					t_tlb * registro = list_get(TLB, entradaTLB);
+					int frameNum = registro->numFrame;
 
-	} else {
-		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
-				cpu->procesoActivo);
-		if (tablaDeProceso != NULL) {
-			t_list * listaRegistros = registrosABuscarParaPeticion(
-					tablaDeProceso, pagina, start, offset);
-			if (listaRegistros != NULL) {
-				int i;
-				for (i = 0; i < list_size(listaRegistros); i++) {
-					t_auxiliar_registro * auxiliar = list_get(listaRegistros,
-							i);
-					t_registro_tabla_de_paginas * registro = auxiliar->registro;
-					log_info(ptrLog,
-							"Registro involucrado-> Pagina: %d - Esta: %d - Modif: %d - Frame: %d",
-							registro->paginaProceso, registro->estaEnUMC,
-							registro->modificado, registro->frame);
-					log_info(ptrLog,
-							"Start del Registro: %d - Offset del Registro: %d",
-							auxiliar->start, auxiliar->offset);
+					t_frame * frame = list_get(frames, frameNum);
+					char * bufferAux = calloc(1, auxiliar->offset + 2);
+					memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+					list_add(datosParaCPU, bufferAux);
+					offsetMemcpy += auxiliar->offset + 1;
+
+				} else {
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
-						memcpy(bufferAux,
-								(frame->contenido) + (auxiliar->start) + 1,
-								auxiliar->offset);
+						memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
 
-						agregarATLB(cpu->procesoActivo,pagina,registro->frame);
-
+						agregarATLB(cpu->procesoActivo, pagina, registro->frame);
 					} else {
-						log_info(ptrLog, //ACA EN VEZ DE ENVIAR TENGO QUE AGREGAR A TLB Y VOLVER A PEDIRLA
-								"UMC no tiene la Pagina %d del Proceso %d. Pido a Swap",
-								registro->paginaProceso, cpu->procesoActivo);
-						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
-								registro->paginaProceso);
+						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
+						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
-						memcpy(bufferAux,
-								(frameSolicitado->contenido) + (auxiliar->start)
-										+ 1, auxiliar->offset);
+						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start) + 1, auxiliar->offset);
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
+
+						agregarATLB(cpu->procesoActivo, pagina, registro->frame);
 					}
 				}
-				free(listaRegistros);
 			}
+
+			free(listaRegistros);
 		}
 	}
 
-	//Falta concatenar todas las instrucciones que estan en la lista datosParaCPU, y mandarle eso
 	char *instruccionPosta = calloc(list_size(datosParaCPU), 50);
 	for(i = 0; i < list_size(datosParaCPU); i++) {
 		char * aux = list_get(datosParaCPU, i);
@@ -728,11 +727,12 @@ void borrarEstructurasDeProceso(uint32_t pid) {
 	list_remove(tablaProcesosPaginas, indexDeTablaAEliminar);
 	free(tablaAEliminar);
 
-	if (entradasTLB != 0) {
-		for (i = 0; i < entradasTLB; i++){
-			if (TLB[i].indice != -1 && TLB[i].pid == pid) {
-				TLB[i].indice = -1;
-				TLB[i].pid = -1;
+	if (entradasTLB > 0 && TLB != NULL) {
+		for (i = 0; i < list_size(TLB); i++){
+			t_tlb * registro = list_get(TLB, i);
+			if (registro->indice != -1 && registro->pid == pid) {
+				registro->indice = -1;
+				registro->pid = -1;
 			}
 		}
 	}
@@ -776,9 +776,10 @@ void actualizarTablaProcesoClock(t_registro_tabla_de_paginas * registroPagina){
 int pagEstaEnTLB(int pid, int numPag){
 	//DEVUELVE -1 si no esta y sino devuelve la posicion en la tlb en la que esta
 	int i;
-	if (TLB != NULL && entradasTLB != 0) {
-		for (i = 0; i < entradasTLB; i++) {
-			if ((TLB[i].pid) == pid && (TLB[i]).numPag == numPag) {
+	if (entradasTLB > 0 && TLB != NULL && list_size(TLB) > 0) {
+		for (i = 0; i < list_size(TLB); i++) {
+			t_tlb * registro = list_get(TLB, i);
+			if (registro->pid == pid && registro->numPag == numPag) {
 				return i;
 			}
 		}
@@ -790,13 +791,16 @@ int pagEstaEnTLB(int pid, int numPag){
 void iniciarTLB() {
 	int i = 0;
 	if (entradasTLB != 0) {
-		TLB = malloc(sizeof(t_tlb) * (entradasTLB));
+		TLB = list_create();
 
 		for (i = 0; i < entradasTLB; i++) {
-			TLB[i].pid = -1;
-			TLB[i].indice = -1;
-			TLB[i].numPag = 0;
-			TLB[i].numFrame = -1;
+			t_tlb * registro = malloc(sizeof(t_tlb));
+			registro->pid = -1;
+			registro->indice = -1;
+			registro->numPag = 0;
+			registro->numFrame = -1;
+
+			list_add(TLB, registro);
 		}
 	} else {
 		TLB = NULL;
@@ -804,18 +808,21 @@ void iniciarTLB() {
 }
 
 int entradaTLBAReemplazarPorLRU(){
-
 	//ESTE CONTADOR NO ME SIRVE, VER DUDAS ACA
 	//Devuelve que entrada hay que reemplazar, si devuelve -1 es xq no hay tlb.
 	int i = 0;
 	int buscarIndiceMasChico = 0;
 	if (TLB != NULL) {
-		for (i = 0; i < entradasTLB; i++) {
-			if (TLB[i].indice == -1)
+		for (i = 0; i < list_size(TLB); i++) {
+			t_tlb * registro = list_get(TLB, i);
+			if (registro->indice == -1) {
 				//si es -1 es porque esa esta vacia
 				return i;
-			if (TLB[i].indice <= TLB[buscarIndiceMasChico].indice)
+			}
+			t_tlb * registroIndiceMasChico = list_get(TLB, buscarIndiceMasChico);
+			if (registro->indice <= registroIndiceMasChico->indice) {
 				buscarIndiceMasChico = i;
+			}
 		}
 		return buscarIndiceMasChico;
 	}
@@ -823,38 +830,42 @@ int entradaTLBAReemplazarPorLRU(){
 }
 
 void agregarATLB(int pid,int pagina,int frame){
-	int aAgregar;
-	aAgregar= entradaTLBAReemplazarPorLRU();
-	TLB[aAgregar].numPag=pagina;
-	TLB[aAgregar].numFrame=frame;
-	TLB[aAgregar].pid=pid;
-	TLB[aAgregar].indice=indiceTLB;
-	indiceTLB++;
+	if(entradasTLB > 0) {
+		int aAgregar;
+		aAgregar= entradaTLBAReemplazarPorLRU();
+
+		t_tlb * registro = malloc(sizeof(t_tlb));
+		registro->numPag=pagina;
+		registro->numFrame=frame;
+		registro->pid=pid;
+		registro->indice=indiceTLB;
+
+		list_add_in_index(TLB, aAgregar, registro);
+
+		indiceTLB++;
+	}
 }
 
 void tlbFlush(){
 	int i = 0;
 	if ((entradasTLB) != 0) {
 		//tendria que ir un semaforo?
-		for (i = 0; i < entradasTLB; i++) {
-			TLB[i].pid = -1;
-			TLB[i].indice = -1;
-			TLB[i].numPag = 0;
-			TLB[i].numFrame = -1;
-		}
+		finalizarTLB();
+		iniciarTLB();
 	}
-	printf("Flush en TLB realizado\n");
+	log_info(ptrLog, "Flush en TLB realizado");
 }
 
 void tlbFlushDeUnPID(int PID) {
 	int i = 0;
 	if ((entradasTLB) != 0) {
-		for (i = 0; i < entradasTLB; i++) {
-			if (TLB[i].pid == PID) {
-				TLB[i].pid = -1;
-				TLB[i].indice = -1;
-				TLB[i].numPag = 0;
-				TLB[i].numFrame = -1;
+		for (i = 0; i < list_size(TLB); i++) {
+			t_tlb * registro = list_get(TLB, i);
+			if (registro->pid == PID) {
+				registro->pid = -1;
+				registro->indice = -1;
+				registro->numPag = 0;
+				registro->numFrame = -1;
 			}
 		}
 		printf("Flush en TLB de PID: %d realizado\n", PID);
@@ -862,7 +873,13 @@ void tlbFlushDeUnPID(int PID) {
 }
 
 void finalizarTLB(){
-	if (TLB != NULL) free(TLB);
+	if (TLB != NULL) {
+		for (i = 0; i < list_size(TLB); i++) {
+			t_tlb * registro = malloc(sizeof(t_tlb));
+			free(registro);
+		}
+		free(TLB);
+	}
 }
 
 void algoritmoReemplazoTP(){
