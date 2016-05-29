@@ -15,12 +15,11 @@
 
 pthread_mutex_t comunicacionConSwap = PTHREAD_MUTEX_INITIALIZER;
 
-// ENTRADAS A LA TLB //
-typedef struct {
+typedef struct{
+	int indice; //Cada vez que se asigna una se le da un indice, el indice menor es el que se saca. (-1 si esta libre)
 	int pid;
-	int pagina;
-	char * direccion_fisica;
-	int marco;
+	int numPag;
+	int numFrame;
 } t_tlb;
 
 typedef struct {
@@ -93,5 +92,16 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina);
 char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion);
 
 void borrarEstructurasDeProceso(uint32_t pid);
+
+void algoritmoReemplazoTP();
+
+//funciones TLB
+int entradaTLBAReemplazarPorLRU();
+int pagEstaEnTLB(int pid, int numPag);
+void agregarATLB(int pid,int pagina,int frame);
+void iniciarTLB();
+void tlbFlush();
+void finalizarTLB();
+void tlbFlushDeUnPID(int PID);
 
 #endif /* UMC_H_ */
