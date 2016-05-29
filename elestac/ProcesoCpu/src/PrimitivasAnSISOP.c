@@ -17,7 +17,6 @@ void setPCB(t_pcb * pcbDeCPU) {
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	t_posicion_stack posicionDevolver;
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
 	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
@@ -47,10 +46,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		nuevaVar->offset = 0;
 		pcb->stackPointer += TAMANIO_VARIABLE;
 		list_add(lineaStack->variables, nuevaVar);
-		//devuelvo el offset desde el inicio de la nueva pagina
-		posicionDevolver.pagina = nuevaVar->pagina;
-		posicionDevolver.offset = nuevaVar->offset;
-		posicionDevolver.size = nuevaVar->size;
 	}else{
 		nuevaVar->idVariable = identificador_variable;
 		nuevaVar->pagina = pcb->paginaStackActual;
@@ -58,12 +53,11 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		nuevaVar->offset = pcb->stackPointer;
 		pcb->stackPointer+= TAMANIO_VARIABLE;
 		list_add(lineaStack->variables, nuevaVar);
-		posicionDevolver.pagina = nuevaVar->pagina;
-		posicionDevolver.offset = nuevaVar->offset;
-		posicionDevolver.size = nuevaVar->size;
 	}
 	//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
-	uint32_t posicionRet = ((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
+	uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset + tamanioPagina;
+
+//	uint32_t posicionRet = ((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
 //	t_variable * otraVar = list_get(lineaStack->variables, 0);
 	log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
 	return posicionRet;
@@ -86,18 +80,11 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 			variable = list_get(lineaActualStack->variables, i);
 			if(variable->idVariable == identificador_variable ){
 				log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
-				//tengo que devolver la pag offset y size de la variable
-				t_posicion_stack pos;
-				pos.pagina = variable->pagina;
-				pos.offset = variable->offset;
-				pos.size = variable->size;
-				//deberia devolver una estructura con las 3 cosas
-				//ver bien aca que deberia devolver
 				free(nom);
-				//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca la variable a buscar
-				uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
+				uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset + tamanioPagina;
+
+//				uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
 				return posicionRet;
-				log_debug(ptrLog, "Llamada a obtenerPosicionVariable");
 			}
 		}
 	}
@@ -138,28 +125,30 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	//corroborar que esto este bien
 	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
-	t_enviarBytes* enviar = malloc(sizeof(t_enviarBytes));
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
-	t_posicion_stack posicionRet;
-	posicionRet.pagina = (direccion_variable/tamanioPagina)+pcb->primerPaginaStack;
-	posicionRet.offset = direccion_variable%tamanioPagina;
-	posicionRet.size = TAMANIO_VARIABLE;
-	enviar->pagina = posicionRet.pagina;
-	enviar->offset = posicionRet.offset;
+
+	t_enviarBytes* enviar = malloc(sizeof(uint32_t) * 5);
+	enviar->pagina = direccion_variable / tamanioPagina;
+	enviar->offset = direccion_variable % tamanioPagina;
 	enviar->tamanio = TAMANIO_VARIABLE;
 	enviar->pid = pcb->pcb_id;
-	uint32_t valorVar = (uint32_t)valor;
 	enviar->buffer = malloc(sizeof(uint32_t));
 	sprintf(enviar->buffer, "%d", valor);
-//	memcpy(enviar->buffer, &valorVar, sizeof(uint32_t));
+
 	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
 	if(resp != NULL && resp[0] == -1){
 		operacion = ERROR;
 		free(enviar->buffer);
 		free(enviar);
 		return;
+	}else{
+		uint32_t result = deserializarUint32(resp);
+		if(result == SUCCESS) {
+			log_info(ptrLog, "Variable asignada");
+		}else{
+			log_error(ptrLog, "Variable no asignada");
+		}
 	}
-	log_debug(ptrLog, "Valor asignado");
 	free(enviar->buffer);
 	free(enviar);
 	return;

@@ -480,10 +480,18 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			if(registro->estaEnUMC == 1) {
 				t_frame * frame = list_get(frames, registro->frame);
 				memcpy((frame->contenido) + offset, buffer, tamanio);
+				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 			}else{
 				t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 				memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 			}
+
+			uint32_t successInt = SUCCESS;
+			t_buffer_tamanio * buffer_tamanio = serializarUint32(successInt);
+
+			int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
+
 		}else{
 			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
 		}

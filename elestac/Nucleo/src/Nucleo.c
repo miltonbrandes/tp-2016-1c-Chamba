@@ -839,7 +839,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
 
 		pcb->paginaCodigoActual = 0;
-		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack;
+		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack - 1;
 		pcb->primerPaginaStack = pcb->paginaStackActual;
 		pcb->stackPointer = 0;
 		pcb->PC = datos->instruccion_inicio;
