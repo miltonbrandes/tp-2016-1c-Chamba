@@ -276,12 +276,20 @@ void finalizarEjecucionPorQuantum() {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
 }
+
 void limpiarInstruccion(char * instruccion) {
      char *p2 = instruccion;
+     int a = 0;
      while(*instruccion != '\0') {
      	if(*instruccion != '\t' && *instruccion != '\n') {
-     		*p2++ = *instruccion++;
-     	} else {
+     		if(a == 0 && isdigit((int)*instruccion)){
+     			++instruccion;
+     		}else{
+				*p2++ = *instruccion++;
+				a++;
+     		}
+     	}
+     	else {
      		++instruccion;
      	}
      }
@@ -294,16 +302,17 @@ void comenzarEjecucionDePrograma() {
 	int contador = 1;
 
 	while (contador <= quantum) {
-		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
-		limpiarInstruccion(proximaInstruccion);
-		log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
-		analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
-		contador++;
-		pcb->PC = (pcb->PC) + 1;
 //		sleep(quantumSleep);
-		if(pcb->PC > pcb->codigo) {
+		if(pcb->PC >= (pcb->codigo-1)) {
 			finalizarEjecucionPorExit();
 			return;
+		}else{
+			char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+			limpiarInstruccion(proximaInstruccion);
+			log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
+			analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+			contador++;
+			pcb->PC = (pcb->PC) + 1;
 		}
 		switch(operacion){
 			case IO:
@@ -330,7 +339,7 @@ char * solicitarProximaInstruccionAUMC() {
 	uint32_t requestOffset = indice->offset;
 
 	uint32_t contador = 0;
-	while (requestStart > (tamanioPagina + (tamanioPagina * contador))) {
+	while (requestStart >= (tamanioPagina + (tamanioPagina * contador))) {
 		contador++;
 	}
 	uint32_t paginaAPedir = contador;
@@ -341,7 +350,7 @@ char * solicitarProximaInstruccionAUMC() {
 	solicitarBytes->start = requestStart - (tamanioPagina * paginaAPedir);
 	solicitarBytes->offset = requestOffset;
 
-	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Offset: %d - Start: %d", paginaAPedir, requestStart, solicitarBytes->offset);
+	log_info(ptrLog, "Pido a UMC-> Pagina: %d - Start: %d - Offset: %d", paginaAPedir, requestStart - (tamanioPagina * paginaAPedir), solicitarBytes->offset);
 
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitarBytes(solicitarBytes);
 

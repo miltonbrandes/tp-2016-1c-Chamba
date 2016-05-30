@@ -82,7 +82,7 @@ t_buffer_tamanio * serializarEscribirEnSwap(t_escribir_en_swap * escribirEnSwap,
 	offset += tmp_size;
 	memcpy(buffer + offset, &longPag, tmp_size);
 	offset += tmp_size;
-	memcpy(buffer + offset, escribirEnSwap->contenido, longPag - 1);
+	memcpy(buffer + offset, escribirEnSwap->contenido, longPag);
 
 	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 4) + longPag);
 	buffer_tamanio->tamanioBuffer = longPag + (sizeof(uint32_t) * 3);
@@ -107,7 +107,7 @@ t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer) {
 	offset += tmp_size;
 
 	char * pagina = malloc(tamanioBuffer);
-	memcpy(pagina, buffer + offset, tamanioBuffer - 1);
+	memcpy(pagina, buffer + offset, tamanioBuffer);
 
 	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + tamanioBuffer);
 	escribirEnSwap->pid = pid;
@@ -140,7 +140,7 @@ t_pagina_de_swap * deserializarPaginaDeSwap(char * message) {
 	offset += tmp_size;
 
 	char * pagina = calloc(1, longitudPag);
-	memcpy(pagina, message + offset, longitudPag - 1);
+	memcpy(pagina, message + offset, longitudPag);
 
 	t_pagina_de_swap * paginaSwap = malloc(longitudPag);
 	paginaSwap->paginaSolicitada = pagina;
@@ -247,7 +247,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 	case LEER:
 		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
 		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, LEER, NUCLEO)) < 0) {
 			free(buffer_tamanio);
 			return NULL;
 		}
@@ -284,7 +284,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		buffer_tamanio = serializarCambioProcActivo(estructuraDeOperacion);
 
 		//Envio paquete
-		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, NUCLEO)) < 0) {
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, CAMBIOPROCESOACTIVO, NUCLEO)) < 0) {
 			free(buffer_tamanio);
 			return NULL;
 		}

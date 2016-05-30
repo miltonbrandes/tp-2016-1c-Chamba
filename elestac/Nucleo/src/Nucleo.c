@@ -811,15 +811,15 @@ t_pcb* crearPCB(char* programa, int socket) {
 	pthread_mutex_unlock(&mutex_pid_counter);
 
 	log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
-	t_iniciar_programa * iniciarProg = malloc((sizeof(uint32_t) * 2) + strlen(programa) + 1);
+	t_iniciar_programa * iniciarProg = malloc((sizeof(uint32_t) * 2) + strlen(programa));
 	iniciarProg->programID = pcb->pcb_id;
-	if(strlen(programa+1)%tamanioMarcos != 0){
-		iniciarProg->tamanio = ((strlen(programa+1)) / tamanioMarcos) + 1 + tamanioStack;
+	if(strlen(programa)%tamanioMarcos != 0){
+		iniciarProg->tamanio = ((strlen(programa)) / tamanioMarcos) + 1 + tamanioStack;
 	}
 	else{
-		iniciarProg->tamanio = ((strlen(programa+1) / tamanioMarcos) + tamanioStack);
+		iniciarProg->tamanio = ((strlen(programa) / tamanioMarcos) + tamanioStack);
 	}
-	iniciarProg->codigoAnsisop = malloc(strlen(programa)+1);
+	iniciarProg->codigoAnsisop = malloc(strlen(programa));
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
 	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");

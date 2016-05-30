@@ -28,7 +28,7 @@ int socketReceptorNucleo;
 int socketReceptorCPU;
 int socketSwap;
 int socketClienteNucleo;
-
+int datoGuardado = 0;
 //Archivo de Log
 t_log* ptrLog;
 
@@ -367,8 +367,8 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 
 		if(offset + marcosSize < longitudCodigo) {
 			escribirEnSwap->contenido = malloc(marcosSize);
-			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize - 1);
-			offset += marcosSize - 1;
+			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize);
+			offset += marcosSize;
 		}else{
 			uint32_t longitudACopiar = longitudCodigo - offset;
 			escribirEnSwap->contenido = malloc(longitudACopiar);
@@ -603,16 +603,16 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 	t_auxiliar_registro * auxiliar = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 	auxiliar->registro = registro;
 
-	if ((start + offset) < marcosSize) {
+	if ((start + offset) <= marcosSize) {
 		//Es solo 1 pagina la que hay que agarrar
 		auxiliar->start = start;
-		auxiliar->offset = offset + 1;
+		auxiliar->offset = offset;
 		start = -1;
 		offset = -1;
 		list_add(registros, auxiliar);
 	} else {
 		auxiliar->start = start;
-		auxiliar->offset = (marcosSize - start) - 1;
+		auxiliar->offset = (marcosSize - start);
 		offset = offset - (marcosSize - start);
 		start = 0;
 		list_add(registros, auxiliar);
@@ -635,9 +635,9 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			auxiliarAdicional2->registro = registroAdicional2;
 			auxiliarAdicional2->start = -1;
 			if(offset == 0) {
-				auxiliarAdicional2->offset = offset + 2;
+				auxiliarAdicional2->offset = offset+1;
 			}else{
-				auxiliarAdicional2->offset = offset + 1;
+				auxiliarAdicional2->offset = offset;
 			}
 			list_add(registros, auxiliarAdicional2);
 		}

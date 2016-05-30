@@ -325,7 +325,7 @@ char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados)//pagAL
 	FILE* swap = fopen(nombre_swap,"r");
 	fseek(swap,tamanoPagina* (pagina+ espacioDelProceso->posicion_inicial),SEEK_SET);
 	char* contLeido = calloc(1, tamanoPagina);
-	int readed=fread(contLeido, tamanoPagina - 1, 1, swap);
+	int readed=fread(contLeido, tamanoPagina, 1, swap);
 	if(!readed){
 		return 0;
 	}
