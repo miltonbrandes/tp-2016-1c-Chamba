@@ -20,6 +20,7 @@ typedef struct{
 	int pid;
 	int numPag;
 	int numFrame;
+	char * contenido;
 } t_tlb;
 
 typedef struct {
@@ -98,7 +99,7 @@ void algoritmoReemplazoTP();
 //funciones TLB
 int entradaTLBAReemplazarPorLRU();
 int pagEstaEnTLB(int pid, int numPag);
-void agregarATLB(int pid,int pagina,int frame);
+void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame);
 void iniciarTLB();
 void tlbFlush();
 void finalizarTLB();

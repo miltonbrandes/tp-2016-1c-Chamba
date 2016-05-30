@@ -477,14 +477,31 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 	if(tablaDeProceso != NULL) {
 		t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
 		if(registro != NULL) {
-			if(registro->estaEnUMC == 1) {
-				t_frame * frame = list_get(frames, registro->frame);
+			int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
+			if (entradasTLB > 0 && entradaTLB != -1) {
+				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
+
+				t_tlb * registro = list_get(TLB, entradaTLB);
+				int frameNum = registro->numFrame;
+
+				t_frame * frame = list_get(frames, frameNum);
 				memcpy((frame->contenido) + offset, buffer, tamanio);
 				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
-			}else{
-				t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
-				memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
-				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
+
+			} else {
+				if (registro->estaEnUMC == 1) {
+					t_frame * frame = list_get(frames, registro->frame);
+					memcpy((frame->contenido) + offset, buffer, tamanio);
+					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
+
+					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+				} else {
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+					memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
+
+					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+				}
 			}
 
 			uint32_t successInt = SUCCESS;
@@ -517,6 +534,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
+					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
 					t_tlb * registro = list_get(TLB, entradaTLB);
 					int frameNum = registro->numFrame;
 
@@ -534,7 +552,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
 
-						agregarATLB(cpu->procesoActivo, pagina, registro->frame);
+						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
 					} else {
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
@@ -543,7 +561,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
 
-						agregarATLB(cpu->procesoActivo, pagina, registro->frame);
+						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
 					}
 				}
 			}
@@ -735,15 +753,7 @@ void borrarEstructurasDeProceso(uint32_t pid) {
 	list_remove(tablaProcesosPaginas, indexDeTablaAEliminar);
 	free(tablaAEliminar);
 
-	if (entradasTLB > 0 && TLB != NULL) {
-		for (i = 0; i < list_size(TLB); i++){
-			t_tlb * registro = list_get(TLB, i);
-			if (registro->indice != -1 && registro->pid == pid) {
-				registro->indice = -1;
-				registro->pid = -1;
-			}
-		}
-	}
+	tlbFlushDeUnPID(pid);
 }
 
 uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
@@ -782,7 +792,6 @@ void actualizarTablaProcesoClock(t_registro_tabla_de_paginas * registroPagina){
 }
 
 int pagEstaEnTLB(int pid, int numPag){
-	//DEVUELVE -1 si no esta y sino devuelve la posicion en la tlb en la que esta
 	int i;
 	if (entradasTLB > 0 && TLB != NULL && list_size(TLB) > 0) {
 		for (i = 0; i < list_size(TLB); i++) {
@@ -801,12 +810,13 @@ void iniciarTLB() {
 	if (entradasTLB != 0) {
 		TLB = list_create();
 
-		for (i = 0; i < entradasTLB; i++) {
-			t_tlb * registro = malloc(sizeof(t_tlb));
+		for (i = 0; i <= entradasTLB; i++) {
+			t_tlb * registro = malloc((sizeof(int) * 4) + marcosSize);
 			registro->pid = -1;
-			registro->indice = -1;
-			registro->numPag = 0;
+			registro->indice = i;
+			registro->numPag = -1;
 			registro->numFrame = -1;
+			registro->contenido = malloc(marcosSize);
 
 			list_add(TLB, registro);
 		}
@@ -816,41 +826,44 @@ void iniciarTLB() {
 }
 
 int entradaTLBAReemplazarPorLRU(){
-	//ESTE CONTADOR NO ME SIRVE, VER DUDAS ACA
-	//Devuelve que entrada hay que reemplazar, si devuelve -1 es xq no hay tlb.
+	//Retorna -1 si no hay libres. Sino, retorna indice de Libre.
 	int i = 0;
-	int buscarIndiceMasChico = 0;
+	int indiceLibre = -1;
 	if (TLB != NULL) {
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
-			if (registro->indice == -1) {
-				//si es -1 es porque esa esta vacia
-				return i;
-			}
-			t_tlb * registroIndiceMasChico = list_get(TLB, buscarIndiceMasChico);
-			if (registro->indice <= registroIndiceMasChico->indice) {
-				buscarIndiceMasChico = i;
+			if (registro->pid == -1) {
+				indiceLibre = registro->indice;
+				break;
 			}
 		}
-		return buscarIndiceMasChico;
+		return indiceLibre;
 	}
 	return -1;
 }
 
-void agregarATLB(int pid,int pagina,int frame){
+void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 	if(entradasTLB > 0) {
-		int aAgregar;
-		aAgregar= entradaTLBAReemplazarPorLRU();
+		int indiceLibre = entradaTLBAReemplazarPorLRU();
 
-		t_tlb * registro = malloc(sizeof(t_tlb));
-		registro->numPag=pagina;
-		registro->numFrame=frame;
-		registro->pid=pid;
-		registro->indice=indiceTLB;
+		t_tlb * aInsertar = malloc(sizeof(t_tlb));
+		aInsertar->numPag=pagina;
+		aInsertar->numFrame=frame;
+		aInsertar->pid=pid;
+		aInsertar->indice=indiceTLB;
+		aInsertar->contenido = contenidoFrame;
 
-		list_add_in_index(TLB, aAgregar, registro);
-
-		indiceTLB++;
+		if(indiceLibre > -1) {
+			list_remove(TLB, indiceLibre);
+			list_add_in_index(TLB, indiceLibre, aInsertar);
+			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
+		}else{
+			//Elimino la primera entrada => La mas vieja
+			log_info(ptrLog, "Se elimina la primer entrada de la TLB", pagina, pid);
+			list_remove(TLB, 0);
+			list_add(TLB, aInsertar);
+			log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, pid);
+		}
 	}
 }
 
