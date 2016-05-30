@@ -43,6 +43,8 @@ typedef struct {
 } t_cpu;
 
 typedef struct {
+	uint32_t disponible;
+	uint32_t bitDeReferencia; //Para Clock.
 	uint32_t numeroFrame;
 	char * contenido;
 } t_frame;
@@ -94,7 +96,13 @@ char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t oper
 
 void borrarEstructurasDeProceso(uint32_t pid);
 
-void algoritmoReemplazoTP();
+t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina);
+void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame);
+int buscarFrameLibre();
 
 //funciones TLB
 int entradaTLBAReemplazarPorLRU();

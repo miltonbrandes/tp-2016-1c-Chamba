@@ -47,7 +47,7 @@ t_list * frames;
 t_list * tablaProcesosPaginas;
 t_list * TLB;
 
-int indiceTLB;
+int posibleProximaVictimaClock;
 
 //Variables Hilos
 pthread_t hiloConexiones;
@@ -62,7 +62,6 @@ int main() {
 		tablaProcesosPaginas = list_create();
 		frames = list_create();
 
-		indiceTLB = 0;
 		iniciarTLB();
 
 		sem_init(&semEmpezarAceptarCpu, 1, 0);
@@ -121,12 +120,16 @@ char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t oper
 void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 	int i;
 	for(i = 0; i < cantidadMarcos; i++) {
-		t_frame * frame = malloc(sizeof(uint32_t) + tamanioMarco);
+		t_frame * frame = malloc((sizeof(uint32_t) * 3) + tamanioMarco);
+		frame->bitDeReferencia = 0;
+		frame->disponible = 1;
 		frame->numeroFrame = i;
 		frame->contenido = malloc(tamanioMarco);
 
 		list_add(frames, frame);
 	}
+
+	posibleProximaVictimaClock = 0;
 }
 
 /////HAY QUE MODIFICAR COMO SE ENVIAN LOS MENSAJES
@@ -481,13 +484,14 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			if (entradasTLB > 0 && entradaTLB != -1) {
 				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
 
-				t_tlb * registro = list_get(TLB, entradaTLB);
-				int frameNum = registro->numFrame;
+				t_tlb * registroTLB = list_get(TLB, entradaTLB);
+				int frameNum = registroTLB->numFrame;
 
 				t_frame * frame = list_get(frames, frameNum);
 				memcpy((frame->contenido) + offset, buffer, tamanio);
 				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 
+				registro->modificado = 1;
 			} else {
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
@@ -495,12 +499,20 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 
 					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+
+					registro->estaEnUMC = 1;
+					registro->frame = frame->numeroFrame;
+					registro->modificado = 1;
 				} else {
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 					memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 
 					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+
+					registro->estaEnUMC = 1;
+					registro->frame = frameSolicitado->numeroFrame;
+					registro->modificado = 1;
 				}
 			}
 
@@ -535,8 +547,8 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
 					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
-					t_tlb * registro = list_get(TLB, entradaTLB);
-					int frameNum = registro->numFrame;
+					t_tlb * registroTLB = list_get(TLB, entradaTLB);
+					int frameNum = registroTLB->numFrame;
 
 					t_frame * frame = list_get(frames, frameNum);
 					char * bufferAux = calloc(1, auxiliar->offset + 2);
@@ -553,6 +565,9 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						offsetMemcpy += auxiliar->offset + 1;
 
 						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+
+						registro->estaEnUMC = 1;
+						registro->frame = frame->numeroFrame;
 					} else {
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
@@ -562,6 +577,9 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						offsetMemcpy += auxiliar->offset + 1;
 
 						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+
+						registro->estaEnUMC = 1;
+						registro->frame = frameSolicitado->numeroFrame;
 					}
 				}
 			}
@@ -602,13 +620,8 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
 		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
 
-		//Agrego siempre en el Frame 0. Esto se modifica cuando hagamos el algoritmo
-		t_frame * frame = list_get(frames, 0);
-		frame->contenido = paginaSwap->paginaSolicitada;
+		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo, pagina);
 		return frame;
-		//Aca hay que hacer el algoritmo que me devuelva el Frame pero
-		//teniendo en cuenta ya todoo el reemplazo, osea, me devuelve un Frame
-		//que solicito y metio en memoria
 	}
 	return NULL;
 }
@@ -850,7 +863,7 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 		aInsertar->numPag=pagina;
 		aInsertar->numFrame=frame;
 		aInsertar->pid=pid;
-		aInsertar->indice=indiceTLB;
+		aInsertar->indice=indiceLibre;
 		aInsertar->contenido = contenidoFrame;
 
 		if(indiceLibre > -1) {
@@ -868,7 +881,6 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 }
 
 void tlbFlush(){
-	int i = 0;
 	if ((entradasTLB) != 0) {
 		//tendria que ir un semaforo?
 		finalizarTLB();
@@ -903,16 +915,124 @@ void finalizarTLB(){
 	}
 }
 
-void algoritmoReemplazoTP(){
+t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
 	if (!strcmp(algoritmoReemplazo, "CLOCK")) {
-		log_info(ptrLog, "Algoritmo de reemplazo: CLOCK");
-		//actualizarTablaProcesoClock();
+		return actualizarFramesConClock(paginaSwap, pid, pagina);
 	}
 	if (!strcmp(algoritmoReemplazo, "CLOCK MODIFICADO")) {
-		log_info(ptrLog, "Algoritmo de reemplazo: CLOCK MODIFICADO");
-		//actualizarTablaProcesoClockModif();
+		return actualizarFramesConClockModificado(paginaSwap, pid, pagina);
 	} else {
 		log_info(ptrLog, "Algoritmo de reemplazo no reconocido");
+		return NULL;
 	}
+}
+
+t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
+	int indiceFrameLibre = buscarFrameLibre();
+
+	if(indiceFrameLibre > -1) {
+		t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
+		frame->contenido = paginaSwap->paginaSolicitada;
+		frame->disponible = 0;
+		frame->bitDeReferencia = 1;
+		frame->numeroFrame = indiceFrameLibre;
+
+		list_remove(frames, indiceFrameLibre);
+		list_add_in_index(frames, indiceFrameLibre, frame);
+
+		//Actualizo Tabla de Paginas del Proceso
+		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+		registroTabla->estaEnUMC = 1;
+		registroTabla->frame = frame->numeroFrame;
+
+		return frame;
+	}else{
+		return desalojarFrameConClock(paginaSwap, pid, pagina);
+	}
+}
+
+t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
+	if(posibleProximaVictimaClock >= marcos) {
+		posibleProximaVictimaClock = 0;
+	}
+
+	t_frame * frameCandidato = list_get(frames, posibleProximaVictimaClock);
+	if(frameCandidato->bitDeReferencia == 1) {
+		frameCandidato->bitDeReferencia = 0;
+		posibleProximaVictimaClock++;
+		return desalojarFrameConClock(paginaSwap, pid, pagina);
+	}else{
+		t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
+		frame->contenido = paginaSwap->paginaSolicitada;
+		frame->disponible = 0;
+		frame->bitDeReferencia = 1;
+		frame->numeroFrame = posibleProximaVictimaClock;
+
+		chequearSiHayQueEscribirEnSwapLaPagina(posibleProximaVictimaClock);
+
+		list_remove(frames, posibleProximaVictimaClock);
+		list_add_in_index(frames, posibleProximaVictimaClock, frame);
+		posibleProximaVictimaClock++;
+
+		//Actualizo Tabla de Paginas del Proceso
+		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+		registroTabla->estaEnUMC = 1;
+		registroTabla->frame = frame->numeroFrame;
+
+		return frame;
+	}
+}
+
+t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
+	//No implementado
+	return NULL;
+}
+
+void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame) {
+	int i, j;
+	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
+		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
+		for(j = 0; j < list_size(tabla->tablaDePaginas); j++) {
+			t_registro_tabla_de_paginas * registroTabla = list_get(tabla->tablaDePaginas, j);
+			if(registroTabla->estaEnUMC && registroTabla->frame == nroFrame) {
+				if(registroTabla->modificado == 1) {
+					escribirFrameEnSwap(nroFrame, tabla->pID, registroTabla->paginaProceso);
+				}
+				registroTabla->estaEnUMC = 0;
+				registroTabla->frame = -1;
+				registroTabla->modificado = 0;
+				break;
+			}
+		}
+	}
+}
+
+void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
+	t_frame * frame = list_get(frames, nroFrame);
+
+	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
+	escribirEnSwap->paginaProceso = pagina;
+	escribirEnSwap->pid = pid;
+	escribirEnSwap->contenido = malloc(marcosSize);
+	memcpy(escribirEnSwap->contenido, frame->contenido, marcosSize);
+
+	t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
+	enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
+
+	free(buffer_tamanio);
+	free(escribirEnSwap);
+}
+
+int buscarFrameLibre() {
+	int i;
+	for(i = 0; i < list_size(frames); i++) {
+		t_frame * frame = list_get(frames, i) ;
+		if(frame->disponible == 1) {
+			return i;
+		}
+	}
+	return -1;
 }
 
