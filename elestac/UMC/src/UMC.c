@@ -284,22 +284,29 @@ void recibirPeticionesNucleo(){
 		log_info(ptrLog, "Esperando Peticion de Nucleo");
 		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
 
+		sleep(retardo);
+
 		if (operacion == NUEVOPROGRAMA) {
 			t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
-			log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
-
-			uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
-
-			if (pudoSwap == SUCCESS) {
-				log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
-				log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
-				t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
-				notificarProcesoIniciadoANucleo(iniciarPrograma);
-			} else {
-				operacion = ERROR;
-				log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+			if(iniciarProg->tamanio > marcoXProc) {
+				log_info(ptrLog, "No se puede iniciar el Proceso %d porque supera la cantidad de paginas permitidas", iniciarProg->programID);
 				notificarProcesoNoIniciadoANucleo();
+			}else{
+				log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
+
+				uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+
+				if (pudoSwap == SUCCESS) {
+					log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
+					log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
+					t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
+					notificarProcesoIniciadoANucleo(iniciarPrograma);
+				} else {
+					operacion = ERROR;
+					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+					notificarProcesoNoIniciadoANucleo();
+				}
 			}
 		}else if (operacion == FINALIZARPROGRAMA) {
 			t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
