@@ -60,4 +60,8 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado);
 void operacionesConSemaforos(uint32_t operacion, char* buffer,
 		t_clienteCpu *unCliente);
 
+void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer);
+t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
+int indiceConsolaEnLista(uint32_t pid);
+
 #endif /* SRC_NUCLEO_H_ */
