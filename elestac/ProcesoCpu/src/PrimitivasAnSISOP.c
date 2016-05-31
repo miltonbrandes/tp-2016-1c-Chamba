@@ -33,8 +33,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		//pcb->ind_stack = malloc(tamLineaStack);
 		list_add(pcb->ind_stack, lineaStack);
 	}else{
-		//lineaStack->variables = malloc((sizeof(uint32_t)*3)+1);
-		//lineaStack = malloc(7*sizeof(uint32_t)+1);
 	}
 
 	//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
@@ -55,10 +53,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		list_add(lineaStack->variables, nuevaVar);
 	}
 	//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
-	uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset + tamanioPagina;
-
-//	uint32_t posicionRet = ((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
-//	t_variable * otraVar = list_get(lineaStack->variables, 0);
+	uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset;
 	log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
 	return posicionRet;
 }
@@ -81,9 +76,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 			if(variable->idVariable == identificador_variable ){
 				log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
 				free(nom);
-				uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset + tamanioPagina;
-
-//				uint32_t posicionRet = ((pos.pagina-pcb->primerPaginaStack)*tamanioPagina)+(pos.pagina*tamanioPagina)+pos.offset;
+				uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset;
 				return posicionRet;
 			}
 		}
@@ -100,7 +93,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	//uint32_t operacion;
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 	t_posicion_stack posicionRet;
-	posicionRet.pagina = (direccion_variable/tamanioPagina)+pcb->primerPaginaStack;
+	posicionRet.pagina = (direccion_variable/tamanioPagina);
 	posicionRet.offset = direccion_variable%tamanioPagina;
 	posicionRet.size = TAMANIO_VARIABLE;
 			//((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
@@ -127,8 +120,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 
-	t_enviarBytes* enviar = malloc(sizeof(uint32_t) * 5);
-	enviar->pagina = direccion_variable / tamanioPagina;
+	t_enviarBytes* enviar = malloc(sizeof(uint32_t) * 4);
+	enviar->pagina = (direccion_variable / tamanioPagina);
 	enviar->offset = direccion_variable % tamanioPagina;
 	enviar->tamanio = TAMANIO_VARIABLE;
 	enviar->pid = pcb->pcb_id;

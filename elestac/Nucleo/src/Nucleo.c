@@ -500,7 +500,7 @@ void escucharPuertos() {
 							} else {
 								if (id == CPU) {
 									t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
-									log_info(ptrLog, "Mensaje recibido: %s", buffer);
+									log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
 									comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
 								}
 							}
@@ -611,7 +611,6 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		break;
 	case EXIT:
 		log_debug(ptrLog, "Se ingresa a operacionExit");
-
 		log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
 		unPCB = deserializar_pcb(buffer); //debo deserializar el pcb que me envio la cpu
 		char* texto = "Se ha finalizado el programa correctamente";
@@ -796,7 +795,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
 
 		pcb->paginaCodigoActual = 0;
-		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack - 1;
+		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack;
 		pcb->primerPaginaStack = pcb->paginaStackActual;
 		pcb->stackPointer = 0;
 		pcb->PC = datos->instruccion_inicio;
@@ -927,7 +926,8 @@ void* mensajesPrograma(void) {
 			} else {
 				log_debug(ptrLog, "Mensaje de tipo: EXIT del Programa %d enviado con éxito!", aux->pid);
 			}
-
+			FD_CLR(aux->socket, &tempSockets);
+			FD_CLR(aux->socket, &sockets);
 			finalizarConexion(aux->socket);
 
 			list_remove(listaSocketsConsola, indiceConsolaEnLista(aux->pid));

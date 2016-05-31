@@ -136,9 +136,11 @@ int recibirMensaje(int socket) {
 		if (socket == socketNucleo) {
 			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
 			finalizarConexion(socketNucleo);
+			return -1;
 		} else if (socket == socketUMC) {
 			log_info(ptrLog, "No se recibio nada de UMC, cierro conexion");
 			finalizarConexion(socketUMC);
+			return -1;
 		}
 	}else{
 		manejarMensajeRecibido(id, operacion, respuestaServidor);
@@ -249,6 +251,10 @@ void finalizarEjecucionPorExit() {
 	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, EXIT, CPU);
 	if(bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Finalizacion a Nucleo");
+
+	}
+	else{
+		log_info(ptrLog, "Programa Finalizado con exito");
 	}
 }
 void finalizarEjecucionPorIO(){
