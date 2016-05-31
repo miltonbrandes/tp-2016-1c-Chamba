@@ -284,8 +284,6 @@ void recibirPeticionesNucleo(){
 		log_info(ptrLog, "Esperando Peticion de Nucleo");
 		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
 
-		sleep(retardo);
-
 		if (operacion == NUEVOPROGRAMA) {
 			t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
@@ -491,15 +489,12 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			if (entradasTLB > 0 && entradaTLB != -1) {
 				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
 
-				t_tlb * registroTLB = list_get(TLB, entradaTLB);
-				int frameNum = registroTLB->numFrame;
-
-				t_frame * frame = list_get(frames, frameNum);
-				memcpy((frame->contenido) + offset, buffer, tamanio);
-				log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
+				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
+				memcpy((registroTLB->contenido) + offset, buffer, tamanio);
 
 				registro->modificado = 1;
 			} else {
+				sleep(retardo);
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 					memcpy((frame->contenido) + offset, buffer, tamanio);
@@ -554,16 +549,15 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
 					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
-					t_tlb * registroTLB = list_get(TLB, entradaTLB);
-					int frameNum = registroTLB->numFrame;
+					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 
-					t_frame * frame = list_get(frames, frameNum);
 					char * bufferAux = calloc(1, auxiliar->offset + 2);
-					memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+					memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start) + 1, auxiliar->offset);
 					list_add(datosParaCPU, bufferAux);
 					offsetMemcpy += auxiliar->offset + 1;
 
 				} else {
+					sleep(retardo);
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
@@ -811,6 +805,23 @@ void actualizarTablaProcesoClock(t_registro_tabla_de_paginas * registroPagina){
 
 }
 
+t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
+	t_tlb * tlbRegistro = list_get(TLB, entradaTLB);
+
+	t_tlb * nuevoRegistroTLB = malloc((sizeof(int) * 4) + marcosSize);
+	nuevoRegistroTLB->indice = tlbRegistro->indice;
+	nuevoRegistroTLB->numFrame = tlbRegistro->numFrame;
+	nuevoRegistroTLB->numPag = tlbRegistro->numPag;
+	nuevoRegistroTLB->pid = tlbRegistro->pid;
+	nuevoRegistroTLB->contenido = malloc(marcosSize);
+	memcpy(nuevoRegistroTLB->contenido, tlbRegistro->contenido, marcosSize);
+
+	list_remove(TLB, entradasTLB);
+	list_add(TLB, nuevoRegistroTLB);
+
+	return nuevoRegistroTLB;
+}
+
 int pagEstaEnTLB(int pid, int numPag){
 	int i;
 	if (entradasTLB > 0 && TLB != NULL && list_size(TLB) > 0) {
@@ -870,14 +881,22 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 		aInsertar->numPag=pagina;
 		aInsertar->numFrame=frame;
 		aInsertar->pid=pid;
-		aInsertar->indice=indiceLibre;
-		aInsertar->contenido = contenidoFrame;
+		aInsertar->contenido = malloc(marcosSize);
+		memcpy(aInsertar->contenido, contenidoFrame, marcosSize);
 
 		if(indiceLibre > -1) {
+			aInsertar->indice = indiceLibre;
 			list_remove(TLB, indiceLibre);
 			list_add_in_index(TLB, indiceLibre, aInsertar);
 			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
 		}else{
+			aInsertar->indice = list_size(TLB) - 1;
+			//Actualizo el Frame en Swap antes de eliminar
+			t_tlb * tlbAEliminar = list_get(TLB, 0);
+			t_frame * frameSwap = list_get(frames, tlbAEliminar->numFrame);
+			frameSwap->contenido = malloc(marcosSize);
+			memcpy(frameSwap->contenido, tlbAEliminar->contenido, marcosSize);
+
 			//Elimino la primera entrada => La mas vieja
 			log_info(ptrLog, "Se elimina la primer entrada de la TLB", pagina, pid);
 			list_remove(TLB, 0);

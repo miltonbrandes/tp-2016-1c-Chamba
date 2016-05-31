@@ -308,7 +308,6 @@ void comenzarEjecucionDePrograma() {
 	int contador = 1;
 
 	while (contador <= quantum) {
-		sleep(quantumSleep);
 		if(pcb->PC >= (pcb->codigo-1)) {
 			finalizarEjecucionPorExit();
 			return;
@@ -332,6 +331,7 @@ void comenzarEjecucionDePrograma() {
 			default:
 				break;
 		}
+		sleep(quantumSleep);
 	}
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();

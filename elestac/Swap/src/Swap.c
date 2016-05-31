@@ -95,7 +95,7 @@ int cargarValoresDeConfig() {
 		}
 
 		if (config_has_property(config, "RETARDO_ACCESO")) {
-			retardoCompactacion = config_get_int_value(config, "RETARDO_ACCESO");
+			retardoAcceso = config_get_int_value(config, "RETARDO_ACCESO");
 		} else {
 			log_info(ptrLog,
 					"El archivo de configuracion no contiene la clave RETARDO_ACCESO");

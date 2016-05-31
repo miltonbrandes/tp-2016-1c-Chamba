@@ -105,6 +105,7 @@ void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame);
 int buscarFrameLibre();
 
 //funciones TLB
+t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB);
 int entradaTLBAReemplazarPorLRU();
 int pagEstaEnTLB(int pid, int numPag);
 void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame);
