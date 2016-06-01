@@ -104,13 +104,13 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	solicitar->offset = TAMANIO_VARIABLE;
 	solicitar->start = posicionRet.offset;
 	char* buffer = enviarOperacion(LEER, solicitar, socketUMC);
-	if(buffer[0] == -1){
-		//operacion = ERROR;
-		free(solicitar);
-		return -1;
+	if(buffer != NULL) {
+		t_instruccion * instruccion = deserializarInstruccion(buffer);
+		int valueAsInt = atoi(instruccion->instruccion);
+		memcpy(&valor, &valueAsInt, sizeof(t_valor_variable));
+		log_debug(ptrLog, "El valor es %d", valor);
+
 	}
-	memcpy(&valor, buffer + 1, sizeof(t_valor_variable));
-	log_debug(ptrLog, "El valor es %d", valor);
 	free(solicitar);
 	return valor;
 }

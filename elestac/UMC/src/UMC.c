@@ -490,14 +490,36 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
-				memcpy((registroTLB->contenido) + offset, buffer, tamanio);
+
+				char *buffAux = malloc(tamanio);
+				memcpy(buffAux, buffer, strlen(buffer));
+				if(tamanio > strlen(buffer)) {
+					int i;
+					for(i = strlen(buffer); i < tamanio; i++) {
+						char * auxito = "~";
+						memcpy(buffAux + i, auxito, 1);
+					}
+				}
+				memcpy(registroTLB->contenido + offset, buffAux, tamanio);
 
 				registro->modificado = 1;
 			} else {
 				sleep(retardo);
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
-					memcpy((frame->contenido) + offset, buffer, tamanio);
+
+//					memcpy((frame->contenido) + offset, buffer, tamanio);
+					char *buffAux = malloc(tamanio);
+					memcpy(buffAux, buffer, strlen(buffer));
+					if(tamanio > strlen(buffer)) {
+						int i;
+						for(i = 1; i <= (tamanio-strlen(buffer)); i++) {
+							char * auxito = "~";
+							memcpy(buffAux + i, auxito, 1);
+						}
+					}
+					memcpy(frame->contenido + offset, buffAux, tamanio);
+
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 
 					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
@@ -505,9 +527,22 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->estaEnUMC = 1;
 					registro->frame = frame->numeroFrame;
 					registro->modificado = 1;
+					frame->bitDeReferencia = 1;
 				} else {
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
-					memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+
+//					memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
+					char *buffAux = malloc(tamanio);
+					memcpy(buffAux, buffer, strlen(buffer));
+					if(tamanio > strlen(buffer)) {
+						int i;
+						for(i = 1; i <= (tamanio-strlen(buffer)); i++) {
+							char * auxito = "~";
+							memcpy(buffAux + i, auxito, 1);
+						}
+					}
+					memcpy(frameSolicitado->contenido + offset, buffAux, tamanio);
+
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 
 					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
@@ -515,6 +550,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->estaEnUMC = 1;
 					registro->frame = frameSolicitado->numeroFrame;
 					registro->modificado = 1;
+					frameSolicitado->bitDeReferencia = 1;
 				}
 			}
 
@@ -531,6 +567,21 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 	}
 }
 
+
+
+void limpiarInstruccion(char * instruccion) {
+     char *p2 = instruccion;
+     while(*instruccion != '\0') {
+     	if(*instruccion != '~') {
+			*p2++ = *instruccion++;
+     	}
+     	else {
+     		++instruccion;
+     	}
+     }
+     *p2 = '\0';
+ }
+
 void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset) {
 	uint32_t offsetMemcpy = 0;
 	t_list * datosParaCPU = list_create();
@@ -543,8 +594,6 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 			for (i = 0; i < list_size(listaRegistros); i++) {
 				t_auxiliar_registro * auxiliar = list_get(listaRegistros,i);
 				t_registro_tabla_de_paginas * registro = auxiliar->registro;
-				log_info(ptrLog, "Registro involucrado-> Pagina: %d - Esta: %d - Modif: %d - Frame: %d", registro->paginaProceso, registro->estaEnUMC, registro->modificado, registro->frame);
-				log_info(ptrLog, "Start del Registro: %d - Offset del Registro: %d", auxiliar->start, auxiliar->offset);
 
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
@@ -553,6 +602,18 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 					char * bufferAux = calloc(1, auxiliar->offset + 2);
 					memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+
+					int tieneCaracterEspecial = 0, i;
+					for(i = 0; i < auxiliar->offset + 2; i++) {
+						if(bufferAux[i] == '~') {
+							tieneCaracterEspecial = 1;
+						}
+					}
+					if(tieneCaracterEspecial == 1) {
+						memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
+						limpiarInstruccion(bufferAux);
+					}
+
 					list_add(datosParaCPU, bufferAux);
 					offsetMemcpy += auxiliar->offset + 1;
 
@@ -562,6 +623,18 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
 						memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+
+						int tieneCaracterEspecial = 0, i;
+						for(i = 0; i < auxiliar->offset + 2; i++) {
+							if(bufferAux[i] == '~') {
+								tieneCaracterEspecial = 1;
+							}
+						}
+						if(tieneCaracterEspecial == 1) {
+							memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+							limpiarInstruccion(bufferAux);
+						}
+
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
 
@@ -574,6 +647,18 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
 						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+
+						int tieneCaracterEspecial = 0, i;
+						for(i = 0; i < auxiliar->offset + 2; i++) {
+							if(bufferAux[i] == '~') {
+								tieneCaracterEspecial = 1;
+							}
+						}
+						if(tieneCaracterEspecial == 1) {
+							memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+							limpiarInstruccion(bufferAux);
+						}
+
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset + 1;
 
