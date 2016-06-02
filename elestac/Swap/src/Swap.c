@@ -261,9 +261,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 		break;
 		case FINALIZARPROGRAMA:
 			sleep(retardoAcceso);
-			log_info(ptrLog, "UMC Solicita la finalizacion del Proceso %i", finalizarPrograma->programID);
 			finalizarPrograma = deserializarFinalizarPrograma(buffer);
-
+			log_info(ptrLog, "UMC Solicita la finalizacion del Proceso %i", finalizarPrograma->programID);
 			liberarMemoria(listaDeLibres, listaDeOcupados, finalizarPrograma->programID);
 
 			buffer_tamanio = serializarUint32(SUCCESS);

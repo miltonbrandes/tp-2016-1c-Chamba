@@ -408,8 +408,8 @@ void escucharPuertos() {
 				t_pcb *unPcb;
 				uint32_t operacion;
 				char* bu = recibirDatos(nuevoSocketConexion, &operacion, &id);
-				char* buffer = malloc(strlen(bu));
-				strcpy(buffer, bu);
+				char* buffer = malloc(strlen(bu)+1);
+				memcpy(buffer, bu, strlen(bu)+1);
 				int bytesRecibidos = strlen(buffer);
 				if (bytesRecibidos < 0) {
 					log_info(ptrLog,
