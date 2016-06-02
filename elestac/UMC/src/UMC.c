@@ -508,7 +508,6 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 
-//					memcpy((frame->contenido) + offset, buffer, tamanio);
 					char *buffAux = malloc(tamanio);
 					memcpy(buffAux, buffer, strlen(buffer));
 					if(tamanio > strlen(buffer)) {
@@ -531,7 +530,6 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				} else {
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
-//					memcpy((frameSolicitado->contenido) + offset, buffer, tamanio);
 					char *buffAux = malloc(tamanio);
 					memcpy(buffAux, buffer, strlen(buffer));
 					if(tamanio > strlen(buffer)) {
@@ -644,6 +642,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						registro->frame = frame->numeroFrame;
 					} else {
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
+
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
 						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start) + 1, auxiliar->offset);
@@ -842,8 +841,14 @@ void borrarEstructurasDeProceso(uint32_t pid) {
 	for(i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
 		t_registro_tabla_de_paginas * registro = list_get(tablaAEliminar->tablaDePaginas, i);
 		if(registro->estaEnUMC == 1) {
+			pthread_mutex_lock(&accesoAFrames);
 			t_frame * frame = list_get(frames, registro->frame);
-			free(frame);
+			frame->bitDeReferencia = 0;
+			frame->disponible = 1;
+			frame->numeroFrame = i;
+			free(frame->contenido);
+			frame->contenido = malloc(marcosSize);
+			pthread_mutex_unlock(&accesoAFrames);
 		}
 		free(registro);
 	}
@@ -891,6 +896,7 @@ void actualizarTablaProcesoClock(t_registro_tabla_de_paginas * registroPagina){
 }
 
 t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
+	pthread_mutex_lock(&accesoATLB);
 	t_tlb * tlbRegistro = list_get(TLB, entradaTLB);
 
 	t_tlb * nuevoRegistroTLB = malloc((sizeof(int) * 4) + marcosSize);
@@ -903,22 +909,24 @@ t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
 
 	list_remove(TLB, entradasTLB);
 	list_add(TLB, nuevoRegistroTLB);
+	pthread_mutex_unlock(&accesoATLB);
 
 	return nuevoRegistroTLB;
 }
 
 int pagEstaEnTLB(int pid, int numPag){
-	int i;
+	int i, j = -1;
+	pthread_mutex_lock(&accesoATLB);
 	if (entradasTLB > 0 && TLB != NULL && list_size(TLB) > 0) {
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
 			if (registro->pid == pid && registro->numPag == numPag) {
-				return i;
+				j = i;
 			}
 		}
-		return -1;
 	}
-	return -1;
+	pthread_mutex_unlock(&accesoATLB);
+	return j;
 }
 
 void iniciarTLB() {
@@ -945,6 +953,7 @@ int entradaTLBAReemplazarPorLRU(){
 	//Retorna -1 si no hay libres. Sino, retorna indice de Libre.
 	int i = 0;
 	int indiceLibre = -1;
+	pthread_mutex_lock(&accesoATLB);
 	if (TLB != NULL) {
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
@@ -953,9 +962,9 @@ int entradaTLBAReemplazarPorLRU(){
 				break;
 			}
 		}
-		return indiceLibre;
 	}
-	return -1;
+	pthread_mutex_unlock(&accesoATLB);
+	return indiceLibre;
 }
 
 void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
@@ -971,21 +980,27 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 
 		if(indiceLibre > -1) {
 			aInsertar->indice = indiceLibre;
+			pthread_mutex_lock(&accesoATLB);
 			list_remove(TLB, indiceLibre);
 			list_add_in_index(TLB, indiceLibre, aInsertar);
+			pthread_mutex_unlock(&accesoATLB);
 			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
 		}else{
 			aInsertar->indice = list_size(TLB) - 1;
 			//Actualizo el Frame en Swap antes de eliminar
 			t_tlb * tlbAEliminar = list_get(TLB, 0);
+			pthread_mutex_lock(&accesoAFrames);
 			t_frame * frameSwap = list_get(frames, tlbAEliminar->numFrame);
 			frameSwap->contenido = malloc(marcosSize);
 			memcpy(frameSwap->contenido, tlbAEliminar->contenido, marcosSize);
+			pthread_mutex_unlock(&accesoAFrames);
 
 			//Elimino la primera entrada => La mas vieja
 			log_info(ptrLog, "Se elimina la primer entrada de la TLB", pagina, pid);
+			pthread_mutex_lock(&accesoATLB);
 			list_remove(TLB, 0);
 			list_add(TLB, aInsertar);
+			pthread_mutex_unlock(&accesoATLB);
 			log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, pid);
 		}
 	}
@@ -1003,6 +1018,7 @@ void tlbFlush(){
 void tlbFlushDeUnPID(int PID) {
 	int i = 0;
 	if ((entradasTLB) != 0) {
+		pthread_mutex_lock(&accesoATLB);
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
 			if (registro->pid == PID) {
@@ -1012,16 +1028,19 @@ void tlbFlushDeUnPID(int PID) {
 				registro->numFrame = -1;
 			}
 		}
+		pthread_mutex_unlock(&accesoATLB);
 		printf("Flush en TLB de PID: %d realizado\n", PID);
 	}
 }
 
 void finalizarTLB(){
 	if (TLB != NULL) {
+		pthread_mutex_lock(&accesoATLB);
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = malloc(sizeof(t_tlb));
 			free(registro);
 		}
+		pthread_mutex_unlock(&accesoATLB);
 		free(TLB);
 	}
 }
@@ -1048,6 +1067,7 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, 
 		frame->bitDeReferencia = 1;
 		frame->numeroFrame = indiceFrameLibre;
 
+		pthread_mutex_lock(&accesoAFrames);
 		list_remove(frames, indiceFrameLibre);
 		list_add_in_index(frames, indiceFrameLibre, frame);
 
@@ -1056,6 +1076,7 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, 
 		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
 		registroTabla->estaEnUMC = 1;
 		registroTabla->frame = frame->numeroFrame;
+		pthread_mutex_unlock(&accesoAFrames);
 
 		return frame;
 	}else{
@@ -1068,7 +1089,9 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 		posibleProximaVictimaClock = 0;
 	}
 
+	pthread_mutex_lock(&accesoAFrames);
 	t_frame * frameCandidato = list_get(frames, posibleProximaVictimaClock);
+	pthread_mutex_unlock(&accesoAFrames);
 	if(frameCandidato->bitDeReferencia == 1) {
 		frameCandidato->bitDeReferencia = 0;
 		posibleProximaVictimaClock++;
@@ -1082,6 +1105,7 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 
 		chequearSiHayQueEscribirEnSwapLaPagina(posibleProximaVictimaClock);
 
+		pthread_mutex_lock(&accesoAFrames);
 		list_remove(frames, posibleProximaVictimaClock);
 		list_add_in_index(frames, posibleProximaVictimaClock, frame);
 		posibleProximaVictimaClock++;
@@ -1091,6 +1115,7 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
 		registroTabla->estaEnUMC = 1;
 		registroTabla->frame = frame->numeroFrame;
+		pthread_mutex_unlock(&accesoAFrames);
 
 		return frame;
 	}
@@ -1121,6 +1146,7 @@ void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame) {
 }
 
 void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
+	pthread_mutex_lock(&accesoAFrames);
 	t_frame * frame = list_get(frames, nroFrame);
 
 	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
@@ -1128,6 +1154,7 @@ void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
 	escribirEnSwap->pid = pid;
 	escribirEnSwap->contenido = malloc(marcosSize);
 	memcpy(escribirEnSwap->contenido, frame->contenido, marcosSize);
+	pthread_mutex_unlock(&accesoAFrames);
 
 	t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
 	enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
@@ -1137,13 +1164,15 @@ void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
 }
 
 int buscarFrameLibre() {
-	int i;
+	pthread_mutex_lock(&accesoAFrames);
+	int i, j = -1;
 	for(i = 0; i < list_size(frames); i++) {
 		t_frame * frame = list_get(frames, i) ;
 		if(frame->disponible == 1) {
-			return i;
+			j = i;
 		}
 	}
-	return -1;
+	pthread_mutex_unlock(&accesoAFrames);
+	return j;
 }
 
