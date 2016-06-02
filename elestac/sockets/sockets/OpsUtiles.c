@@ -406,6 +406,28 @@ t_buffer_tamanio * serializarUint32(uint32_t number) {
 
 	return buffer_tamanio;
 }
+t_buffer_tamanio * serializar (int number){
+	int offset = 0, tmp_size = 0;
+	size_t messageSize = sizeof(int);
+	char *serialized = malloc(messageSize);
+
+	tmp_size = sizeof(int);
+	memcpy(serialized + offset, &number, tmp_size);
+
+	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + messageSize);
+	buffer_tamanio->tamanioBuffer = messageSize;
+	buffer_tamanio->buffer = serialized;
+
+	return buffer_tamanio;
+}
+int deserializar(char* buffer){
+	int number;
+	int offset = 0;
+	int tmp_size = sizeof(int);
+	memcpy(&number, buffer + offset, tmp_size);
+	return number;
+
+}
 
 uint32_t deserializarUint32(char *package) {
 	uint32_t number;

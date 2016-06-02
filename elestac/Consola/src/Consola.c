@@ -143,8 +143,9 @@ int main(int argc, char **argv) {
 						printf("%s\n", server_reply);
 						break;
 					case IMPRIMIR_VALOR:
-						memcpy(&valor, server_reply, 4);
-						printf("%d\n", valor);
+						valor = deserializar(server_reply);
+						//memcpy(&valor, server_reply, 4);
+						printf("%i\n", valor);
 						break;
 					default:
 						printf("%s\n", server_reply);

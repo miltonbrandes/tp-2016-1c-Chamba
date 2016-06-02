@@ -309,7 +309,7 @@ void recibirPeticionesNucleo(){
 		}else if (operacion == FINALIZARPROGRAMA) {
 			t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
 			uint32_t PID = finalizar->programID;
-			log_info(ptrLog, "Se recibio orden de finalizacion del PID: %d", PID);
+			log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i", PID);
 			finalizarPrograma(PID);
 
 		} else {
@@ -622,7 +622,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset + 2);
-						memcpy(bufferAux, (frame->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+						memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
 
 						int tieneCaracterEspecial = 0, i;
 						for(i = 0; i < auxiliar->offset + 2; i++) {
@@ -751,11 +751,11 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 			auxiliarAdicional2->registro = registroAdicional2;
 			auxiliarAdicional2->start = -1;
-			if(offset == 0) {
-				auxiliarAdicional2->offset = offset+1;
-			}else{
+			//if(offset == 0) {
 				auxiliarAdicional2->offset = offset;
-			}
+			/*}else{
+				auxiliarAdicional2->offset = offset;
+			}*/
 			list_add(registros, auxiliarAdicional2);
 		}
 	}

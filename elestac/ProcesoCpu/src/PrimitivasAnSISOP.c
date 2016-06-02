@@ -219,14 +219,15 @@ void imprimir(t_valor_variable valor_mostrar) {
 	log_debug(ptrLog,
 			"Enviando al kernel el valor %d que se mostrara por pantalla",
 			valor_mostrar);
-	char* buffer = malloc(sizeof(t_valor_variable));
+	//char* buffer = malloc(sizeof(t_valor_variable));
+	t_buffer_tamanio*  buff = serializar(valor_mostrar);
 	uint32_t op = IMPRIMIR_VALOR;
 	uint32_t id = CPU;
-	uint32_t lon = sizeof(t_valor_variable);
-	memcpy(buffer, &valor_mostrar, sizeof(t_valor_variable));
-	int bytesEnviados = enviarDatos(socketNucleo, &buffer, lon, op, id);
+	uint32_t lon = buff->tamanioBuffer;
+	//memcpy(buffer, buff->buffer, buff->tamanioBuffer);
+	int bytesEnviados = enviarDatos(socketNucleo, buff->buffer, lon, op, id);
 	log_debug(ptrLog, "Valor enviado");
-	free(buffer);
+	//free(buffer);
 }
 
 void imprimirTexto(char* texto) {
