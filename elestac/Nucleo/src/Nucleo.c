@@ -501,7 +501,9 @@ void escucharPuertos() {
 								if (id == CPU) {
 									t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
 									log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
+									pthread_mutex_lock(&mutex_cpu);
 									comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
+									pthread_mutex_unlock(&mutex_cpu);
 								}
 							}
 						} else if (bytesRecibidos == 0) {
