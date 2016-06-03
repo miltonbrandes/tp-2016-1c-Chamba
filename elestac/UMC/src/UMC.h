@@ -112,8 +112,15 @@ int entradaTLBAReemplazarPorLRU();
 int pagEstaEnTLB(int pid, int numPag);
 void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame);
 void iniciarTLB();
-void tlbFlush();
 void finalizarTLB();
 void tlbFlushDeUnPID(int PID);
+
+
+//funciones consola
+void retardar(int retardoNuevo);
+void tlbFlush();
+void flushMemory(uint32_t pid);
+void dumpDeUnPID(uint32_t pid);
+void dump(uint32_t pid);
 
 #endif /* UMC_H_ */

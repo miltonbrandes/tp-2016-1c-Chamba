@@ -565,8 +565,6 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 	}
 }
 
-
-
 void limpiarInstruccion(char * instruccion) {
      char *p2 = instruccion;
      while(*instruccion != '\0') {
@@ -1008,7 +1006,6 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 
 void tlbFlush(){
 	if ((entradasTLB) != 0) {
-		//tendria que ir un semaforo?
 		finalizarTLB();
 		iniciarTLB();
 	}
@@ -1049,7 +1046,7 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_
 	if (!strcmp(algoritmoReemplazo, "CLOCK")) {
 		return actualizarFramesConClock(paginaSwap, pid, pagina);
 	}
-	if (!strcmp(algoritmoReemplazo, "CLOCK MODIFICADO")) {
+	if (!strcmp(algoritmoReemplazo, "CLOCK_MODIFICADO")) {
 		return actualizarFramesConClockModificado(paginaSwap, pid, pagina);
 	} else {
 		log_info(ptrLog, "Algoritmo de reemplazo no reconocido");
@@ -1175,4 +1172,85 @@ int buscarFrameLibre() {
 	pthread_mutex_unlock(&accesoAFrames);
 	return j;
 }
+
+void retardar(int retardoNuevo) {
+	retardo = retardoNuevo;
+	log_info(ptrLog, "Se modifico el retardo a:%d", retardoNuevo);
+}
+
+void flushMemory(uint32_t pid) {
+	t_tabla_de_paginas * tablaAModificar = buscarTablaDelProceso(pid);
+	int i;
+	for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(
+				tablaAModificar->tablaDePaginas, i);
+
+		// SOLO LAS PAGINAS EN UMC O TODAS SE MODIFICAN?
+		registro->modificado = 1;
+
+//		if (registro->estaEnUMC == 1) {
+//			registro->modificado = 1;
+//		}
+		free(registro);
+		log_info(ptrLog, "Se realizo flush a las TP del PID:%d", pid);
+	}
+}
+
+void dumpDeUnPID(uint32_t pid) {
+
+	//traigo la tabla del proceso
+	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
+	int i;
+
+	if (tablaAMostrar != NULL) {
+		for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
+			//Traigo cada tabla de paginas
+			t_registro_tabla_de_paginas * registro = list_get(
+					tablaAMostrar->tablaDePaginas, i);
+
+			if (registro->estaEnUMC == 1) {
+				//CORROBORAR QUE VAYAN ESTOS SEMAFOROS
+				pthread_mutex_lock(&accesoAFrames);
+				t_frame * frame = list_get(frames, registro->frame);
+				log_info(ptrLog, "PaginaProceso: %d ; Marco: %d ; Contenido: \"%s\"",
+						registro->paginaProceso, registro->frame, frame->contenido);
+
+
+				//agregar tmb a un archi
+
+				pthread_mutex_unlock(&accesoAFrames);
+			}
+			free(registro);
+		}
+	} else {
+		log_info(ptrLog, "No se encontro TP del PID: %d", pid);
+	}
+
+}
+
+void dump(uint32_t pid) {
+
+	FILE*archivoDump;
+
+
+	//Me fijo si hay algo cargado en la TP
+	if (list_size(tablaProcesosPaginas) != 0) {
+
+		//caso que sea dump de 1 proceso especifico
+		if (pid != NULL) {
+			dumpDeUnPID(pid);
+
+		} else {
+			//caso que sea dump for all
+
+			for (i = 0; i < list_size(tablaProcesosPaginas); i++) {
+				t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
+				dumpDeUnPID(tabla->pID);
+			}
+		}
+	} else {
+		log_info(ptrLog, "La memoria esta vacia");
+	}
+}
+
 
