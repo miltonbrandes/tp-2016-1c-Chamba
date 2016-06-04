@@ -40,6 +40,7 @@ uint32_t marcos, marcosSize, marcoXProc, entradasTLB, retardo;
 char *algoritmoReemplazo;
 char *ipSwap;
 int i = 0;
+char comando;
 
 //Variables frames, tlb, tablas
 t_list * listaCpus;
@@ -53,7 +54,7 @@ int posibleProximaVictimaClock;
 pthread_t hiloConexiones;
 pthread_t hiloCpu;
 pthread_t hiloNucleo;
-
+pthread_t hiloConsola;
 //variables semaforos
 sem_t semEmpezarAceptarCpu;
 
@@ -87,7 +88,8 @@ int main() {
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
-		manejarConexionesRecibidas();
+		pthread_create(&hiloConexiones, NULL, (void *) manejarConexionesRecibidas, NULL);
+		crearConsola();
 
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
@@ -152,7 +154,7 @@ void enviarMensajeACpu(char *mensaje, int operacion, int socketCpu) {
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
-	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 1, 0);
+	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 0, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -1009,7 +1011,7 @@ void tlbFlush(){
 		finalizarTLB();
 		iniciarTLB();
 	}
-	log_info(ptrLog, "Flush en TLB realizado");
+	printf("Flush en TLB realizado");
 }
 
 void tlbFlushDeUnPID(int PID) {
@@ -1026,7 +1028,7 @@ void tlbFlushDeUnPID(int PID) {
 			}
 		}
 		pthread_mutex_unlock(&accesoATLB);
-		printf("Flush en TLB de PID: %d realizado\n", PID);
+		log_info(ptrLog, "Flush en TLB de PID: %d realizado\n", PID);
 	}
 }
 
@@ -1173,9 +1175,9 @@ int buscarFrameLibre() {
 	return j;
 }
 
-void retardar(int retardoNuevo) {
+void retardar(uint32_t retardoNuevo) {
 	retardo = retardoNuevo;
-	log_info(ptrLog, "Se modifico el retardo a:%d", retardoNuevo);
+	printf("Se modifico el retardo a:%d", retardoNuevo);
 }
 
 void flushMemory(uint32_t pid) {
@@ -1192,7 +1194,7 @@ void flushMemory(uint32_t pid) {
 //			registro->modificado = 1;
 //		}
 		free(registro);
-		log_info(ptrLog, "Se realizo flush a las TP del PID:%d", pid);
+		printf("Se realizo flush a las TP del PID:%d", pid);
 	}
 }
 
@@ -1251,6 +1253,31 @@ void dump(uint32_t pid) {
 	} else {
 		log_info(ptrLog, "La memoria esta vacia");
 	}
+}
+
+void crearConsola() {
+	char* comando = malloc(30);
+	uint32_t parametro;
+	while (1) {
+		printf("Ingrese un comando: ");
+		scanf("%s %s", comando, parametro);
+		if (strcmp("retardo", comando) == 0) {
+			retardar(atoi(parametro));
+			printf("\n");
+		} else if (strcmp("dump", comando) == 0) {
+			dump(atoi(parametro));
+			printf("\n");
+		} else if (strcmp("flushmemory", comando) == 0) {
+			flushMemory(atoi(parametro));
+			printf("\n");
+		} else if (strcmp("flushtlb", strcat(comando,parametro)) == 0) {
+					tlbFlush();
+					printf("\n");
+				}
+			else {
+				printf("\nComando no reconocido.\n\n");
+			}
+		}
 }
 
 

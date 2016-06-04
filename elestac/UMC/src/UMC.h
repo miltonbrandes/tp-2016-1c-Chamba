@@ -117,10 +117,11 @@ void tlbFlushDeUnPID(int PID);
 
 
 //funciones consola
-void retardar(int retardoNuevo);
+void retardar(uint32_t retardoNuevo);
 void tlbFlush();
 void flushMemory(uint32_t pid);
 void dumpDeUnPID(uint32_t pid);
 void dump(uint32_t pid);
+void crearConsola();
 
 #endif /* UMC_H_ */
