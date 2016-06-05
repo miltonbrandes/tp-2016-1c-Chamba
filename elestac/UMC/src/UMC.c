@@ -41,6 +41,7 @@ char *algoritmoReemplazo;
 char *ipSwap;
 int i = 0;
 char comando;
+t_config* config;
 
 //Variables frames, tlb, tablas
 t_list * listaCpus;
@@ -97,6 +98,7 @@ int main() {
 	}
 	//pthread_join(hiloConexiones, NULL);
 	log_info(ptrLog, "Proceso UMC finalizado");
+	free(config);
 	finalizarConexion(socketSwap);
 	finalizarConexion(socketReceptorNucleo);
 	finalizarConexion(socketReceptorCPU);
@@ -210,7 +212,6 @@ int iniciarUMC(t_config* config) {
 }
 
 int cargarValoresDeConfig() {
-	t_config* config;
 	config = config_create(getenv("UMC_CONFIG"));
 
 	if (config) {
