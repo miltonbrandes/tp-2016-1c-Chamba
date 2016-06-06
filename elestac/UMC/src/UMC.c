@@ -203,7 +203,7 @@ int iniciarUMC(t_config* config) {
 	if (config_has_property(config, "ALGORITMO")) {
 		algoritmoReemplazo = config_get_string_value(config, "ALGORITMO");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave TLB_HABILITADA");
+		log_info(ptrLog, "El archivo de configuracion no contiene la clave ALGORITMO");
 		return 0;
 	}
 
@@ -891,10 +891,6 @@ t_cambio_proc_activo* deserializarCambioProcesoActivo(char * mensaje) {
 	return respuesta;
 }
 
-void actualizarTablaProcesoClock(t_registro_tabla_de_paginas * registroPagina){
-
-}
-
 t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
 	pthread_mutex_lock(&accesoATLB);
 	t_tlb * tlbRegistro = list_get(TLB, entradaTLB);
@@ -1176,8 +1172,12 @@ int buscarFrameLibre() {
 }
 
 void retardar(uint32_t retardoNuevo) {
-	retardo = retardoNuevo;
-	printf("Se modifico el retardo a:%d", retardoNuevo);
+	if (retardoNuevo != NULL) {
+		retardo = retardoNuevo;
+		printf("Se modifico el retardo a:%d", retardoNuevo);
+	} else {
+		printf("No se modifico el retardo, sigue siendo:%d", retardo);
+	}
 }
 
 void flushMemory(uint32_t pid) {
@@ -1185,12 +1185,9 @@ void flushMemory(uint32_t pid) {
 	int i;
 for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
 			t_registro_tabla_de_paginas * registro = list_get(tablaAModificar->tablaDePaginas, i);
-			// SOLO LAS PAGINAS EN UMC O TODAS SE MODIFICAN?
+
 			registro->modificado = 1;
 
-//		if (registro->estaEnUMC == 1) {
-//			registro->modificado = 1;
-//		}
 			free(registro);
 			printf("Se realizo flush a las TP del PID:%d", pid);
 		}
@@ -1212,37 +1209,30 @@ void dumpDeUnPID(uint32_t pid) {
 				//CORROBORAR QUE VAYAN ESTOS SEMAFOROS
 				pthread_mutex_lock(&accesoAFrames);
 				t_frame * frame = list_get(frames, registro->frame);
-				log_info(ptrLog, "PaginaProceso: %d ; Marco: %d ; Contenido: \"%s\"",
+				log_info(ptrLog, "Proceso: %d ; Pagina: %d ; Marco: %d ; Contenido: \"%s\"", pid,
 						registro->paginaProceso, registro->frame, frame->contenido);
 
-
-				//agregar tmb a un archi
+				escribirEnArchivo(pid,registro->paginaProceso,registro->frame, frame->contenido);
 
 				pthread_mutex_unlock(&accesoAFrames);
 			}
 			free(registro);
 		}
 	} else {
-		log_info(ptrLog, "No se encontro TP del PID: %d", pid);
+		log_info(ptrLog, "No se encontro Tabla de Paginas del PID: %d", pid);
 	}
 
 }
 
 void dump(uint32_t pid) {
 
-	FILE*archivoDump;
-
-
 	//Me fijo si hay algo cargado en la TP
 	if (list_size(tablaProcesosPaginas) != 0) {
-
 		//caso que sea dump de 1 proceso especifico
 		if (pid != NULL) {
 			dumpDeUnPID(pid);
-
 		} else {
 			//caso que sea dump for all
-
 			for (i = 0; i < list_size(tablaProcesosPaginas); i++) {
 				t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
 				dumpDeUnPID(tabla->pID);
@@ -1265,19 +1255,27 @@ void crearConsola() {
 		} else if (strcmp("dump", comando) == 0) {
 			dump(atoi(parametro));
 			printf("\n");
-		} else if (strcmp("flushmemory", comando) == 0) {
+		} else if (strcmp("flush_memory", comando) == 0) {
 			flushMemory(atoi(parametro));
 			printf("\n");
-		} else if (strcmp("flushtlb", strcat(comando,parametro)) == 0) {
-					tlbFlush();
-					printf("\n");
-				}
-			else {
-				printf("\nComando no reconocido.\n\n");
-			}
+		} else if (strcmp("flush_tlb", strcat(comando, parametro)) == 0) {
+			tlbFlush();
+			printf("\n");
+		} else {
+			printf("\nComando no reconocido.\n\n");
 		}
+	}
 	free(comando);
 	free(parametro);
 }
 
+void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,
+		char* contenido) {
 
+	FILE*archivoDump = fopen("dump.txt", "a");
+
+	fprintf(archivoDump,
+			"Proceso: %d ; Pagina: %d ; Marco: %d ; Contenido: \"%s\" \n", pid,
+			paginaProceso, frame, contenido);
+	fclose(archivoDump);
+}

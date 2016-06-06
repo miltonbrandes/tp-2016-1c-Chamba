@@ -123,5 +123,6 @@ void flushMemory(uint32_t pid);
 void dumpDeUnPID(uint32_t pid);
 void dump(uint32_t pid);
 void crearConsola();
+void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,char* contenido);
 
 #endif /* UMC_H_ */
