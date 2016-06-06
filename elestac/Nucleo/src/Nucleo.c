@@ -1,12 +1,7 @@
 /*
 
  * nucleo.c
- *
- *  Created on: 18/4/2016
- *      Author: utnso
- */
-//TODO: le tengo que pasar tambien cual es la primer pagina de mi codigo a la cpu para que se la pueda pedir a la umc??? en principio se lo paso por las dudas
-//TODO: ver el tema del notify
+ * */
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/log.h>
@@ -23,9 +18,9 @@
 #include <commons/collections/queue.h>
 #include <parser/metadata_program.h>
 #include "Nucleo.h"
-#define MAX_BUFFER_SIZE 4096
+
 t_log* ptrLog;
-//Metodos para iniciar valores de Nucleo
+
 int crearLog() {
 	ptrLog = log_create(getenv("NUCLEO_LOG"), "Nucleo", 1, 0);
 	if (ptrLog) {
@@ -83,7 +78,6 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 }
 
 int iniciarNucleo() {
-
 	config = config_create(getenv("NUCLEO_CONFIG"));
 	if (config) {
 		if (config_has_property(config, "PUERTO_SERVIDOR_UMC")) {
@@ -248,30 +242,21 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 }
 
 int datosEnSocketUMC() {
-	char *buffer;
 	uint32_t id;
 	uint32_t operacion;
 
-	buffer = recibirDatos(socketUMC, &operacion, &id);
-	int bytesRecibidos = strlen(buffer);
+	char * buffer = recibirDatos(socketUMC, &operacion, &id);
 
-	if (bytesRecibidos < 0) {
-		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
-	} else if (bytesRecibidos == 0) {
-		log_info(ptrLog, "Ocurrio un error al recibir datos en Socket UMC");
+	if (strcmp("ERROR", buffer) == 0) {
 		finalizarConexion(socketUMC);
 		return -1;
 	} else {
-		if (strcmp("ERROR", buffer) == 0) {
-					return -1;
-		} else {
-			tamanioMarcos = deserializarUint32(buffer);
-			log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioMarcos);
-		}
+		tamanioMarcos = deserializarUint32(buffer);
+		log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioMarcos);
 	}
-	//free(buffer);
-	return 0;
 
+	free(buffer);
+	return 0;
 }
 
 void operacionesConVariablesCompartidas(char operacion, char *buffer,
@@ -326,8 +311,7 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 	}
 	// Si tenia un pcb asignado, lo mando a la cola d exit para liberar recursos..
 	if (unCliente->fueAsignado == true && cpuAcerrar == unCliente->socket) {
-		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d",
-				unCliente->pcbAsignado->pcb_id);
+		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d", unCliente->pcbAsignado->pcb_id);
 		queue_push(colaExit, unCliente->pcbAsignado);
 		sem_post(&semProgExit);
 		pthread_mutex_unlock(&mutex_exit);
@@ -338,6 +322,119 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 	} else {
 		sem_wait(&semCpuOciosa);
 	}
+}
+
+void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion) {
+	t_clienteCpu *cliente = malloc(sizeof(t_clienteCpu));
+	cliente->socket = nuevoSocketConexion;
+	cliente->id = (uint32_t) list_size(listaSocketsCPUs);
+	cliente->fueAsignado = false;
+	cliente->programaCerrado = false;
+	list_add(listaSocketsCPUs, cliente);
+	estructuraInicial = malloc(sizeof(t_EstructuraInicial));
+	estructuraInicial->Quantum = quantum;
+	estructuraInicial->RetardoQuantum = quantumSleep;
+	t_buffer_tamanio * buffer_tamanio = serializar_EstructuraInicial(estructuraInicial);
+	enviarDatos(cliente->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, QUANTUM_PARA_CPU, NUCLEO);
+	sem_post(&semCpuOciosa);
+	log_debug(ptrLog, "Cliente aceptado y quantum enviado");
+	free(estructuraInicial);
+	free(buffer_tamanio);
+}
+
+void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
+	uint32_t id;
+	t_pcb *unPcb;
+	uint32_t operacion;
+	char* buffer = recibirDatos(socketConexion, &operacion, &id);
+	if (strcmp("ERROR", buffer) == 0) {
+		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Consola");
+	} else {
+		log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
+
+		unPcb = crearPCB(buffer, socketUMC);
+		if(unPcb == NULL){
+			int bytesEnviados = enviarDatos(socketConexion, buffer,(uint32_t) strlen(buffer), ERROR, id);
+			if (bytesEnviados < 0) {
+				log_error(ptrLog, "Error al enviar los datos");
+			}
+			return;
+		}
+
+		/*Definimos la estructura del cliente con su socket y pid asociado*/
+		t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));
+		unCliente->pid = unPcb->pcb_id;
+		unCliente->socket = socketConexion;
+		unCliente->terminado = false;
+		list_add(listaSocketsConsola, unCliente);
+
+		if (buffer[0] == -1) {
+			log_error(ptrLog, "Hubo un fallo en la creacion del PCB - Causa: Memory Overload");
+			char* texto = "Error al crear el pcb correspondiente a tu programa - Causa: Memory Overload";
+			t_imprimibles *unMensaje = malloc((sizeof(uint32_t) * 2) + strlen(texto) + 1);
+			unCliente->terminado = true;
+			unMensaje->PCB_ID = nroProg;
+			unMensaje->valor = texto;
+			queue_push(colaImprimibles, unMensaje);
+			sem_post(&semMensajeImpresion);
+		} else if (buffer[0] == -2) {
+			log_error(ptrLog, "Hubo un fallo en la creacion del PCB - Causa: Segmentation Fault");
+			char* texto = "Error al crear el pcb correspondiente a tu programa - Causa: Segmentation Fault";
+			t_imprimibles *unMensaje = malloc((sizeof(uint32_t) * 2) + strlen(texto) + 1);
+			unCliente->terminado = true;
+			unMensaje->PCB_ID = nroProg;
+			unMensaje->valor = texto;
+			queue_push(colaImprimibles, unMensaje);
+			sem_post(&semMensajeImpresion);
+		} else {
+			log_debug(ptrLog, "Todo reservado, se procede a ponerlo en la lista New");
+			list_add(colaNew, unPcb);
+			log_info(ptrLog, "===== Lista de Procesos en cola NEW =====");
+			imprimirProcesoNew(unPcb);
+			sem_post(&semNuevoProg);
+		}
+	}
+}
+
+void finalizarConexionDeUnSocketEnParticular(int socketFor) {
+	finalizarConexion(socketFor);
+
+	bool buscarCpuPorSocket(t_clienteCpu * unCliente) {
+		return unCliente->socket == socketFor;
+	}
+	bool buscarConsolaPorSocket(t_socket_pid* unCliente) {
+		return unCliente->socket == socketFor;
+	}
+
+	t_clienteCpu* cpu = list_get(list_filter(listaSocketsCPUs, (void *)buscarCpuPorSocket), 0);
+
+	if(cpu != NULL) {
+		cerrarConexionCliente(cpu);
+		finalizarConexion(socketFor);
+		free(cpu);
+	}else{
+		t_socket_pid *consola = list_remove_by_condition(listaSocketsConsola, (void*)buscarConsolaPorSocket);
+		if(consola != NULL) {
+			if (consola->terminado == false) {
+				log_error(ptrLog, "El programa:%d se ha desconectado", consola->pid);
+				pcbAFinalizar = consola->pid;
+				sem_post(&semProgramaFinaliza);
+			}
+			free(consola);
+		}
+	}
+}
+
+void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion) {
+	bool buscarCpuPorSocket(t_clienteCpu * unCliente) {
+		return unCliente->socket == socketFor;
+	}
+
+	t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)buscarCpuPorSocket), 0);
+	log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
+	pthread_mutex_lock(&mutex_cpu);
+	comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
+	pthread_mutex_unlock(&mutex_cpu);
 }
 
 void escucharPuertos() {
@@ -352,8 +449,7 @@ void escucharPuertos() {
 		tempSockets = sockets;
 		log_info(ptrLog, "Esperando conexiones");
 
-		int resultadoSelect = select(socketMaximo + 1, &tempSockets, NULL, NULL,
-				NULL);
+		int resultadoSelect = select(socketMaximo + 1, &tempSockets, NULL, NULL, NULL);
 		if (resultadoSelect == 0) {
 			log_info(ptrLog, "Time out. Volviendo a esperar conexiones");
 		} else if (resultadoSelect < 0) {
@@ -362,181 +458,49 @@ void escucharPuertos() {
 		} else {
 
 			if (FD_ISSET(socketReceptorCPU, &tempSockets)) {
-
-				int nuevoSocketConexion = AceptarConexionCliente(
-						socketReceptorCPU);
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorCPU);
 				if (nuevoSocketConexion < 0) {
-					log_info(ptrLog,
-							"Ocurrio un error al intentar aceptar una conexion de CPU");
-				} else {
-					FD_SET(nuevoSocketConexion, &sockets);
-					FD_SET(nuevoSocketConexion, &tempSockets);
-					socketMaximo =
-							(socketMaximo < nuevoSocketConexion) ?
-									nuevoSocketConexion : socketMaximo;
-				}
-				t_clienteCpu *cliente = malloc(sizeof(t_clienteCpu));
-				cliente->socket = nuevoSocketConexion;
-				cliente->id = (uint32_t) list_size(listaSocketsCPUs);
-				cliente->fueAsignado = false;
-				cliente->programaCerrado = false;
-				list_add(listaSocketsCPUs, cliente);
-				estructuraInicial = malloc(sizeof(t_EstructuraInicial));
-				estructuraInicial->Quantum = quantum;
-				estructuraInicial->RetardoQuantum = quantumSleep;
-				t_buffer_tamanio * buffer_tamanio = serializar_EstructuraInicial(estructuraInicial);
-				enviarDatos(cliente->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, QUANTUM_PARA_CPU, NUCLEO);
-				sem_post(&semCpuOciosa);
-				log_debug(ptrLog, "Cliente aceptado y quantum enviado");
-				free(estructuraInicial);
-				free(buffer_tamanio);
-				FD_CLR(socketReceptorCPU, &tempSockets);
-
-			} else if (FD_ISSET(socketReceptorConsola, &tempSockets)) {
-
-				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorConsola);
-				if (nuevoSocketConexion < 0) {
-					log_info(ptrLog,
-							"Ocurrio un error al intentar aceptar una conexion de Consola");
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 				} else {
 					FD_SET(nuevoSocketConexion, &sockets);
 					FD_SET(nuevoSocketConexion, &tempSockets);
 					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
+
+					aceptarConexionEnSocketReceptorCPU(nuevoSocketConexion);
 				}
+			} else if (FD_ISSET(socketReceptorConsola, &tempSockets)) {
 
-				uint32_t id;
-				t_pcb *unPcb;
-				uint32_t operacion;
-				char* bu = recibirDatos(nuevoSocketConexion, &operacion, &id);
-				char* buffer = malloc(strlen(bu)+1);
-				memcpy(buffer, bu, strlen(bu)+1);
-				int bytesRecibidos = strlen(buffer);
-				if (bytesRecibidos < 0) {
-					log_info(ptrLog,
-							"Ocurrio un error al recibir datos en un Socket Consola");
-				} else if (bytesRecibidos == 0) {
-					log_info(ptrLog,
-							"No se recibieron datos en el Socket Consola");
+				int nuevoSocketConexion = AceptarConexionCliente(socketReceptorConsola);
+				if (nuevoSocketConexion < 0) {
+					log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de Consola");
 				} else {
-					if (strcmp("ERROR", buffer) == 0) {
+					FD_SET(nuevoSocketConexion, &sockets);
+					FD_SET(nuevoSocketConexion, &tempSockets);
+					socketMaximo = (socketMaximo < nuevoSocketConexion) ? nuevoSocketConexion : socketMaximo;
 
-					} else {
-						log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
-
-						unPcb = crearPCB(buffer, socketUMC);
-						if(unPcb == NULL){
-							int bytesEnviados = enviarDatos(nuevoSocketConexion, buffer,(uint32_t) strlen(buffer), ERROR, id);
-							if (bytesEnviados < 0) {
-								buffer = "Este es un mensaje para vos, Consola\0";
-								log_error(ptrLog, "Error al enviar los datos");
-							}
-						}
-
-
-						t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));/*Definimos la estructura del cliente con su socket y pid asociado*/
-						unCliente->pid = unPcb->pcb_id;
-						unCliente->socket = nuevoSocketConexion;
-						unCliente->terminado = false;
-						list_add(listaSocketsConsola, unCliente);
-						FD_CLR(socketReceptorConsola, &tempSockets);
-						if (unPcb == NULL && buffer[0] == -1) {
-							log_error(ptrLog,
-									"Hubo un fallo en la creacion del PCB - Causa: Memory Overload");
-							t_imprimibles *unMensaje = malloc(sizeof(t_imprimibles));
-							unCliente->terminado = true;
-							char* texto =
-									"Error al crear el pcb correspondiente a tu programa - Causa: Memory Overload";
-							unMensaje->PCB_ID = nroProg;
-							unMensaje->valor = texto;
-							queue_push(colaImprimibles, unMensaje);
-							sem_post(&semMensajeImpresion);
-						} else if (unPcb == NULL && buffer[0] == -2) {
-							log_error(ptrLog,
-									"Hubo un fallo en la creacion del PCB - Causa: Segmentation Fault");
-							t_imprimibles *unMensaje = malloc(sizeof(t_imprimibles));
-							unCliente->terminado = true;
-							char* texto =
-									"Error al crear el pcb correspondiente a tu programa - Causa: Segmentation Fault";
-							unMensaje->PCB_ID = nroProg;
-							unMensaje->valor = texto;
-							queue_push(colaImprimibles, unMensaje);
-							sem_post(&semMensajeImpresion);
-						} else {
-							log_debug(ptrLog,
-									"Todo reservado, se procede a ponerlo en la lista New");
-							list_add(colaNew, unPcb);
-							log_info(ptrLog,
-									"===== Lista de Procesos en cola NEW =====");
-							imprimirProcesoNew(unPcb);
-							sem_post(&semNuevoProg);
-						}
-					}
+					aceptarConexionEnSocketReceptorConsola(nuevoSocketConexion);
 				}
 			} else if (FD_ISSET(socketUMC, &tempSockets)) {
 				int returnDeUMC = datosEnSocketUMC();
 				if (returnDeUMC == -1) {
 					//Aca matamos Socket UMC
 					FD_CLR(socketUMC, &sockets);
-
 				}
 			} else {
-				//Ver que hacer aca, se esta recibiendo algo de un socket en particular
-				char* buffer;
 				uint32_t id;
 				uint32_t operacion;
 				int socketFor;
-				for (socketFor = 0; socketFor < (socketMaximo + 1);
-						socketFor++) {
+				for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 					if (FD_ISSET(socketFor, &tempSockets)) {
-						buffer = recibirDatos(socketFor, &operacion, &id);
-						int bytesRecibidos = strlen(buffer);
-						bool recibiendo(t_clienteCpu * unCliente) {
-							return unCliente->socket == socketFor;
-						}
-						if (bytesRecibidos > 0) {
-							if (strcmp("ERROR", buffer) == 0) {
-								FD_CLR(socketFor, &tempSockets);
-								FD_CLR(socketFor, &sockets);
-							} else {
-								if (id == CPU) {
-									t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
-									log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
-									pthread_mutex_lock(&mutex_cpu);
-									comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
-									pthread_mutex_unlock(&mutex_cpu);
-								}
-							}
-						} else if (bytesRecibidos == 0) {
-							finalizarConexion(socketFor);
+						char * buffer = recibirDatos(socketFor, &operacion, &id);
+						if (strcmp("ERROR", buffer) == 0) {
 							FD_CLR(socketFor, &tempSockets);
 							FD_CLR(socketFor, &sockets);
-							log_info(ptrLog,
-									"No se recibio ningun byte de un socket que solicito conexion.");
-						} else if (bytesRecibidos < 0) {
-							if(id == CPU){
-								t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)recibiendo), 0);
-								cerrarConexionCliente(unCliente);
-								finalizarConexion(socketFor);
-								FD_CLR(socketFor, &sockets);
-								FD_CLR(socketFor, &tempSockets);
-								log_info(ptrLog,
-										"Ocurrio un error al recibir los bytes de un socket");
-
-							}
-							if(id == CONSOLA){
-								bool _buscaCliente(t_socket_pid* unCliente) {
-									return unCliente->socket == socketFor;
-								}
-								t_socket_pid *unCliente = list_remove_by_condition(listaSocketsConsola, (void*) _buscaCliente);
-								log_error(ptrLog, "El programa:%d se ha desconectado",unCliente->pid);
-								if (unCliente->terminado == false) {
-									pcbAFinalizar = unCliente->pid;
-									sem_post(&semProgramaFinaliza);
-								}
-								finalizarConexion(socketFor);
-								FD_CLR(socketFor, &sockets);
-								FD_CLR(socketFor, &tempSockets);/*Removemos el socket del cliente del master set*/
-								//free(buffer);
+							finalizarConexionDeUnSocketEnParticular(socketFor);
+							log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+						} else {
+							if (id == CPU) {
+								recibirDatosDeSocketCPU(buffer, socketFor, operacion);
 							}
 						}
 					}
@@ -975,6 +939,7 @@ void* vaciarColaExit(){
 			log_info(ptrLog,"Borrados las paginas del programa:%d",aux->pcb_id);
 		}
 		free(aux);
+		pthread_mutex_unlock(&mutex_exit);
 	}
 	return 0;
 }
@@ -1074,6 +1039,68 @@ void* hiloPCBaFinalizar() {
 	return 0;
 }
 
+int abrirSocketsImportantes() {
+	socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);
+	if (socketUMC < 0) {
+		log_info(ptrLog, "No pudo conectarse con UMC");
+		return -1;
+	}
+	log_info(ptrLog, "Se conecto con UMC");
+
+	socketReceptorCPU = AbrirSocketServidor(puertoReceptorCPU);
+	if (socketReceptorCPU < 0) {
+		log_info(ptrLog, "No se pudo abrir el Socket Servidor CPU");
+		return -1;
+	}
+	log_info(ptrLog, "Se abrio el Socket Servidor CPU");
+
+	socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
+	if (socketReceptorCPU < 0) {
+		log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
+		return -1;
+	}
+	log_info(ptrLog, "Se abrio el Socket Servidor Consola");
+
+	return 1;
+}
+
+int crearThreadsUtiles() {
+	if (pthread_create(&threadSocket, NULL, (void*) escucharPuertos, NULL) != 0) {
+		perror("no se pudo crear el thread para escuchar las nuevas conexiones y las respuestas de cpu");
+		return -1;
+	} else {
+		log_debug(ptrLog, "Hilo para escuchar puertos creado");
+	}
+	if (pthread_create(&hiloCpuOciosa, NULL, (void*) hiloClienteOcioso, NULL) != 0) {
+		perror("no se pudo crear el thread para planificar a que cpu mandar un nuevo prog");
+		return -1;
+	} else {
+		log_debug(ptrLog, "Hilo cliente ocioso creado");
+	}
+	if (pthread_create(&threadPlanificador, NULL, (void*) mensajesPrograma, NULL) != 0) {
+		perror("no se pudo crear el thread para enviar mensajes a consoals");
+		return -1;
+	} else {
+		log_debug(ptrLog, "Hilo para enviar mensajes a clientes creado");
+	}
+	if (pthread_create(&threadExit, NULL, vaciarColaExit, NULL)!= 0) {
+		perror("No se pudo crear el thread para ir vaciando la cola de programas a finalizar");
+		return -1;
+	}else{
+		log_debug(ptrLog, "Hilo para vaciar los programas finalizados creado");
+	}
+
+	//hilo creado para programas aque se cierren inesperadamente.
+	if (pthread_create(&hiloPcbFinalizarError, NULL, (void*) hiloPCBaFinalizar, NULL ) != 0) {
+		perror("no se pudo crear el thread para finalizar programas inesperadamente");
+		return -1;
+	}else{
+		log_debug(ptrLog, "Hilo para finalizar los programas que tuvieron un fin inesperado");
+	}
+
+	return 1;
+}
+
 int main() {
 	colaNew = list_create();				// Lista para procesos en estado NEW
 	colaReady = queue_create();			// Cola para procesos en estado READY
@@ -1092,82 +1119,39 @@ int main() {
 	int returnInt = EXIT_SUCCESS;
 	if (init()) {
 		list_iterate(listaDispositivosIO, (void*) hilosIO);
-		socketUMC = AbrirConexion(ipUMC, puertoConexionUMC);
-		if (socketUMC < 0) {
-			log_info(ptrLog, "No pudo conectarse con UMC");
-			return -1;
-		}
-		log_info(ptrLog, "Se conecto con UMC");
 
-		socketReceptorCPU = AbrirSocketServidor(puertoReceptorCPU);
-		if (socketReceptorCPU < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor CPU");
-			return -1;
-		}
+		if (abrirSocketsImportantes()) {
+			if(crearThreadsUtiles()) {
+				while (1) {
+					sem_wait(&semNuevoProg);/*Este 1er semaforo espera que se cree un nuevo pcb y que mande signal para recien
+					 poder enviarlo a la cola de Ready*/
+					log_debug(ptrLog, "Se procede a pasar un pcb en estado New a la cola Ready");
+					t_pcb * aux = list_get(colaNew, 0);
+					list_remove(colaNew, 0);
+					log_debug(ptrLog, "Proceso %u pasa a la cola READY", aux->pcb_id);
 
-		log_info(ptrLog, "Se abrio el Socket Servidor CPU");
+					pthread_mutex_lock(&mutex);
+					queue_push(colaReady, aux);
+					pthread_mutex_unlock(&mutex);
 
-		socketReceptorConsola = AbrirSocketServidor(puertoReceptorConsola);
-		if (socketReceptorCPU < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Consola");
-			return -1;
-		}
-		log_info(ptrLog, "Se abrio el Socket Servidor Consola");
+					sem_post(&semNuevoPcbColaReady);
+				}
+			}else{
+				returnInt = EXIT_FAILURE;
+			}
 
-		//returnInt = enviarMensajeAUMC("Hola, soy el Nucleo/0");
-		if (pthread_create(&threadSocket, NULL, (void*) escucharPuertos, NULL)
-				!= 0) {
-			perror("no se pudo crear el thread para escuchar las nuevas conexiones y las respuestas de cpu");
-		} else {
-			log_debug(ptrLog, "Hilo para escuchar puertos creado");
-		}
-		if (pthread_create(&hiloCpuOciosa, NULL, (void*) hiloClienteOcioso,
-		NULL) != 0) {
-			perror("no se pudo crear el thread para planificar a que cpu mandar un nuevo prog");
-		} else {
-			log_debug(ptrLog, "Hilo cliente ocioso creado");
-		}
-		if (pthread_create(&threadPlanificador, NULL, (void*) mensajesPrograma,
-				NULL) != 0) {
-			perror("no se pudo crear el thread para enviar mensajes a consoals");
-		} else {
-			log_debug(ptrLog, "Hilo para enviar mensajes a clientes creado");
-		}
-		if (pthread_create(&threadExit, NULL, vaciarColaExit, NULL)!= 0) {
-					perror("No se pudo crear el thread para ir vaciando la cola de programas a finalizar");
+			pthread_join(threadSocket, NULL);
+			pthread_join(hiloCpuOciosa, NULL);
+			pthread_join(threadPlanificador, NULL);
+			pthread_join(hiloPcbFinalizarError, NULL);
+			pthread_join(threadExit,NULL);
 		}else{
-			log_debug(ptrLog, "Hilo para vaciar los programas finalizados creado");
+			returnInt = EXIT_FAILURE;
 		}
-
-		//hilo creado para programas aque se cierren inesperadamente.
-		if (pthread_create(&hiloPcbFinalizarError, NULL, (void*) hiloPCBaFinalizar, NULL ) != 0) {
-				perror("no se pudo crear el thread para finalizar programas inesperadamente");
-		}else{
-			log_debug(ptrLog, "Hilo para finalizar los programas que tuvieron un fin inesperado");
-		}
-		while (1) {
-			sem_wait(&semNuevoProg);/*Este 1er semaforo espera que se cree un nuevo pcb y que mande signal para recien
-			 poder enviarlo a la cola de Ready*/
-			log_debug(ptrLog, "Se procede a pasar un pcb en estado New a la cola Ready");
-			t_pcb * aux = list_get(colaNew, 0);
-			list_remove(colaNew, 0);
-			log_debug(ptrLog, "Proceso %u pasa a la cola READY", aux->pcb_id);
-
-			pthread_mutex_lock(&mutex);
-			queue_push(colaReady, aux);
-			pthread_mutex_unlock(&mutex);
-
-			sem_post(&semNuevoPcbColaReady);
-		}
-		pthread_join(threadSocket, NULL);
-		pthread_join(hiloCpuOciosa, NULL);
-		pthread_join(threadPlanificador, NULL);
-		pthread_join(hiloPcbFinalizarError, NULL);
-		pthread_join(threadExit,NULL);
 
 	} else {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");
-		return -1;
+		returnInt = EXIT_FAILURE;
 	}
 
 	finalizarConexion(socketUMC);

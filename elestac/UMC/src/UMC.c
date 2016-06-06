@@ -286,39 +286,42 @@ void recibirPeticionesNucleo(){
 		log_info(ptrLog, "Esperando Peticion de Nucleo");
 		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
 
-		if (operacion == NUEVOPROGRAMA) {
-			t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
+		if(strcmp(mensajeRecibido, "ERROR") == 0) {
+			log_error(ptrLog, "No se recibio nada de Nucleo, se cierra la conexion");
+			finalizarConexion(socketClienteNucleo);
+		}else{
+			if (operacion == NUEVOPROGRAMA) {
+				t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
-			if(iniciarProg->tamanio > marcoXProc) {
-				log_info(ptrLog, "No se puede iniciar el Proceso %d porque supera la cantidad de paginas permitidas", iniciarProg->programID);
-				notificarProcesoNoIniciadoANucleo();
-			}else{
-				log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
-
-				uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
-
-				if (pudoSwap == SUCCESS) {
-					log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
-					log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
-					t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
-					notificarProcesoIniciadoANucleo(iniciarPrograma);
-				} else {
-					operacion = ERROR;
-					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+				if(iniciarProg->tamanio > marcoXProc) {
+					log_info(ptrLog, "No se puede iniciar el Proceso %d porque supera la cantidad de paginas permitidas", iniciarProg->programID);
 					notificarProcesoNoIniciadoANucleo();
-				}
-			}
-		}else if (operacion == FINALIZARPROGRAMA) {
-			t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
-			uint32_t PID = finalizar->programID;
-			log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i", PID);
-			finalizarPrograma(PID);
+				}else{
+					log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
 
-		} else {
-			operacion = ERROR;
-			log_info(ptrLog, "Nucleo no entiendo que queres, atte: UMC");
-			enviarMensajeANucleo("Error, operacion no reconocida", operacion);
-			break;
+					uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+
+					if (pudoSwap == SUCCESS) {
+						log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
+						log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
+						t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
+						notificarProcesoIniciadoANucleo(iniciarPrograma);
+					} else {
+						operacion = ERROR;
+						log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+						notificarProcesoNoIniciadoANucleo();
+					}
+				}
+			}else if (operacion == FINALIZARPROGRAMA) {
+				t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
+				uint32_t PID = finalizar->programID;
+				log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i", PID);
+				finalizarPrograma(PID);
+
+			} else {
+				operacion = ERROR;
+				break;
+			}
 		}
 	}
 }
