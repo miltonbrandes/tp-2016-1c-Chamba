@@ -40,7 +40,6 @@ uint32_t marcos, marcosSize, marcoXProc, entradasTLB, retardo;
 char *algoritmoReemplazo;
 char *ipSwap;
 int i = 0;
-char comando;
 t_config* config;
 
 //Variables frames, tlb, tablas
@@ -91,14 +90,14 @@ int main() {
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 		pthread_create(&hiloConexiones, NULL, (void *) manejarConexionesRecibidas, NULL);
 		crearConsola();
-
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 		return -1;
 	}
-	//pthread_join(hiloConexiones, NULL);
 	log_info(ptrLog, "Proceso UMC finalizado");
+//	pthread_join(hiloConexiones, NULL);
 	free(config);
+	finalizarTLB();
 	finalizarConexion(socketSwap);
 	finalizarConexion(socketReceptorNucleo);
 	finalizarConexion(socketReceptorCPU);
@@ -1184,19 +1183,17 @@ void retardar(uint32_t retardoNuevo) {
 void flushMemory(uint32_t pid) {
 	t_tabla_de_paginas * tablaAModificar = buscarTablaDelProceso(pid);
 	int i;
-	for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
-		t_registro_tabla_de_paginas * registro = list_get(
-				tablaAModificar->tablaDePaginas, i);
-
-		// SOLO LAS PAGINAS EN UMC O TODAS SE MODIFICAN?
-		registro->modificado = 1;
+for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
+			t_registro_tabla_de_paginas * registro = list_get(tablaAModificar->tablaDePaginas, i);
+			// SOLO LAS PAGINAS EN UMC O TODAS SE MODIFICAN?
+			registro->modificado = 1;
 
 //		if (registro->estaEnUMC == 1) {
 //			registro->modificado = 1;
 //		}
-		free(registro);
-		printf("Se realizo flush a las TP del PID:%d", pid);
-	}
+			free(registro);
+			printf("Se realizo flush a las TP del PID:%d", pid);
+		}
 }
 
 void dumpDeUnPID(uint32_t pid) {
@@ -1258,7 +1255,7 @@ void dump(uint32_t pid) {
 
 void crearConsola() {
 	char* comando = malloc(30);
-	uint32_t parametro;
+	uint32_t parametro = malloc(sizeof(uint32_t));
 	while (1) {
 		printf("Ingrese un comando: ");
 		scanf("%s %s", comando, parametro);
@@ -1279,6 +1276,8 @@ void crearConsola() {
 				printf("\nComando no reconocido.\n\n");
 			}
 		}
+	free(comando);
+	free(parametro);
 }
 
 

@@ -26,6 +26,10 @@ t_log* ptrLog;
 espacioLibre* libre;
 espacioOcupado* ocupado;
 FILE* archivo_control;
+t_config* config;
+t_list* listaOcupados;
+t_list* listaLibres;
+char * holes;
 
 //Variables de configuracion
 int puertoTCPRecibirConexiones;
@@ -46,7 +50,6 @@ int crearLog() {
 }
 
 int cargarValoresDeConfig() {
-	t_config* config;
 	config = config_create(getenv("SWAP_CONFIG"));
 
 	//int tamanoPagina, cantidadPaginas;
@@ -179,7 +182,7 @@ void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* li
 
 int crearArchivoControlMemoria() {
 	int tamanoArchivo = (cantidadPaginas) * (tamanoPagina);
-	char * holes = malloc(tamanoArchivo);
+	holes = malloc(tamanoArchivo);
 	holes = string_repeat('\0', tamanoArchivo);
 
 	int fd = open(nombre_swap, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -609,7 +612,7 @@ void liberarMemoria(t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pid
 
 t_list* crearListaLibre(int cantPaginas)
 {
- t_list* listaLibres = list_create();
+ listaLibres = list_create();
  espacioLibre* particionCompleta=malloc(sizeof(espacioLibre));
  particionCompleta->posicion_inicial = 0;
  particionCompleta->cantidad_paginas = cantPaginas;
@@ -619,7 +622,7 @@ t_list* crearListaLibre(int cantPaginas)
 
 t_list* crearListaOcupados()
 {
-	 t_list* listaOcupados = list_create();
+	listaOcupados = list_create();
 	 return listaOcupados;
 }
 
@@ -656,6 +659,10 @@ int main() {
 	}
 	printf("Proceso SWAP finalizado.\n\n");
 	log_info(ptrLog, "Proceso SWAP finalizado.\n");
+	free(config);
+	free(listaOcupados);
+	free(listaLibres);
+	free(holes);
 	finalizarConexion(socketReceptorUMC);
 	fclose(archivo_control);
 	eliminarListas();
