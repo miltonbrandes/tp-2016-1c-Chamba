@@ -112,24 +112,12 @@ int crearSocketCliente(char* direccion, int puerto) {
 	return socketConexion;
 }
 
-int enviarMensaje(int socket, char *mensaje) {
-	uint32_t id = 2;
-	uint32_t longitud = strlen(mensaje);
-	uint32_t operacion = 1;
-	int sendBytes = enviarDatos(socket, mensaje, longitud, operacion, id);
-	if (sendBytes < 0) {
-		log_error(ptrLog, "Error al escribir");
-		return -1;
-	}
-	log_info(ptrLog, "Mensaje Enviado");
-	return 0;
-}
 
 int recibirMensaje(int socket) {
 	uint32_t id;
-	uint32_t operacion;
+	uint32_t op;
 
-	char *respuestaServidor = recibirDatos(socket, &operacion, &id);
+	char *respuestaServidor = recibirDatos(socket, &op, &id);
 	log_info(ptrLog, "Recibo mensaje");
 
 	if(strcmp(respuestaServidor, "ERROR") == 0) {
@@ -143,26 +131,26 @@ int recibirMensaje(int socket) {
 			return -1;
 		}
 	}else{
-		manejarMensajeRecibido(id, operacion, respuestaServidor);
+		manejarMensajeRecibido(id, op, respuestaServidor);
 	}
 
 	return 0;
 }
 
 //Veo quien me mando mensajes
-void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje) {
+void manejarMensajeRecibido(uint32_t id, uint32_t op, char *mensaje) {
 	switch (id) {
 	case NUCLEO:
-		manejarMensajeRecibidoNucleo(operacion, mensaje);
+		manejarMensajeRecibidoNucleo(op, mensaje);
 		break;
 	case UMC:
-		manejarMensajeRecibidoUMC(operacion, mensaje);
+		manejarMensajeRecibidoUMC(op, mensaje);
 		break;
 	}
 }
 
-void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje) {
-	switch (operacion) {
+void manejarMensajeRecibidoNucleo(uint32_t op, char *mensaje) {
+	switch (op) {
 	case QUANTUM_PARA_CPU:
 		recibirQuantum(mensaje);
 		break;
@@ -183,8 +171,8 @@ void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje) {
 	}
 }
 
-void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje) {
-	switch (operacion) {
+void manejarMensajeRecibidoUMC(uint32_t op, char *mensaje) {
+	switch (op) {
 	case ENVIAR_TAMANIO_PAGINA_A_CPU:
 		recibirTamanioPagina(mensaje);
 		break;
@@ -366,8 +354,8 @@ char * solicitarProximaInstruccionAUMC() {
 		return NULL;
 	} else {
 		log_info(ptrLog, "Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
-		uint32_t operacion, id;
-		char* instruccionRecibida = recibirDatos(socketUMC, &operacion, &id);
+		uint32_t op, id;
+		char* instruccionRecibida = recibirDatos(socketUMC, &op, &id);
 		t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
 		return instruccion->instruccion;
 	}

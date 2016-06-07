@@ -26,6 +26,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_pid_counter = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
+sem_t semFinalizoDeImprimir;
 pthread_t hiloCpuOciosa;
 pthread_t threadPlanificador;
 pthread_t threadSocket;
@@ -65,4 +66,6 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
 int indiceConsolaEnLista(uint32_t pid);
 
+
 #endif /* SRC_NUCLEO_H_ */
+

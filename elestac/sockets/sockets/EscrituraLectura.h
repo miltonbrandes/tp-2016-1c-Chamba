@@ -17,7 +17,6 @@ typedef enum {
 
 typedef enum {
 	QUANTUM,
-	IO,
 	EXIT,
 	IMPRIMIR_VALOR,
 	IMPRIMIR_TEXTO,
@@ -26,7 +25,8 @@ typedef enum {
 	WAIT,
 	SIGNAL,
 	SIGUSR,
-	SIGUSR1
+	SIGUSR1,
+	IO,
 } cpu_ops;
 typedef enum {
 	ENVIAR_TAMANIO_PAGINA_A_CPU,

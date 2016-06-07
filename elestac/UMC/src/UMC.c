@@ -155,7 +155,7 @@ void enviarMensajeACpu(char *mensaje, int operacion, int socketCpu) {
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
-	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 0, 0);
+	ptrLog = log_create(getenv("UMC_LOG"), "UMC", 1, 0);
 	if (ptrLog) {
 		return 1;
 	} else {
@@ -533,6 +533,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->modificado = 1;
 					frame->bitDeReferencia = 1;
 				} else {
+					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
 					char *buffAux = malloc(tamanio);
@@ -988,12 +989,13 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 			aInsertar->indice = list_size(TLB) - 1;
 			//Actualizo el Frame en Swap antes de eliminar
 			t_tlb * tlbAEliminar = list_get(TLB, 0);
-			pthread_mutex_lock(&accesoAFrames);
-			t_frame * frameSwap = list_get(frames, tlbAEliminar->numFrame);
-			frameSwap->contenido = malloc(marcosSize);
-			memcpy(frameSwap->contenido, tlbAEliminar->contenido, marcosSize);
-			pthread_mutex_unlock(&accesoAFrames);
-
+			if(tlbAEliminar->numFrame != -1){
+				pthread_mutex_lock(&accesoAFrames);
+				t_frame * frameSwap = list_get(frames, tlbAEliminar->numFrame);
+				frameSwap->contenido = malloc(marcosSize);
+				memcpy(frameSwap->contenido, tlbAEliminar->contenido, marcosSize);
+				pthread_mutex_unlock(&accesoAFrames);
+			}
 			//Elimino la primera entrada => La mas vieja
 			log_info(ptrLog, "Se elimina la primer entrada de la TLB", pagina, pid);
 			pthread_mutex_lock(&accesoATLB);
@@ -1020,6 +1022,12 @@ void tlbFlushDeUnPID(int PID) {
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
 			if (registro->pid == PID) {
+				pthread_mutex_lock(&accesoAFrames);
+				t_frame * frameSwap = list_get(frames, registro->numFrame);
+				frameSwap->contenido = malloc(marcosSize);
+				memcpy(frameSwap->contenido, registro->contenido, marcosSize);
+				pthread_mutex_unlock(&accesoAFrames);
+				//log_info(ptrLog, "Actualize la tlb en umc porque hubo un flush");
 				registro->pid = -1;
 				registro->indice = -1;
 				registro->numPag = 0;
@@ -1100,9 +1108,16 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 		frame->disponible = 0;
 		frame->bitDeReferencia = 1;
 		frame->numeroFrame = posibleProximaVictimaClock;
-
 		chequearSiHayQueEscribirEnSwapLaPagina(posibleProximaVictimaClock);
 
+		int posEnTlb = pagEstaEnTLB(pid, pagina);
+		if(posEnTlb < list_size(TLB) && posEnTlb != -1){
+			//la tengo que eliminar
+			pthread_mutex_lock(&accesoATLB);
+			t_tlb * aEliminar =	list_get(TLB, posEnTlb);
+			list_remove(TLB, aEliminar->indice);
+			pthread_mutex_unlock(&accesoATLB);
+		}
 		pthread_mutex_lock(&accesoAFrames);
 		list_remove(frames, posibleProximaVictimaClock);
 		list_add_in_index(frames, posibleProximaVictimaClock, frame);
@@ -1168,6 +1183,7 @@ int buscarFrameLibre() {
 		t_frame * frame = list_get(frames, i) ;
 		if(frame->disponible == 1) {
 			j = i;
+			break;
 		}
 	}
 	pthread_mutex_unlock(&accesoAFrames);
