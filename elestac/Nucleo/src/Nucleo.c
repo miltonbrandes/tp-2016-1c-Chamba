@@ -221,26 +221,20 @@ void datosEnSocketReceptorCPU(int nuevoSocketConexion) {
 	uint32_t operacion;
 
 	buffer = recibirDatos(socket, &operacion, &id);
-	int bytesRecibidos = strlen(buffer);
-
-	if (bytesRecibidos < 0) {
-		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket CPU");
-	} else if (bytesRecibidos == 0) {
+	if (strcmp("ERROR", buffer) == 0) {
 		log_info(ptrLog, "No se recibieron datos en el Socket CPU");
 	} else {
-		if (strcmp("ERROR", buffer) == 0) {
+		log_info(ptrLog, "Bytes recibidos desde una CPU: %s", buffer);
+		char *mensajeParaCPU = "Este es un mensaje para vos, CPU\0";
+		int bytesEnviados = enviarDatos(nuevoSocketConexion, buffer, (uint32_t) strlen(mensajeParaCPU), operacion, id);
 
-		} else {
-			log_info(ptrLog, "Bytes recibidos desde una CPU: %s", buffer);
-			char *mensajeParaCPU = "Este es un mensaje para vos, CPU\0";
-			int bytesEnviados = enviarDatos(nuevoSocketConexion, buffer,
-					(uint32_t) strlen(mensajeParaCPU), operacion, id);
-
-			if (bytesEnviados < 0) {
-				log_error(ptrLog, "Error al enviar datos a cpu");
-			}
+		if (bytesEnviados < 0) {
+			log_error(ptrLog, "Error al enviar datos a cpu");
 		}
+
+		free(mensajeParaCPU);
 	}
+	free(buffer);
 }
 
 int datosEnSocketUMC() {
@@ -251,18 +245,17 @@ int datosEnSocketUMC() {
 
 	if (strcmp("ERROR", buffer) == 0) {
 		finalizarConexion(socketUMC);
+		free(buffer);
 		return -1;
 	} else {
 		tamanioMarcos = deserializarUint32(buffer);
 		log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioMarcos);
 	}
 
-	free(buffer);
 	return 0;
 }
 
-void operacionesConVariablesCompartidas(char operacion, char *buffer,
-		uint32_t socketCliente) {
+void operacionesConVariablesCompartidas(char operacion, char *buffer, uint32_t socketCliente) {
 	log_debug(ptrLog, "Se ingresa a operacionVariablesCompartidas");
 	t_op_varCompartida * varCompartida;
 	t_variable_compartida * varCompartidaEnLaLista;
@@ -300,7 +293,6 @@ void operacionesConVariablesCompartidas(char operacion, char *buffer,
 		free(bufferLeerVarCompartida);
 		break;
 	}
-	pthread_mutex_unlock(&mutex_cpu);
 }
 
 void imprimirProcesoNew(t_pcb* pcb) {
@@ -357,10 +349,12 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 
 		unPcb = crearPCB(buffer, socketUMC);
 		if(unPcb == NULL){
+			//Que carajos hace este codigo
 			int bytesEnviados = enviarDatos(socketConexion, buffer,(uint32_t) strlen(buffer), ERROR, id);
 			if (bytesEnviados < 0) {
 				log_error(ptrLog, "Error al enviar los datos");
 			}
+			free(buffer);
 			return;
 		}
 
@@ -397,6 +391,7 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 			sem_post(&semNuevoProg);
 		}
 	}
+	free(buffer);
 }
 
 void finalizarConexionDeUnSocketEnParticular(int socketFor) {
@@ -436,7 +431,7 @@ void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion) {
 	log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
 	pthread_mutex_lock(&mutex_cpu);
 	comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
-	//pthread_mutex_unlock(&mutex_cpu);
+	pthread_mutex_unlock(&mutex_cpu);
 }
 
 void escucharPuertos() {
@@ -494,14 +489,13 @@ void escucharPuertos() {
 				int socketFor;
 				for (socketFor = 0; socketFor < (socketMaximo + 1); socketFor++) {
 					if (FD_ISSET(socketFor, &tempSockets)) {
-
-
 						char * buffer = recibirDatos(socketFor, &operacion, &id);
 						if (strcmp("ERROR", buffer) == 0) {
 							FD_CLR(socketFor, &tempSockets);
 							FD_CLR(socketFor, &sockets);
 							finalizarConexionDeUnSocketEnParticular(socketFor);
 							log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
+							free(buffer);
 						} else {
 							if (id == CPU) {
 								recibirDatosDeSocketCPU(buffer, socketFor, operacion);
@@ -521,11 +515,13 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		unCliente->fueAsignado = false;
 		unCliente->programaCerrado = false;
 		sem_post(&semCpuOciosa);
+		free(buffer);
 		return;
 	}
 	if (unCliente->programaCerrado
 			&& (operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO
 					|| operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
+		free(buffer);
 		return;
 	t_pcb* unPCB;
 	switch (operacion) {
@@ -535,16 +531,15 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
 		pthread_mutex_lock(&mutex);
 		queue_push(colaReady, (void*) unPCB);
+		sem_post(&semNuevoPcbColaReady);
 		pthread_mutex_unlock(&mutex);
 		log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",
 				unPCB->pcb_id);
 		if (cpuAcerrar != unCliente->socket) {
 			unCliente->fueAsignado = false;
 			sem_post(&semCpuOciosa);
-			sem_post(&semNuevoPcbColaReady);
 		}else{
 			sem_post(&semNuevoPcbColaReady);
-			pthread_mutex_unlock(&mutex_cpu);
 		}
 		free(buffer);
 		break;
@@ -611,7 +606,6 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		queue_push(colaImprimibles, imprimi);
 		sem_post(&semMensajeImpresion);
 		sem_wait(&semFinalizoDeImprimir);
-		pthread_mutex_unlock(&mutex_cpu);
 		break;
 	}
 	case IMPRIMIR_TEXTO: {
@@ -622,16 +616,13 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		queue_push(colaImprimibles, imprimir);
 		sem_post(&semMensajeImpresion);
 		sem_wait(&semFinalizoDeImprimir);
-		pthread_mutex_unlock(&mutex_cpu);
 		break;
 	}
 	case LEER_VAR_COMPARTIDA:
-		operacionesConVariablesCompartidas(LEER_VAR_COMPARTIDA, buffer,
-				unCliente->socket);
+		operacionesConVariablesCompartidas(LEER_VAR_COMPARTIDA, buffer, unCliente->socket);
 		break;
 	case ASIG_VAR_COMPARTIDA:
-		operacionesConVariablesCompartidas(ASIG_VAR_COMPARTIDA, buffer,
-				unCliente->socket);
+		operacionesConVariablesCompartidas(ASIG_VAR_COMPARTIDA, buffer, unCliente->socket);
 		break;
 	case WAIT:
 		operacionesConSemaforos(WAIT, buffer, unCliente);
@@ -642,7 +633,6 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 	case SIGUSR:
 		cpuAcerrar = unCliente->socket;
 		free(buffer);
-		pthread_mutex_unlock(&mutex_cpu);
 		break;
 	}
 }
@@ -674,7 +664,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer,
 			unPcbBlocked = malloc(sizeof(t_pcbBlockedSemaforo));
 			bufferPCB = recibirDatos(unCliente->socket, &operacion, &id);
 			unPcbBlocked->nombreSemaforo = semaforo->nombre;
-			unPcbBlocked->pcb = deserializar_pcb((char *) &bufferPCB);
+			unPcbBlocked->pcb = deserializar_pcb(bufferPCB);
 			free(bufferPCB);
 			list_add(colaBloqueados, unPcbBlocked);
 			log_debug(ptrLog,
@@ -692,8 +682,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer,
 		if (semaforo->valor < 0) {
 
 			_Bool _obtenerPcbBlockeado(t_pcbBlockedSemaforo *unPcbBlockeado) {
-				return (strcmp(unPcbBlockeado->nombreSemaforo, semaforo->nombre)
-						== 0);
+				return (strcmp(unPcbBlockeado->nombreSemaforo, semaforo->nombre) == 0);
 			}
 			t_pcbBlockedSemaforo* pcbBlockeado;
 			pcbBlockeado = list_find(colaBloqueados,
@@ -750,7 +739,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	else{
 		iniciarProg->tamanio = ((strlen(programa) / tamanioMarcos) + tamanioStack);
 	}
-	iniciarProg->codigoAnsisop = malloc(strlen(programa));
+	iniciarProg->codigoAnsisop = malloc(strlen(programa) + 1);
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
 	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
@@ -803,9 +792,9 @@ void *hiloClienteOcioso() {
 	while (1) {
 		// Tengo la colaReady con algun PCB, compruebo si tengo un cliente ocioso..
 		sem_wait(&semNuevoPcbColaReady);
-		log_debug(ptrLog, "\nPase semaforo semNuevoPcbColaReady\n");
+		log_debug(ptrLog, "Pase semaforo semNuevoPcbColaReady");
 		sem_wait(&semCpuOciosa);
-		log_debug(ptrLog, "\nPase semaforo semClienteOcioso\n");
+		log_debug(ptrLog, "Pase semaforo semClienteOcioso");
 		bool _sinPCB(t_clienteCpu * unCliente) {
 			return unCliente->fueAsignado == false;
 		}
@@ -954,6 +943,7 @@ void* vaciarColaExit(){
 		}else{
 			log_info(ptrLog,"Borrados las paginas del programa:%d",aux->pcb_id);
 		}
+		free(finalizarProg);
 		free(aux);
 		pthread_mutex_unlock(&mutex_cpu);
 		pthread_mutex_unlock(&mutex_exit);

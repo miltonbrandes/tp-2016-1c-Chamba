@@ -121,6 +121,7 @@ int recibirMensaje(int socket) {
 	log_info(ptrLog, "Recibo mensaje");
 
 	if(strcmp(respuestaServidor, "ERROR") == 0) {
+		free(respuestaServidor);
 		if (socket == socketNucleo) {
 			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
 			finalizarConexion(socketNucleo);
@@ -186,6 +187,7 @@ void manejarMensajeRecibidoUMC(uint32_t op, char *mensaje) {
 //Manejo de mensajes recibidos
 void recibirPCB(char *mensaje) {
 	pcb = deserializar_pcb(mensaje);
+	free(mensaje);
 	setPCB(pcb);
 	notificarAUMCElCambioDeProceso(pcb->pcb_id);
 	comenzarEjecucionDePrograma();
@@ -196,27 +198,33 @@ void recibirQuantum(char *mensaje) {
 	quantum = estructuraInicial->Quantum;
 	quantumSleep = estructuraInicial->RetardoQuantum;
 	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d\n", quantum, quantumSleep);
+	free(mensaje);
 }
 
 void recibirTamanioPagina(char *mensaje) {
 	tamanioPagina = deserializarUint32(mensaje);
 	log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioPagina);
+	free(mensaje);
 }
 
 void recibirValorVariableCompartida(char *mensaje) {
 
+	free(mensaje);
 }
 
 void recibirAsignacionVariableCompartida(char *mensaje) {
 
+	free(mensaje);
 }
 
 void recibirSignalSemaforo(char *mensaje) {
 
+	free(mensaje);
 }
 
 void recibirInstruccion(char *mensaje) {
 
+	free(mensaje);
 }
 //Fin manejo de mensajes recibidos
 
@@ -239,12 +247,13 @@ void finalizarEjecucionPorExit() {
 	int bytesEnviados = enviarDatos(socketNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, EXIT, CPU);
 	if(bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Finalizacion a Nucleo");
-
 	}
 	else{
 		log_info(ptrLog, "Programa Finalizado con exito");
 	}
+	free(buffer_tamanio);
 }
+
 void finalizarEjecucionPorIO(){
 	operacion = NOTHING;
 	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
@@ -252,7 +261,9 @@ void finalizarEjecucionPorIO(){
 	if(bytesEnviados <= 0){
 		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por io a nucleo");
 	}
+	free(buffer_tamanio);
 }
+
 void finalizarEjecucionPorWait(){
 	operacion = NOTHING;
 	t_buffer_tamanio* buffer_tamanio = serializar_pcb(pcb);
@@ -260,6 +271,7 @@ void finalizarEjecucionPorWait(){
 	if(bytesEnviados <= 0){
 		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por wait a nucleo");
 	}
+	free(buffer_tamanio);
 }
 
 void finalizarEjecucionPorQuantum() {
@@ -269,6 +281,7 @@ void finalizarEjecucionPorQuantum() {
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
+	free(message);
 }
 
 void limpiarInstruccion(char * instruccion) {
@@ -357,6 +370,7 @@ char * solicitarProximaInstruccionAUMC() {
 		uint32_t op, id;
 		char* instruccionRecibida = recibirDatos(socketUMC, &op, &id);
 		t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
+		free(instruccionRecibida);
 		return instruccion->instruccion;
 	}
 }

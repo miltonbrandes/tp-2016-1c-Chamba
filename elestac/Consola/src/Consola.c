@@ -134,6 +134,7 @@ int main(int argc, char **argv) {
 						&id);
 				if (strlen(server_reply) < 0) {
 					log_error(ptrLog, "Error al recibir datos del servior.");
+					free(server_reply);
 					return EXIT_FAILURE;
 				} else if (strcmp("ERROR", server_reply) == 0) {
 

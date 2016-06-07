@@ -109,7 +109,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 		int valueAsInt = atoi(instruccion->instruccion);
 		memcpy(&valor, &valueAsInt, sizeof(t_valor_variable));
 		log_debug(ptrLog, "El valor es %d", valor);
-
+		free(buffer);
 	}
 	free(solicitar);
 	return valor;
@@ -131,6 +131,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
 	if(resp != NULL && resp[0] == -1){
 		operacion = ERROR;
+		free(resp);
 		free(enviar->buffer);
 		free(enviar);
 		return;
@@ -142,6 +143,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 			log_error(ptrLog, "Variable no asignada");
 		}
 	}
+	free(resp);
 	free(enviar->buffer);
 	free(enviar);
 	return;
@@ -157,10 +159,9 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	if (enviarDatos(socketNucleo, variable, lon, operacion, id) < 0)
 	return -1;
 	buffer = recibirDatos(socketNucleo, &operacion, &id);
-	if (strlen(buffer) < 0)
-		return -1;
 
 	if (strcmp("ERROR", buffer) == 0) {
+		free(buffer);
 		return -1;
 	} else {
 		memcpy(&valor, buffer, sizeof(t_valor_variable));

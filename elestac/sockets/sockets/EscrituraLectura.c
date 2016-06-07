@@ -42,7 +42,7 @@ char* recibirDatos(int socket, uint32_t ** op, uint32_t ** id) {
 			memcpy(&longitud, buffer + (2 * sizeof(uint32_t)), sizeof(uint32_t));
 		}
 		free(buffer);
-		buffer = (char *) malloc(longitud);
+		buffer = malloc(longitud);
 	} else {
 		free(buffer);
 		return "ERROR";

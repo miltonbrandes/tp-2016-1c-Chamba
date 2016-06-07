@@ -237,7 +237,6 @@ t_iniciar_programa * deserializarIniciarPrograma(char * buffer) {
 }
 
 char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int serverSocket) {
-	char * buffer = malloc(50);
 	char* respuestaOperacion;
 	uint32_t id;
 	t_iniciar_programa* est;
@@ -253,9 +252,9 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		}
 		//####		Recibo buffer pedidos		####
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
-		int bytesRecibidos = strlen(respuestaOperacion);
-		if (bytesRecibidos < 0) {
+		if (strcmp(respuestaOperacion, "ERROR") == 0) {
 			free(buffer_tamanio);
+			free(respuestaOperacion);
 			return NULL;
 		}
 
@@ -273,6 +272,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		if(strcmp(respuestaOperacion, "ERROR") == 0) {
 			free(buffer_tamanio);
+			free(respuestaOperacion);
 			return NULL;
 		}else{
 			return respuestaOperacion;
@@ -301,11 +301,7 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		}
 		//Recibo el valor respuesta de la operación
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
-		if(strcmp(respuestaOperacion, "ERROR") == 0) {
-			//log_error(ptrLog, "Error al recibir respuesta de UMC al solicitar paginas");
-		}else{
-			return respuestaOperacion;
-		}
+		free(buffer_tamanio);
 
 		break;
 	case FINALIZARPROGRAMA:
@@ -318,8 +314,8 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		}
 		//Recibo respuesta
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
-		int bytesRecibidos4 = strlen(respuestaOperacion);
-		if (bytesRecibidos4 < 0) {
+		if (strcmp(respuestaOperacion, "ERROR") == 0) {
+			free(respuestaOperacion);
 			free(buffer_tamanio);
 			return NULL;
 		}
@@ -330,7 +326,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		break;
 	}
 
-	free(buffer_tamanio);
 	return respuestaOperacion;
 }
 
@@ -942,6 +937,15 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 //			offset += tamanioUint32;
 //		}
 	}
+
+	for(a = 0; a < list_size(tamanioStackStack); a++) {
+		t_tamanio_stack_stack * tamanioStack = list_get(tamanioStackStack, a);
+		t_stack * stack = tamanioStack->stack;
+		list_remove(tamanioStackStack, a);
+		free(stack);
+		free(tamanioStack);
+	}
+	free(tamanioStackStack);
 
 	t_buffer_tamanio *bufferTamanio = malloc((sizeof(uint32_t)*2) + tamanioTotalBuffer);
 	bufferTamanio->tamanioBuffer = tamanioTotalBuffer + sizeof(uint32_t);

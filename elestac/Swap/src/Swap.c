@@ -150,30 +150,20 @@ int init() {
 void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* listaDeOcupados) {
 	do {
 		log_info(ptrLog, "Esperando recibir alguna peticion de UMC");
-		char* buffer;
 		uint32_t id;
 		uint32_t operacion;
 
-		buffer = recibirDatos(socketUMC, &operacion, &id);
-		int bytesRecibidos = strlen(buffer);
+		char * buffer = recibirDatos(socketUMC, &operacion, &id);
 
-		if (bytesRecibidos < 0) {
-			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC\0");
+		if (strcmp("ERROR", buffer) == 0) {
+			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC");
 			finalizarConexion(socketUMC);
-			return;
-		} else if (bytesRecibidos == 0) {
-			log_info(ptrLog, "No se recibio ningun byte de UMC");
-			//Aca matamos Socket UMC
-			finalizarConexion(socketUMC);
+			free(buffer);
 			return;
 		} else {
-			if (strcmp("ERROR", buffer) == 0) {
+			int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);
+			if(!interpretado){
 				return;
-			} else {
-				int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);
-				if(!interpretado){
-					return;
-				}
 			}
 		}
 
@@ -314,6 +304,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 		break;
 		default:
 			log_error(ptrLog, "Mensaje de UMC no comprendido");
+			free(buffer);
 			return 0;
 			break;
 	}

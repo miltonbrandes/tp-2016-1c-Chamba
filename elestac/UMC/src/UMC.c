@@ -289,6 +289,8 @@ void recibirPeticionesNucleo(){
 		if(strcmp(mensajeRecibido, "ERROR") == 0) {
 			log_error(ptrLog, "No se recibio nada de Nucleo, se cierra la conexion");
 			finalizarConexion(socketClienteNucleo);
+			free(mensajeRecibido);
+			return;
 		}else{
 			if (operacion == NUEVOPROGRAMA) {
 				t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
@@ -320,8 +322,8 @@ void recibirPeticionesNucleo(){
 
 			} else {
 				operacion = ERROR;
-				break;
 			}
+			free(mensajeRecibido);
 		}
 	}
 }
@@ -438,50 +440,56 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 		log_debug(ptrLog, "A la espera de alguna solicitud de la CPU %d", cpuEnAccion->numCpu);
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
-		if (operacion == LEER) {
-			t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
+		if(strcmp(mensajeRecibido, "ERROR") == 0) {
+			free(mensajeRecibido);
+			finalizarConexion(cpuEnAccion->socket);
+			free(cpuEnAccion);
+		}else{
+			if (operacion == LEER) {
+				t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
 
-			uint32_t pagina = leer->pagina;
-			uint32_t start = leer->start;
-			uint32_t offset = leer->offset;
-			log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
+				uint32_t pagina = leer->pagina;
+				uint32_t start = leer->start;
+				uint32_t offset = leer->offset;
+				log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
 
-			enviarDatoACPU(cpuEnAccion, pagina, start, offset);
+				enviarDatoACPU(cpuEnAccion, pagina, start, offset);
 
-			free(leer);
-		}else if (operacion == ESCRIBIR) {
-			t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
+				free(leer);
+			}else if (operacion == ESCRIBIR) {
+				t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
 
-			uint32_t pagina = escribir->pagina;
-			uint32_t tamanio = escribir->tamanio;
-			uint32_t offset = escribir->offset;
-			char* buffer = escribir->buffer;
-			log_debug(ptrLog, "Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s", cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
+				uint32_t pagina = escribir->pagina;
+				uint32_t tamanio = escribir->tamanio;
+				uint32_t offset = escribir->offset;
+				char* buffer = escribir->buffer;
+				log_debug(ptrLog, "Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s", cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
 
-			escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
+				escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 
-			free(escribir);
-		}else if (operacion == CAMBIOPROCESOACTIVO){
+				free(escribir);
+			}else if (operacion == CAMBIOPROCESOACTIVO){
 
-			if(cpuEnAccion->procesoActivo != -1){
-				tlbFlushDeUnPID(cpuEnAccion->procesoActivo);
+				if(cpuEnAccion->procesoActivo != -1){
+					tlbFlushDeUnPID(cpuEnAccion->procesoActivo);
+				}
+
+				t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
+
+				uint32_t PID_Activo = procesoActivo->programID;
+				log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
+				cpuEnAccion->procesoActivo = PID_Activo;
+
+				free(procesoActivo);
+			} else {
+				operacion = ERROR;
+				log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
+				enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
+				break;
 			}
 
-			t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
-
-			uint32_t PID_Activo = procesoActivo->programID;
-			log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
-			cpuEnAccion->procesoActivo = PID_Activo;
-
-			free(procesoActivo);
-		} else {
-			operacion = ERROR;
-			log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
-			enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
-			break;
+			free(mensajeRecibido);
 		}
-
-		free(mensajeRecibido);
 	}
 }
 
@@ -872,6 +880,9 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 	t_buffer_tamanio * iniciarProgSerializado = serializarCheckEspacio(check);
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
 	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
+	free(iniciarProgSerializado->buffer);
+	free(iniciarProgSerializado);
+
 	uint32_t operacion;
 	uint32_t id;
 
@@ -879,6 +890,7 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
 
+	free(hayEspacio);
 	free(iniciarProgSerializado);
 	return pudoSwap;
 }
