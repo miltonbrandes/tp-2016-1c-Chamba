@@ -298,6 +298,7 @@ void operacionesConVariablesCompartidas(char operacion, char *buffer, uint32_t s
 		free(bufferLeerVarCompartida);
 		break;
 	}
+	pthread_mutex_unlock(&mutex_cpu);
 }
 
 void imprimirProcesoNew(t_pcb* pcb) {
@@ -436,7 +437,7 @@ void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion) {
 	log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
 	pthread_mutex_lock(&mutex_cpu);
 	comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
-	pthread_mutex_unlock(&mutex_cpu);
+	//pthread_mutex_unlock(&mutex_cpu);
 }
 
 void escucharPuertos() {
@@ -513,117 +514,136 @@ void escucharPuertos() {
 		}
 	}
 }
+void operacionQuantum(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
+	log_debug(ptrLog, "Se ingresa a operacionQuantum");
+			log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
+			unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
+			pthread_mutex_lock(&mutex);
+			queue_push(colaReady, (void*) unPCB);
+
+			pthread_mutex_unlock(&mutex);
+			log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",
+					unPCB->pcb_id);
+			if (cpuAcerrar != unCliente->socket) {
+				unCliente->fueAsignado = false;
+				sem_post(&semCpuOciosa);
+				sem_post(&semNuevoPcbColaReady);
+			}else{
+				sem_post(&semNuevoPcbColaReady);
+				pthread_mutex_unlock(&mutex_cpu);
+	}
+}
+
+void operacionIO(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
+	log_debug(ptrLog, "Se ingresa a operacionIO");
+	t_solicitudes *solicitud = malloc(sizeof(t_solicitudes));
+	t_dispositivo_io* opIO;
+	log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
+	opIO = deserializar_opIO(buffer);
+	unPCB = deserializar_pcb((char *) &buffer);
+	solicitud->pcb = unPCB;
+	solicitud->valor = opIO->tiempo;
+	bool _BuscarIO(t_dispositivo_io* element) {
+		return (strcmp(opIO->nombre, element->nombre) == 0);
+	}
+	t_IO * entradaSalida;
+	entradaSalida = list_find(listaDispositivosIO, (void*) _BuscarIO);
+	if (entradaSalida == NULL) {
+		log_error(ptrLog,
+			"Dispositivo IO no encontrado en archivo de configuracion");
+		log_debug(ptrLog, "Agregado el PCB_ID:%d a la cola Ready",
+			unPCB->pcb_id);
+		queue_push(colaReady, unPCB);
+		sem_post(&semNuevoPcbColaReady);
+	}else {
+		queue_push(entradaSalida->colaSolicitudes, solicitud);
+		sem_post(&entradaSalida->semaforo);
+	}
+	if (cpuAcerrar != unCliente->socket) {
+		unCliente->fueAsignado = false;
+		sem_post(&semCpuOciosa);
+	}
+}
+
+void operacionEXIT(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
+	log_debug(ptrLog, "Se ingresa a operacionExit");
+	log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
+	unPCB = deserializar_pcb(buffer); //debo deserializar el pcb que me envio la cpu
+	char* texto = "Se ha finalizado el programa correctamente";
+	t_imprimibles *imp = malloc(sizeof(uint32_t)*2+43);
+	imp->PCB_ID = unCliente->pcbAsignado->pcb_id;
+	imp->tipoDeValor = EXIT;
+	imp->valor = texto;
+	queue_push(colaImprimibles, imp);
+	sem_post(&semMensajeImpresion);
+	sem_wait(&semFinalizoDeImprimir);
+	log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %i", unPCB->pcb_id);
+	queue_push(colaExit, (void*) unPCB);
+	sem_post(&semProgExit);
+	pthread_mutex_unlock(&mutex_exit);
+	if (cpuAcerrar != unCliente->socket) {
+		unCliente->fueAsignado = false;
+		sem_post(&semCpuOciosa);
+	}
+}
+
+void imprimirTexto(t_clienteCpu* unCliente, char* buffer){
+	t_imprimibles* imprimir = malloc(sizeof(t_imprimibles));
+	imprimir->tipoDeValor = IMPRIMIR_TEXTO;
+	imprimir->valor = buffer;
+	imprimir->PCB_ID = unCliente->pcbAsignado->pcb_id;
+	queue_push(colaImprimibles, imprimir);
+	sem_post(&semMensajeImpresion);
+	sem_wait(&semFinalizoDeImprimir);
+	pthread_mutex_unlock(&mutex_cpu);
+}
+
+void imprimirValor(t_clienteCpu* unCliente, char* buffer){
+	t_imprimibles* imprimi = malloc(sizeof(t_imprimibles));
+	imprimi->tipoDeValor = IMPRIMIR_VALOR;
+	imprimi->valor = buffer;
+	imprimi->PCB_ID = unCliente->pcbAsignado->pcb_id;
+	queue_push(colaImprimibles, imprimi);
+	sem_post(&semMensajeImpresion);
+	sem_wait(&semFinalizoDeImprimir);
+	pthread_mutex_unlock(&mutex_cpu);
+	free(imprimi);
+}
 
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer) {
 	unCliente->socket = socketFor;
-	if (unCliente->programaCerrado
-			&& (operacion == QUANTUM || operacion == EXIT || operacion == IO)) {
+	if (unCliente->programaCerrado && (operacion == QUANTUM || operacion == EXIT || operacion == IO)) {
 		unCliente->fueAsignado = false;
 		unCliente->programaCerrado = false;
 		sem_post(&semCpuOciosa);
 		free(buffer);
 		return;
 	}
-	if (unCliente->programaCerrado
-			&& (operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO
-					|| operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
+	if (unCliente->programaCerrado && (operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO || operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
 		free(buffer);
 		return;
 	t_pcb* unPCB;
 	switch (operacion) {
 	case QUANTUM:
-		log_debug(ptrLog, "Se ingresa a operacionQuantum");
-		log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
-		unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
-		pthread_mutex_lock(&mutex);
-		queue_push(colaReady, (void*) unPCB);
-		sem_post(&semNuevoPcbColaReady);
-		pthread_mutex_unlock(&mutex);
-		log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",
-				unPCB->pcb_id);
-		if (cpuAcerrar != unCliente->socket) {
-			unCliente->fueAsignado = false;
-			sem_post(&semCpuOciosa);
-		}else{
-			sem_post(&semNuevoPcbColaReady);
-		}
+		operacionQuantum(unCliente, buffer, unPCB);
 		free(buffer);
 		break;
 	case IO:
-		log_debug(ptrLog, "Se ingresa a operacionIO");
-		t_solicitudes *solicitud = malloc(sizeof(t_solicitudes));
-		t_dispositivo_io* opIO;
-		log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
-		opIO = deserializar_opIO(buffer);
-
-		unPCB = deserializar_pcb((char *) &buffer);
-		solicitud->pcb = unPCB;
-		solicitud->valor = opIO->tiempo;
-
-		bool _BuscarIO(t_dispositivo_io* element) {
-			return (strcmp(opIO->nombre, element->nombre) == 0);
-		}
-		t_IO * entradaSalida;
-		entradaSalida = list_find(listaDispositivosIO, (void*) _BuscarIO);
-		if (entradaSalida == NULL) {
-			log_error(ptrLog,
-					"Dispositivo IO no encontrado en archivo de configuracion");
-			log_debug(ptrLog, "Agregado el PCB_ID:%d a la cola Ready",
-					unPCB->pcb_id);
-			queue_push(colaReady, unPCB);
-			sem_post(&semNuevoPcbColaReady);
-		} else {
-			queue_push(entradaSalida->colaSolicitudes, solicitud);
-			sem_post(&entradaSalida->semaforo);
-		}
-		if (cpuAcerrar != unCliente->socket) {
-			unCliente->fueAsignado = false;
-			sem_post(&semCpuOciosa);
-		}
+		operacionIO(unCliente, buffer, unPCB);
 		free(buffer);
 		break;
 	case EXIT:
-		log_debug(ptrLog, "Se ingresa a operacionExit");
-		log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
-		unPCB = deserializar_pcb(buffer); //debo deserializar el pcb que me envio la cpu
-		char* texto = "Se ha finalizado el programa correctamente";
-		t_imprimibles *imp = malloc(sizeof(uint32_t)*2+43);
-		imp->PCB_ID = unCliente->pcbAsignado->pcb_id;
-		imp->tipoDeValor = EXIT;
-		imp->valor = texto;
-		queue_push(colaImprimibles, imp);
-		sem_post(&semMensajeImpresion);
-		sem_wait(&semFinalizoDeImprimir);
-		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %i", unPCB->pcb_id);
-		queue_push(colaExit, (void*) unPCB);
-		sem_post(&semProgExit);
-		pthread_mutex_unlock(&mutex_exit);
-		if (cpuAcerrar != unCliente->socket) {
-			unCliente->fueAsignado = false;
-			sem_post(&semCpuOciosa);
-		}
+		operacionEXIT(unCliente, buffer, unPCB);
 		free(buffer);
 		break;
-	case IMPRIMIR_VALOR: {
-		t_imprimibles* imprimi = malloc(sizeof(t_imprimibles));
-		imprimi->tipoDeValor = IMPRIMIR_VALOR;
-		imprimi->valor = buffer;
-		imprimi->PCB_ID = unCliente->pcbAsignado->pcb_id;
-		queue_push(colaImprimibles, imprimi);
-		sem_post(&semMensajeImpresion);
-		sem_wait(&semFinalizoDeImprimir);
+	case IMPRIMIR_VALOR:
+		imprimirValor(unCliente, buffer);
+		free(buffer);
 		break;
-	}
-	case IMPRIMIR_TEXTO: {
-		t_imprimibles* imprimir = malloc(sizeof(t_imprimibles));
-		imprimir->tipoDeValor = IMPRIMIR_TEXTO;
-		imprimir->valor = buffer;
-		imprimir->PCB_ID = unCliente->pcbAsignado->pcb_id;
-		queue_push(colaImprimibles, imprimir);
-		sem_post(&semMensajeImpresion);
-		sem_wait(&semFinalizoDeImprimir);
+	case IMPRIMIR_TEXTO:
+		imprimirTexto(unCliente, buffer);
+		free(buffer);
 		break;
-	}
 	case LEER_VAR_COMPARTIDA:
 		operacionesConVariablesCompartidas(LEER_VAR_COMPARTIDA, buffer, unCliente->socket);
 		break;
@@ -804,8 +824,7 @@ void *hiloClienteOcioso() {
 		bool _sinPCB(t_clienteCpu * unCliente) {
 			return unCliente->fueAsignado == false;
 		}
-		t_clienteCpu *clienteSeleccionado = list_get(
-				list_filter(listaSocketsCPUs, (void*) _sinPCB), 0);
+		t_clienteCpu *clienteSeleccionado = list_get(list_filter(listaSocketsCPUs, (void*) _sinPCB), 0);
 		envioPCBaClienteOcioso(clienteSeleccionado);
 
 	}
@@ -999,6 +1018,12 @@ void hilosIO(void* entradaSalida)
 	}
 }
 
+void finHilosIo(void* entradaSalida){
+	if(pthread_join(hiloIO, NULL) != 0){
+		perror("No se pudo finalizar los threads de entrada salida");
+	}
+}
+
 void* hiloPCBaFinalizar() {
 	while (1) {
 		sem_wait(&semProgramaFinaliza);
@@ -1154,7 +1179,7 @@ int main() {
 			}else{
 				returnInt = EXIT_FAILURE;
 			}
-
+			list_iterate(listaDispositivosIO, (void*) finHilosIo);
 			pthread_join(threadSocket, NULL);
 			pthread_join(hiloCpuOciosa, NULL);
 			pthread_join(threadPlanificador, NULL);

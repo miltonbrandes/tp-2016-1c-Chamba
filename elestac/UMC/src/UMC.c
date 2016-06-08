@@ -881,15 +881,11 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
 	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
 	free(iniciarProgSerializado->buffer);
-	free(iniciarProgSerializado);
-
 	uint32_t operacion;
 	uint32_t id;
-
 	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
-
 	free(hayEspacio);
 	free(iniciarProgSerializado);
 	return pudoSwap;
