@@ -48,6 +48,7 @@ char* solicitarProximaInstruccionAUMC();
 void finalizarEjecucionPorExit();
 void finalizarEjecucionPorQuantum();
 void notificarAUMCElCambioDeProceso(uint32_t pid);
+void freePCB();
 
 t_list * crearRequestsParaUMC();
 

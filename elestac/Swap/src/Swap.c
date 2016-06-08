@@ -236,6 +236,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 				{
 					log_error(ptrLog, "Ocurrio un error al Notificar a UMC que se rechazo el Proceso %d.", checkEspacio->pid);
 				}
+				free(buffer_tamanio->buffer);
 				free(buffer_tamanio);
 				free(checkEspacio);
 				free(buffer);
@@ -246,6 +247,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 				if(bytesEnviados <= 0) {
 					log_error(ptrLog, "Ocurrio un error al Notificar a UMC que se acepto el Proceso %d.", checkEspacio->pid);
 				}
+				free(buffer_tamanio->buffer);
 				free(buffer_tamanio);
 				free(checkEspacio);
 				free(buffer);
@@ -265,6 +267,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			}
 			free(buffer);
 			free(finalizarPrograma);
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 		break;
 		case LEER:
@@ -283,6 +286,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			}
 			free(buffer);
 			free(paginaDeSwap);
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			free(leido);
 		break;
@@ -298,6 +302,7 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 				log_error(ptrLog, "Ocurrio un error al Notificar a UMC que se escribio la Pagina %d del Proceso %d.", escritura->paginaProceso, escritura->pid);
 			}
 			free(escritura);
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			free(buffer);
 			break;

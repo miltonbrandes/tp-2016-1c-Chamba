@@ -247,31 +247,38 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
 		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, LEER, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			return NULL;
 		}
 		//####		Recibo buffer pedidos		####
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
 		if (strcmp(respuestaOperacion, "ERROR") == 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			free(respuestaOperacion);
 			return NULL;
 		}
 
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
 		break;
 	case ESCRIBIR:
 		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
 		buffer_tamanio = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
 
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ESCRIBIR, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			return NULL;
 		}
 
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
+
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
 
 		if(strcmp(respuestaOperacion, "ERROR") == 0) {
-			free(buffer_tamanio);
 			free(respuestaOperacion);
 			return NULL;
 		}else{
@@ -285,10 +292,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		//Envio paquete
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, CAMBIOPROCESOACTIVO, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			return NULL;
 		}
 
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
 		break;
 	case NUEVOPROGRAMA:
 		est = estructuraDeOperacion;
@@ -296,11 +306,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		buffer_tamanio = serializarIniciarPrograma((t_iniciar_programa *) estructuraDeOperacion);
 		//Envio paquete
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NUEVOPROGRAMA, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			return NULL;
 		}
 		//Recibo el valor respuesta de la operación
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		free(buffer_tamanio->buffer);
 		free(buffer_tamanio);
 
 		break;
@@ -309,14 +321,18 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 
 		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, FINALIZARPROGRAMA, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			return NULL;
 		}
+
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
+
 		//Recibo respuesta
 		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
 		if (strcmp(respuestaOperacion, "ERROR") == 0) {
 			free(respuestaOperacion);
-			free(buffer_tamanio);
 			return NULL;
 		}
 
@@ -327,63 +343,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 	}
 
 	return respuestaOperacion;
-}
-
-
-t_buffer_tamanio* serializarListaPaginaFrame(t_list * lista) {
-	uint32_t tamanioTotal = 0;
-
-	uint32_t itemsEnLista = list_size(lista);
-	//Reservo espacio para la lista y 1 entero para indicar cuantos items tiene la lista
-	tamanioTotal = (itemsEnLista * sizeof(t_pagina_frame)) + sizeof(uint32_t);
-
-	char * buffer = malloc(tamanioTotal);
-
-	int i, offset = 0, tmpSize = sizeof(uint32_t);
-	memcpy(buffer + offset, &itemsEnLista, tmpSize);
-	offset += tmpSize;
-
-	for(i = 0; i < itemsEnLista; i++) {
-		t_pagina_frame * item = list_get(lista, i);
-
-		memcpy(buffer + offset, &(item->numeroFrame), tmpSize);
-		offset += tmpSize;
-		memcpy(buffer + offset, &(item->numeroPagina), tmpSize);
-		offset += tmpSize;
-	}
-
-	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioTotal);
-	buffer_tamanio->tamanioBuffer = tamanioTotal;
-	buffer_tamanio->buffer = buffer;
-
-	return buffer_tamanio;
-}
-
-t_list * deserializarListaPaginaFrame(char * mensaje) {
-	t_list * listaPaginaFrame = list_create();
-
-	int i, offset = 0, tmpSize = sizeof(uint32_t);
-
-	uint32_t itemsEnLista;
-	memcpy(&itemsEnLista, mensaje, tmpSize);
-	offset += tmpSize;
-
-	for(i = 0; i < itemsEnLista; i++) {
-		t_pagina_frame * item = malloc(sizeof(t_pagina_frame));
-		uint32_t numeroFrame, numeroPagina;
-
-		memcpy(&numeroFrame, mensaje + offset, tmpSize);
-		offset += tmpSize;
-		memcpy(&numeroPagina, mensaje + offset, tmpSize);
-		offset += tmpSize;
-
-		item->numeroFrame = numeroFrame;
-		item->numeroPagina = numeroPagina;
-
-		list_add(listaPaginaFrame, item);
-	}
-
-	return listaPaginaFrame;
 }
 
 t_buffer_tamanio * serializarUint32(uint32_t number) {
@@ -401,6 +360,7 @@ t_buffer_tamanio * serializarUint32(uint32_t number) {
 
 	return buffer_tamanio;
 }
+
 t_buffer_tamanio * serializar (int number){
 	int offset = 0, tmp_size = 0;
 	size_t messageSize = sizeof(int);
@@ -415,6 +375,7 @@ t_buffer_tamanio * serializar (int number){
 
 	return buffer_tamanio;
 }
+
 int deserializar(char* buffer){
 	int number;
 	int offset = 0;
@@ -644,6 +605,12 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 		uint32_t longitudIndiceEtiquetas = 0;
 		memcpy(paqueteSerializado + offset, &longitudIndiceEtiquetas, tmp_size);
 	}
+
+
+	free(indcod->buffer);
+	free(indcod);
+	free(stackSerializado->buffer);
+	free(stackSerializado);
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + tamanioPCB);
 	buffer_tamanio->tamanioBuffer = tamanioPCB;

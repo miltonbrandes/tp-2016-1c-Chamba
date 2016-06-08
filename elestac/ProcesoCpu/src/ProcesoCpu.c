@@ -237,6 +237,9 @@ void notificarAUMCElCambioDeProceso(uint32_t pid) {
 
 	int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, CAMBIOPROCESOACTIVO, CPU);
 
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
+
 	if(bytesEnviados<=0) {
 		log_error(ptrLog, "Algo malo ocurrio al enviar el Cambio de Proceso a UMC.");
 	}
@@ -252,6 +255,7 @@ void finalizarEjecucionPorExit() {
 	else{
 		log_info(ptrLog, "Programa Finalizado con exito");
 	}
+	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 }
 
@@ -262,6 +266,7 @@ void finalizarEjecucionPorIO(){
 	if(bytesEnviados <= 0){
 		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por io a nucleo");
 	}
+	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 }
 
@@ -272,6 +277,7 @@ void finalizarEjecucionPorWait(){
 	if(bytesEnviados <= 0){
 		log_error(ptrLog, "Error al devolver el PCB por finalizacion de ejecucion por wait a nucleo");
 	}
+	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 }
 
@@ -282,6 +288,7 @@ void finalizarEjecucionPorQuantum() {
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
 	}
+	free(message->buffer);
 	free(message);
 }
 
@@ -337,6 +344,45 @@ void comenzarEjecucionDePrograma() {
 	}
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
+	freePCB();
+}
+
+void freePCB() {
+	int a, b;
+
+	if(pcb->ind_etiq != NULL) {
+		free(pcb->ind_etiq);
+	}
+
+	for(a = 0; a < list_size(pcb->ind_codigo); a ++) {
+		t_indice_codigo * indice = list_get(pcb->ind_codigo, a);
+		list_remove(pcb->ind_codigo, a);
+		free(indice);
+	}
+	free(pcb->ind_codigo);
+
+	for(a = 0; a < list_size(pcb->ind_stack); a ++) {
+		t_stack* linea = list_get(pcb->ind_stack, a);
+		uint32_t cantidadArgumentos = list_size(linea->argumentos);
+
+		for(b = 0; b < cantidadArgumentos; b++) {
+			t_argumento *argumento = list_get(linea->argumentos, b);
+			list_remove(linea->argumentos, b);
+			free(argumento);
+		}
+		free(linea->argumentos);
+
+		int32_t cantidadVariables = list_size(linea->variables);
+
+		for(b = 0; b < cantidadVariables; b++) {
+			t_variable *variable = list_get(linea->variables, b);
+			list_remove(linea->variables, b);
+			free(variable->idVariable);
+			free(variable);
+		}
+	}
+	free(pcb->ind_stack);
+
 	free(pcb);
 }
 
@@ -363,6 +409,8 @@ char * solicitarProximaInstruccionAUMC() {
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitarBytes(solicitarBytes);
 
 	int enviarBytes = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, LEER, CPU);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
 	if (enviarBytes <= 0) {
 		log_error(ptrLog, "Ocurrio un error al enviar una solicitud de instruccion a CPU");
 		return NULL;

@@ -16,6 +16,45 @@ void setPCB(t_pcb * pcbDeCPU) {
 	pcb = pcbDeCPU;
 }
 
+void freePCBDePrimitivas() {
+	int a, b;
+
+	if(pcb->ind_etiq != NULL) {
+		free(pcb->ind_etiq);
+	}
+
+	for(a = 0; a < list_size(pcb->ind_codigo); a ++) {
+		t_indice_codigo * indice = list_get(pcb->ind_codigo, a);
+		list_remove(pcb->ind_codigo, a);
+		free(indice);
+	}
+	free(pcb->ind_codigo);
+
+	for(a = 0; a < list_size(pcb->ind_stack); a ++) {
+		t_stack* linea = list_get(pcb->ind_stack, a);
+		uint32_t cantidadArgumentos = list_size(linea->argumentos);
+
+		for(b = 0; b < cantidadArgumentos; b++) {
+			t_argumento *argumento = list_get(linea->argumentos, b);
+			list_remove(linea->argumentos, b);
+			free(argumento);
+		}
+		free(linea->argumentos);
+
+		int32_t cantidadVariables = list_size(linea->variables);
+
+		for(b = 0; b < cantidadVariables; b++) {
+			t_variable *variable = list_get(linea->variables, b);
+			list_remove(linea->variables, b);
+			free(variable->idVariable);
+			free(variable);
+		}
+	}
+	free(pcb->ind_stack);
+
+	free(pcb);
+}
+
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
@@ -188,6 +227,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 
 	if (enviarDatos(socketNucleo, tamanio_buffer->buffer, tamanio_buffer->tamanioBuffer, op, id) < 0)
 	return -1;
+	free(tamanio_buffer->buffer);
 	free(tamanio_buffer);
 	free(varCompartida->nombre);
 	free(varCompartida);
@@ -224,9 +264,10 @@ void imprimir(t_valor_variable valor_mostrar) {
 	t_buffer_tamanio*  buff = serializar(valor_mostrar);
 	uint32_t op = IMPRIMIR_VALOR;
 	uint32_t id = CPU;
-	uint32_t lon = buff->tamanioBuffer;
 	//memcpy(buffer, buff->buffer, buff->tamanioBuffer);
-	int bytesEnviados = enviarDatos(socketNucleo, buff->buffer, lon, op, id);
+	int bytesEnviados = enviarDatos(socketNucleo, buff->buffer, buff->tamanioBuffer, op, id);
+	free(buff->buffer);
+	free(buff);
 	log_debug(ptrLog, "Valor enviado");
 	//free(buffer);
 }

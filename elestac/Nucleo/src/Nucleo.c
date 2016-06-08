@@ -50,16 +50,12 @@ void crearListaSemaforos(char **semIds, char **semInitValues) {
 
 void crearListaDispositivosIO(char **ioIds, char **ioSleepValues) {
 	listaDispositivosIO = list_create();
-	char ** idIO;					// Aca voy a cargar todos los IO
-	char ** values_IO;				// Valores de los IO
 	t_IO *entradaSalida;
-	idIO = ioIds;
-	values_IO = ioSleepValues;
 	int ivar = 0;
-	while (idIO[ivar] != NULL) {
+	while (ioIds[ivar] != NULL) {
 		entradaSalida = malloc(sizeof(t_IO));
-		entradaSalida->nombre = idIO[ivar];
-		entradaSalida->valor = atoi(values_IO[ivar]);
+		entradaSalida->nombre = ioIds[ivar];
+		entradaSalida->valor = atoi(ioSleepValues[ivar]);
 		entradaSalida->ID_IO = ivar;
 		entradaSalida->colaSolicitudes = queue_create();
 		sem_init(&entradaSalida->semaforo, 1, 0);
@@ -68,8 +64,8 @@ void crearListaDispositivosIO(char **ioIds, char **ioSleepValues) {
 				entradaSalida->valor, entradaSalida->ID_IO);
 		ivar++;
 	}
-	free(idIO);
-	free(values_IO);
+	free(ioIds);
+	free(ioSleepValues);
 	log_trace(ptrLog, ":: Finalizada la carga de la lista de IO ::");
 }
 
@@ -250,7 +246,6 @@ int datosEnSocketUMC() {
 
 	if (strcmp("ERROR", buffer) == 0) {
 		finalizarConexion(socketUMC);
-		free(buffer);
 		return -1;
 	} else {
 		tamanioMarcos = deserializarUint32(buffer);
@@ -340,6 +335,7 @@ void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion) {
 	sem_post(&semCpuOciosa);
 	log_debug(ptrLog, "Cliente aceptado y quantum enviado");
 	free(estructuraInicial);
+	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 }
 
@@ -401,7 +397,6 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 			sem_post(&semNuevoProg);
 		}
 	}
-	free(buffer);
 }
 
 void finalizarConexionDeUnSocketEnParticular(int socketFor) {
@@ -493,7 +488,6 @@ void escucharPuertos() {
 				int returnDeUMC = datosEnSocketUMC();
 				if (returnDeUMC == -1) {
 					//Aca matamos Socket UMC
-					free(returnDeUMC);
 					FD_CLR(socketUMC, &sockets);
 				}
 			} else {
@@ -508,7 +502,6 @@ void escucharPuertos() {
 							FD_CLR(socketFor, &sockets);
 							finalizarConexionDeUnSocketEnParticular(socketFor);
 							log_info(ptrLog, "No se recibio ningun byte de un socket que solicito conexion.");
-							free(buffer);
 						} else {
 							if (id == CPU) {
 								recibirDatosDeSocketCPU(buffer, socketFor, operacion);
@@ -782,6 +775,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
 		programa[0] = -2;
 		free(datos);
+		free(programa);
 		free(iniciarProg);
 		free(nuevoProgEnUMC);
 		queue_push(colaExit, pcb);
@@ -812,6 +806,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 			pcb->ind_etiq = NULL;
 		}
 		free(datos);
+		free(programa);
 		free(iniciarProg);
 		free(nuevoProgEnUMC);
 
@@ -851,6 +846,7 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado) {
 	clienteSeleccionado->pcbAsignado = unPCB;
 	clienteSeleccionado->fueAsignado = true;
 	pthread_mutex_unlock(&mutex_cpu);
+	free(pcbSer->buffer);
 	free(pcbSer);
 }
 

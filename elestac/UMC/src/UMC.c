@@ -289,7 +289,6 @@ void recibirPeticionesNucleo(){
 		if(strcmp(mensajeRecibido, "ERROR") == 0) {
 			log_error(ptrLog, "No se recibio nada de Nucleo, se cierra la conexion");
 			finalizarConexion(socketClienteNucleo);
-			free(mensajeRecibido);
 			return;
 		}else{
 			if (operacion == NUEVOPROGRAMA) {
@@ -331,6 +330,8 @@ void recibirPeticionesNucleo(){
 void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma) {
 	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
 	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	free(mensaje->buffer);
+	free(mensaje);
 	if(enviarRespuesta <= 0) {
 		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
 	}
@@ -343,6 +344,8 @@ void notificarProcesoNoIniciadoANucleo() {
 
 	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
 	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	free(mensaje->buffer);
+	free(mensaje);
 	if(enviarRespuesta <= 0) {
 		log_error(ptrLog, "Error al notificar a Nucleo de Proceso No Iniciado");
 	}
@@ -394,7 +397,9 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
 		enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
 
+		free(escribirEnSwap->contenido);
 		free(escribirEnSwap);
+		free(buffer_tamanio->buffer);
 		free(buffer_tamanio);
 	}
 }
@@ -441,9 +446,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
 		if(strcmp(mensajeRecibido, "ERROR") == 0) {
-			free(mensajeRecibido);
-			finalizarConexion(cpuEnAccion->socket);
-			free(cpuEnAccion);
+			finalizarConexion(socketCpu);
 		}else{
 			if (operacion == LEER) {
 				t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
@@ -467,6 +470,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 
 				escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 
+				free(escribir->buffer);
 				free(escribir);
 			}else if (operacion == CAMBIOPROCESOACTIVO){
 
@@ -514,6 +518,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					}
 				}
 				memcpy(registroTLB->contenido + offset, buffAux, tamanio);
+				free(buffAux);
 
 				registro->modificado = 1;
 			} else {
@@ -554,6 +559,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 						}
 					}
 					memcpy(frameSolicitado->contenido + offset, buffAux, tamanio);
+					free(buffAux);
 
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 
@@ -571,6 +577,8 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 
 			int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
+			free(buffer_tamanio->buffer);
+			free(buffer_tamanio);
 		}else{
 			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
 		}
@@ -680,15 +688,20 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					}
 				}
 			}
-
+			for(i = 0; i < list_size(listaRegistros); i++) {
+				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
+				free(auxiliar);
+			}
 			free(listaRegistros);
 		}
 	}
+
 
 	char *instruccionPosta = calloc(list_size(datosParaCPU), 50);
 	for(i = 0; i < list_size(datosParaCPU); i++) {
 		char * aux = list_get(datosParaCPU, i);
 		strcat(instruccionPosta, aux);
+		free(aux);
 	}
 	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
 	t_instruccion * instruccion = calloc(list_size(datosParaCPU), 50);
@@ -697,10 +710,12 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
-//	free(buffer_tamanio);
-//	free(instruccion);
-//	free(datosParaCPU);
-//	free(instruccionPosta);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
+	free(instruccionPosta);
+//	free(instruccion->instruccion);
+	free(instruccion);
+	free(datosParaCPU);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -709,6 +724,10 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 	solicitudPagina->paginaProceso = pagina;
 	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(solicitudPagina);
 	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, LEER);
+
+	free(solicitudPagina);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
 
 	if(strcmp(mensajeDeSwap, "ERROR") == 0) {
 		log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
@@ -810,20 +829,22 @@ int indiceDeTablaDelProceso(uint32_t procesoId) {
 void enviarTamanioPaginaACPU(int socketCPU) {
 	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
 	int bytesEnviados = enviarDatos(socketCPU, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
 	if(bytesEnviados<=0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
-	free(buffer_tamanio);
 }
 
 void enviarTamanioPaginaANUCLEO(){
 	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
 	int bytesEnviados = enviarDatos(socketClienteNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, TAMANIO_PAGINAS_NUCLEO, UMC);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
 	if(bytesEnviados<=0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
 	sem_post(&semEmpezarAceptarCpu);
-	free(buffer_tamanio);
 }
 
 void finalizarPrograma(uint32_t PID){
@@ -833,6 +854,9 @@ void finalizarPrograma(uint32_t PID){
 	t_buffer_tamanio * buffer_tamanio = serializarFinalizarPrograma(finalizarProg);
 
 	char * respuestaSwap = enviarYRecibirMensajeSwap(buffer_tamanio, FINALIZARPROGRAMA);
+	free(buffer_tamanio->buffer);
+	free(buffer_tamanio);
+
 	uint32_t respuesta = deserializarUint32(respuestaSwap);
 
 	if(respuesta == SUCCESS){
@@ -842,7 +866,6 @@ void finalizarPrograma(uint32_t PID){
 		log_info(ptrLog, "Ocurrio un error al borrar las estructuras relacionadas al Proceso %d", PID);
 	}
 
-	free(buffer_tamanio);
 	free(finalizarProg);
 	free(respuestaSwap);
 }
@@ -878,16 +901,18 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 	check->cantidadDePaginas = iniciarProg->tamanio;
 
 	t_buffer_tamanio * iniciarProgSerializado = serializarCheckEspacio(check);
+	free(check);
+
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
 	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
 	free(iniciarProgSerializado->buffer);
+	free(iniciarProgSerializado);
 	uint32_t operacion;
 	uint32_t id;
 	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
 	free(hayEspacio);
-	free(iniciarProgSerializado);
 	return pudoSwap;
 }
 
@@ -1180,6 +1205,7 @@ void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
 	t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
 	enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
 
+	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 	free(escribirEnSwap);
 }

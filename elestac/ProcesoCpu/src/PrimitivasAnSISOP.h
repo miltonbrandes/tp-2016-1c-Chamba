@@ -52,5 +52,6 @@ extern int socketUMC;
 extern uint32_t operacion;
 
 void setPCB(t_pcb * pcbDeCPU);
+void freePCBDePrimitivas();
 
 #endif /* CPU_PRIMITIVAS_ANSISOP_H_ */
