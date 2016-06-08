@@ -1214,14 +1214,20 @@ void retardar(uint32_t retardoNuevo) {
 void flushMemory(uint32_t pid) {
 	t_tabla_de_paginas * tablaAModificar = buscarTablaDelProceso(pid);
 	int i;
-for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
-			t_registro_tabla_de_paginas * registro = list_get(tablaAModificar->tablaDePaginas, i);
 
-			registro->modificado = 1;
+	for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
+		pthread_mutex_lock(&accesoAFrames);
+		t_registro_tabla_de_paginas * registro = list_get(
+				tablaAModificar->tablaDePaginas, i);
 
-			free(registro);
-			printf("Se realizo flush a las TP del PID:%d", pid);
-		}
+		registro->modificado = 1;
+
+		pthread_mutex_unlock(&accesoAFrames);
+		free(registro);
+
+		printf("Se realizo flush a las TP del PID:%d", pid);
+	}
+
 }
 
 void dumpDeUnPID(uint32_t pid) {
