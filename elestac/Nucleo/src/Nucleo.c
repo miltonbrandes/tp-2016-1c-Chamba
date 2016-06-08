@@ -347,7 +347,11 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 	uint32_t id;
 	t_pcb *unPcb;
 	uint32_t operacion;
-	char* buffer = recibirDatos(socketConexion, &operacion, &id);
+	char* buffer = NULL;
+	if(buffer != NULL){
+		free(buffer);
+	}//esto no se si esta bien
+	buffer = recibirDatos(socketConexion, &operacion, &id);
 	if (strcmp("ERROR", buffer) == 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Consola");
 	} else {
@@ -430,9 +434,11 @@ void finalizarConexionDeUnSocketEnParticular(int socketFor) {
 }
 
 void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion) {
+
 	bool buscarCpuPorSocket(t_clienteCpu * unCliente) {
 		return unCliente->socket == socketFor;
 	}
+
 	t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)buscarCpuPorSocket), 0);
 	log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
 	pthread_mutex_lock(&mutex_cpu);
@@ -514,23 +520,22 @@ void escucharPuertos() {
 		}
 	}
 }
+
 void operacionQuantum(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
 	log_debug(ptrLog, "Se ingresa a operacionQuantum");
-			log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
-			unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
-			pthread_mutex_lock(&mutex);
-			queue_push(colaReady, (void*) unPCB);
-
-			pthread_mutex_unlock(&mutex);
-			log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",
-					unPCB->pcb_id);
-			if (cpuAcerrar != unCliente->socket) {
-				unCliente->fueAsignado = false;
-				sem_post(&semCpuOciosa);
-				sem_post(&semNuevoPcbColaReady);
-			}else{
-				sem_post(&semNuevoPcbColaReady);
-				pthread_mutex_unlock(&mutex_cpu);
+	log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
+	unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
+	pthread_mutex_lock(&mutex);
+	queue_push(colaReady, (void*) unPCB);
+	pthread_mutex_unlock(&mutex);
+	log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",unPCB->pcb_id);
+	if (cpuAcerrar != unCliente->socket) {
+		unCliente->fueAsignado = false;
+		sem_post(&semCpuOciosa);
+		sem_post(&semNuevoPcbColaReady);
+	}else{
+		sem_post(&semNuevoPcbColaReady);
+		pthread_mutex_unlock(&mutex_cpu);
 	}
 }
 
@@ -607,20 +612,21 @@ void imprimirValor(t_clienteCpu* unCliente, char* buffer){
 	sem_post(&semMensajeImpresion);
 	sem_wait(&semFinalizoDeImprimir);
 	pthread_mutex_unlock(&mutex_cpu);
-	free(imprimi);
+	//free(imprimi);
 }
 
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer) {
 	unCliente->socket = socketFor;
-	if (unCliente->programaCerrado && (operacion == QUANTUM || operacion == EXIT || operacion == IO)) {
+	if (unCliente->programaCerrado
+			&& (operacion == QUANTUM || operacion == EXIT || operacion == IO)) {
 		unCliente->fueAsignado = false;
 		unCliente->programaCerrado = false;
 		sem_post(&semCpuOciosa);
-		free(buffer);
 		return;
 	}
-	if (unCliente->programaCerrado && (operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO || operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
-		free(buffer);
+	if (unCliente->programaCerrado
+			&& (operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO
+					|| operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
 		return;
 	t_pcb* unPCB;
 	switch (operacion) {
