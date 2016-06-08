@@ -26,6 +26,7 @@
 t_pcb *pcb;
 uint32_t quantum, quantumSleep;
 //uint32_t tamanioPagina;
+t_config* config;
 
 AnSISOP_funciones functions = {
 		.AnSISOP_asignar = asignar,
@@ -55,8 +56,6 @@ int crearLog() {
 }
 int main() {
 	crearLog();
-
-	t_config* config;
 	config = config_create(getenv("CPU_CONFIG"));
 	char *direccionUmc = config_get_string_value(config, "IP_UMC");
 	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
@@ -78,6 +77,7 @@ int main() {
 		log_error(ptrLog, "No se pudo abrir la conexion con UMC");
 		return -1;
 	}
+	free(config);
 }
 
 int manejarPrimeraConexionConUMC() {
@@ -121,7 +121,7 @@ int recibirMensaje(int socket) {
 	log_info(ptrLog, "Recibo mensaje");
 
 	if(strcmp(respuestaServidor, "ERROR") == 0) {
-		free(respuestaServidor);
+		//free(respuestaServidor);
 		if (socket == socketNucleo) {
 			log_info(ptrLog, "No se recibio nada de Nucleo, cierro conexion");
 			finalizarConexion(socketNucleo);
@@ -199,6 +199,7 @@ void recibirQuantum(char *mensaje) {
 	quantumSleep = estructuraInicial->RetardoQuantum;
 	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d\n", quantum, quantumSleep);
 	free(mensaje);
+	free(estructuraInicial);
 }
 
 void recibirTamanioPagina(char *mensaje) {

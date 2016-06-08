@@ -20,6 +20,11 @@
 #include "Nucleo.h"
 
 t_log* ptrLog;
+char** semIds;
+char ** semInitValues;
+char ** ioSleepValues;
+char** sharedVarsIds;
+char** ioIds;
 
 //Metodos para iniciar valores de Nucleo
 
@@ -132,9 +137,9 @@ int iniciarNucleo() {
 		}
 
 		if (config_has_property(config, "SEM_IDS")) {
-			char** semIds = config_get_array_value(config, "SEM_IDS");
+			semIds = config_get_array_value(config, "SEM_IDS");
 			if (config_has_property(config, "SEM_INIT")) {
-				char ** semInitValues = config_get_array_value(config,
+				semInitValues = config_get_array_value(config,
 						"SEM_INIT");
 				crearListaSemaforos(semIds, semInitValues);
 			} else {
@@ -149,9 +154,9 @@ int iniciarNucleo() {
 		}
 
 		if (config_has_property(config, "IO_IDS")) {
-			char** ioIds = config_get_array_value(config, "IO_IDS");
-			if (config_has_property(config, "IO_SLEEP")) {
-				char ** ioSleepValues = config_get_array_value(config,
+			ioIds = config_get_array_value(config, "IO_IDS");
+		if (config_has_property(config, "IO_SLEEP")) {
+				ioSleepValues = config_get_array_value(config,
 						"IO_SLEEP");
 				crearListaDispositivosIO(ioIds, ioSleepValues);
 			} else {
@@ -166,7 +171,7 @@ int iniciarNucleo() {
 		}
 
 		if (config_has_property(config, "SHARED_VARS")) {
-			char** sharedVarsIds = config_get_array_value(config,
+			sharedVarsIds = config_get_array_value(config,
 					"SHARED_VARS");
 			crearListaVariablesCompartidas(sharedVarsIds);
 		} else {
@@ -249,9 +254,9 @@ int datosEnSocketUMC() {
 		return -1;
 	} else {
 		tamanioMarcos = deserializarUint32(buffer);
+		free(buffer);
 		log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioMarcos);
 	}
-
 	return 0;
 }
 
@@ -481,6 +486,7 @@ void escucharPuertos() {
 				int returnDeUMC = datosEnSocketUMC();
 				if (returnDeUMC == -1) {
 					//Aca matamos Socket UMC
+					free(returnDeUMC);
 					FD_CLR(socketUMC, &sockets);
 				}
 			} else {
@@ -1162,7 +1168,14 @@ int main() {
 		log_info(ptrLog, "El Nucleo no pudo inicializarse correctamente");
 		returnInt = EXIT_FAILURE;
 	}
-
+	free(config);
+	free(semIds);
+	free(semInitValues);
+	free(ioIds);
+	free(ioSleepValues);
+	free(sharedVarsIds);
+	//TODO LIBERAR CADA ELEMENTO DE LA LISTA ANTES DE LA LISTA.
+	free(listaDispositivosIO);
 	finalizarConexion(socketUMC);
 	finalizarConexion(socketReceptorConsola);
 	finalizarConexion(socketReceptorCPU);
