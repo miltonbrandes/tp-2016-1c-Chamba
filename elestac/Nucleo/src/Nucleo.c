@@ -343,15 +343,13 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 	uint32_t id;
 	t_pcb *unPcb;
 	uint32_t operacion;
-	char* buffer = NULL;
-	if(buffer != NULL){
-		free(buffer);
-	}//esto no se si esta bien
+	char* buffer;
+	free(buffer);
 	buffer = recibirDatos(socketConexion, &operacion, &id);
 	if (strcmp("ERROR", buffer) == 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos en un Socket Consola");
 	} else {
-		log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
+		//log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
 
 		unPcb = crearPCB(buffer, socketUMC);
 		if(unPcb == NULL){
@@ -755,7 +753,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	pcb->pcb_id = nroProg++;
 	pthread_mutex_unlock(&mutex_pid_counter);
 
-	log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
+	//log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
 	t_iniciar_programa * iniciarProg = malloc((sizeof(uint32_t) * 2) + strlen(programa));
 	iniciarProg->programID = pcb->pcb_id;
 	if(strlen(programa)%tamanioMarcos != 0){
@@ -767,7 +765,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg->codigoAnsisop = malloc(strlen(programa) + 1);
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
-	log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
+	//log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
 	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
 	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 

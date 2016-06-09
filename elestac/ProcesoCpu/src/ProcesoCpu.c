@@ -313,7 +313,7 @@ void limpiarInstruccion(char * instruccion) {
 
 
 void comenzarEjecucionDePrograma() {
-	log_info(ptrLog, "Recibo PCB");
+	log_info(ptrLog, "Recibo PCB id: %i", pcb->pcb_id);
 	int contador = 1;
 
 	while (contador <= quantum) {
@@ -344,7 +344,8 @@ void comenzarEjecucionDePrograma() {
 	}
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
-	freePCB();
+	free(pcb);
+	//freePCB();
 }
 
 void freePCB() {
@@ -363,23 +364,26 @@ void freePCB() {
 
 	for(a = 0; a < list_size(pcb->ind_stack); a ++) {
 		t_stack* linea = list_get(pcb->ind_stack, a);
-		uint32_t cantidadArgumentos = list_size(linea->argumentos);
+		/*uint32_t cantidadArgumentos = list_size(linea->argumentos);
 
 		for(b = 0; b < cantidadArgumentos; b++) {
-			t_argumento *argumento = list_get(linea->argumentos, b);
-			list_remove(linea->argumentos, b);
-			free(argumento);
-		}
+			if(linea->argumentos != NULL){
+				t_argumento *argumento = list_get(linea->argumentos, b);
+				list_remove(linea->argumentos, b);
+				free(argumento);
+			}
+		}*/
 		free(linea->argumentos);
 
-		int32_t cantidadVariables = list_size(linea->variables);
+		/*int32_t cantidadVariables = list_size(linea->variables);
 
 		for(b = 0; b < cantidadVariables; b++) {
 			t_variable *variable = list_get(linea->variables, b);
 			list_remove(linea->variables, b);
 			free(variable->idVariable);
 			free(variable);
-		}
+		}*/
+		free(linea->variables);
 	}
 	free(pcb->ind_stack);
 

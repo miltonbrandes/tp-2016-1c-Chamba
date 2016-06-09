@@ -158,7 +158,7 @@ void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* li
 		if (strcmp("ERROR", buffer) == 0) {
 			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC");
 			finalizarConexion(socketUMC);
-			free(buffer);
+			//free(buffer);
 			return;
 		} else {
 			int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);

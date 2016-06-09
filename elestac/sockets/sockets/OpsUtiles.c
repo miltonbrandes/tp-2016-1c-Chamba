@@ -328,13 +328,13 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 
 		free(buffer_tamanio->buffer);
 		free(buffer_tamanio);
-
+		return SUCCESS;
 		//Recibo respuesta
-		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		/*respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
 		if (strcmp(respuestaOperacion, "ERROR") == 0) {
 			free(respuestaOperacion);
 			return NULL;
-		}
+		}*/
 
 		break;
 	default:
