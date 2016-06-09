@@ -1040,12 +1040,27 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 	}
 }
 
-void tlbFlush(){
+void tlbFlush() {
+	int i = 0;
 	if ((entradasTLB) != 0) {
-		finalizarTLB();
-		iniciarTLB();
+		pthread_mutex_lock(&accesoATLB);
+		for (i = 0; i < list_size(TLB); i++) {
+
+			t_tlb * registro = list_get(TLB, i);
+			pthread_mutex_lock(&accesoAFrames);
+			t_frame * frameSwap = list_get(frames, registro->numFrame);
+			frameSwap->contenido = malloc(marcosSize);
+			memcpy(frameSwap->contenido, registro->contenido, marcosSize);
+			pthread_mutex_unlock(&accesoAFrames);
+
+			registro->pid = -1;
+			registro->indice = -1;
+			registro->numPag = 0;
+			registro->numFrame = -1;
+		}
 	}
-	printf("Flush en TLB realizado");
+	pthread_mutex_unlock(&accesoATLB);
+	log_info(ptrLog, "Flush en TLB\n");
 }
 
 void tlbFlushDeUnPID(int PID) {
