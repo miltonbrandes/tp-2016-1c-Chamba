@@ -56,7 +56,7 @@ pthread_t hiloCpu;
 pthread_t hiloNucleo;
 pthread_t hiloConsola;
 //variables semaforos
-sem_t semEmpezarAceptarCpu;
+
 
 int main() {
 	if (init()) {
@@ -65,7 +65,6 @@ int main() {
 
 		iniciarTLB();
 
-		sem_init(&semEmpezarAceptarCpu, 1, 0);
 		reservarMemoria(marcos,marcosSize);
 
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
@@ -135,23 +134,9 @@ void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 	posibleProximaVictimaClock = 0;
 }
 
-/////HAY QUE MODIFICAR COMO SE ENVIAN LOS MENSAJES
-void enviarMensajeANucleo(char *mensajeNucleo, int operacion) {
- 	log_info(ptrLog, "Envio mensaje a Nucleo: %s", mensajeNucleo);
- 	int tamanio = strlen(mensajeNucleo);
- 	enviarDatos(socketClienteNucleo,mensajeNucleo,tamanio, operacion,UMC);
- }
-
 void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion) {
  	enviarDatos(socketSwap,mensajeSwap, tamanioMensaje, operacion, UMC);
  }
-
-void enviarMensajeACpu(char *mensaje, int operacion, int socketCpu) {
- 	log_info(ptrLog, "Envio mensaje a Cpu: %s", mensaje);
- 	int tamanio = strlen(mensaje);
- 	enviarDatos(socketCpu,mensaje,tamanio, operacion, UMC);
- }
-////////////////////////////////////////////////////////////////////////////
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
@@ -416,24 +401,42 @@ t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presen
 }
 
 void aceptarConexionCpu(){
-	pthread_t hiloEscuchaCpu;
-	sem_wait(&semEmpezarAceptarCpu);
-	int socketCpu = AceptarConexionCliente(socketReceptorCPU);
-	if (socketCpu < 0) {
-		log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
-	} else {
-		log_info(ptrLog, "Nueva conexion de CPU");
-		enviarTamanioPaginaACPU(socketCpu);
+	while (1) {
+		pthread_t hiloEscuchaCpu;
 
-		t_cpu* cpu = malloc(sizeof(t_cpu));
-		uint32_t num = list_size(listaCpus);
-		cpu->socket = socketCpu;
-		cpu->numCpu = num + 1;
-		cpu->procesoActivo = -1;
-		pthread_create(&hiloEscuchaCpu, NULL, (void*) recibirPeticionesCpu, cpu);
-		cpu->hiloCpu = hiloEscuchaCpu; // MATAR ESTE HILO ptheradExit y free(cpu) borrar cpu lista.
-		list_add(listaCpus, cpu);
+		int socketCpu = AceptarConexionCliente(socketReceptorCPU);
+		if (socketCpu < 0) {
+			log_info(ptrLog,
+					"Ocurrio un error al intentar aceptar una conexion de CPU");
+		} else {
+			log_info(ptrLog, "Nueva conexion de CPU");
+			enviarTamanioPaginaACPU(socketCpu);
+
+			t_cpu* cpu = malloc(sizeof(t_cpu));
+			uint32_t num = list_size(listaCpus);
+			cpu->socket = socketCpu;
+			cpu->numCpu = num + 1;
+			cpu->procesoActivo = -1;
+			pthread_create(&hiloEscuchaCpu, NULL, (void*) recibirPeticionesCpu,
+					cpu);
+			cpu->hiloCpu = hiloEscuchaCpu; // MATAR ESTE HILO ptheradExit y free(cpu) borrar cpu lista.
+			list_add(listaCpus, cpu);
+		}
 	}
+}
+
+void borrarCpuMuerta(t_cpu* cpu){
+	int i, indiceDeCpu;
+
+	for(i=0; i < list_size(listaCpus);i++){
+		t_cpu* cpuDeLista = list_get(listaCpus, i);
+
+		if(cpu->numCpu == cpuDeLista->numCpu){
+			indiceDeCpu = i;
+		}
+	}
+	list_remove(listaCpus, indiceDeCpu);
+	free(cpu);
 }
 
 void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
@@ -448,6 +451,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 		if(strcmp(mensajeRecibido, "ERROR") == 0) {
 			finalizarConexion(socketCpu);
 			pthread_join(cpuEnAccion->hiloCpu, NULL);
+			borrarCpuMuerta(cpuEnAccion);
 			break;
 		}else{
 			if (operacion == LEER) {
@@ -490,7 +494,9 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			} else {
 				operacion = ERROR;
 				log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
-				enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
+				//nucleo reciba error
+
+				//enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
 				break;
 			}
 
@@ -848,7 +854,6 @@ void enviarTamanioPaginaANUCLEO(){
 	if(bytesEnviados<=0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
-	sem_post(&semEmpezarAceptarCpu);
 }
 
 void finalizarPrograma(uint32_t PID){
@@ -972,7 +977,7 @@ void iniciarTLB() {
 	int i = 0;
 	if (entradasTLB != 0) {
 		TLB = list_create();
-		//TODO: esto cambiarlo a 1 porque sino tiene una entrada mas de lo que deberia
+
 		for (i = 0; i <= (entradasTLB-1); i++) {
 			t_tlb * registro = malloc((sizeof(int) * 4) + marcosSize);
 			registro->pid = -1;
@@ -1094,7 +1099,8 @@ void tlbFlushDeUnPID(int PID) {
 				registro->indice = i;
 				registro->numPag = 0;
 				registro->numFrame = -1;
-				registro->contenido = NULL;
+				free(registro->contenido);
+				registro->contenido = malloc(marcosSize);
 			}
 		}
 		pthread_mutex_unlock(&accesoATLB);
@@ -1296,24 +1302,23 @@ void dumpDeUnPID(uint32_t pid) {
 	int i;
 
 	if (tablaAMostrar != NULL) {
+		pthread_mutex_lock(&accesoAFrames);
 		for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
 			//Traigo cada tabla de paginas
 			t_registro_tabla_de_paginas * registro = list_get(
 					tablaAMostrar->tablaDePaginas, i);
 
 			if (registro->estaEnUMC == 1) {
-				//CORROBORAR QUE VAYAN ESTOS SEMAFOROS
-				pthread_mutex_lock(&accesoAFrames);
+
 				t_frame * frame = list_get(frames, registro->frame);
 				log_info(ptrLog, "Proceso: %d ; Pagina: %d ; Marco: %d ; Contenido: \"%s\"", pid,
 						registro->paginaProceso, registro->frame, frame->contenido);
 
 				escribirEnArchivo(pid,registro->paginaProceso,registro->frame, frame->contenido);
-
-				pthread_mutex_unlock(&accesoAFrames);
 			}
 			free(registro);
 		}
+		pthread_mutex_unlock(&accesoAFrames);
 	} else {
 		log_info(ptrLog, "No se encontro Tabla de Paginas del PID: %d", pid);
 	}
