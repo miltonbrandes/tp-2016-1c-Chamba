@@ -20,8 +20,8 @@ t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, uint32_t t
 	memcpy(buffer, &tamanioInstruccion, tmp_size);
 	offset += tmp_size;
 	memcpy(buffer + offset, (instruccion->instruccion), tamanioInstruccion);
-
-	t_buffer_tamanio * buffer_tamanio = malloc((sizeof(uint32_t) * 2) + tamanioInstruccion);
+	t_buffer_tamanio * buffer_tamanio;
+	buffer_tamanio = malloc(tamanioInstruccion + 8);
 	buffer_tamanio->tamanioBuffer = tmp_size + tamanioInstruccion;
 	buffer_tamanio->buffer = buffer;
 
@@ -329,12 +329,6 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		free(buffer_tamanio->buffer);
 		free(buffer_tamanio);
 		return SUCCESS;
-		//Recibo respuesta
-		/*respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
-		if (strcmp(respuestaOperacion, "ERROR") == 0) {
-			free(respuestaOperacion);
-			return NULL;
-		}*/
 
 		break;
 	default:
