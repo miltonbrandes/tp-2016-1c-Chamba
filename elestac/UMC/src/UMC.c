@@ -710,12 +710,12 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 	int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
-	free(buffer_tamanio->buffer);
-	free(buffer_tamanio);
-	free(instruccionPosta);
+//	free(buffer_tamanio->buffer);
+//	free(buffer_tamanio);
+//	free(instruccionPosta);
 //	free(instruccion->instruccion);
-	free(instruccion);
-	free(datosParaCPU);
+//	free(instruccion);
+//	free(datosParaCPU);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
