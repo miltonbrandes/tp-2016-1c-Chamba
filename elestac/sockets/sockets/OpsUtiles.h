@@ -74,7 +74,7 @@ t_escribir_en_swap * deserializarEscribirEnSwap(char * buffer);
 t_buffer_tamanio * serializarCheckEspacio(t_check_espacio * check);
 t_check_espacio * deserializarCheckEspacio(char * buffer);
 
-t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, uint32_t tamanioInstruccion);
+t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, int tamanioInstruccion);
 t_instruccion * deserializarInstruccion(char * message);
 
 #endif /* SOCKETS_UTILES_OPSUTILES_H_ */

@@ -13,7 +13,7 @@
 #include "OpsUtiles.h"
 #include "StructsUtiles.h"
 
-t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, uint32_t tamanioInstruccion) {
+t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, int tamanioInstruccion) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
 	char * buffer = malloc(tamanioInstruccion);
 

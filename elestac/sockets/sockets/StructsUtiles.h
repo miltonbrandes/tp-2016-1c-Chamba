@@ -74,16 +74,10 @@ typedef struct estructuraInicial {
 typedef struct clienteCpu{
 	int socket;
 	uint32_t id;
-	t_pcb* pcbAsignado;
+	uint32_t pcbId;
 	bool fueAsignado;
 	bool programaCerrado;
 }t_clienteCpu;
-
-typedef struct{
-	char* valor;
-	uint32_t PCB_ID;
-	uint32_t tipoDeValor;
-}t_imprimibles;
 
 typedef struct{
 	int32_t ID_IO;

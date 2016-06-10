@@ -719,10 +719,10 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 		free(aux);
 	}
 	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
-	t_instruccion * instruccion = calloc(list_size(datosParaCPU), 50);
+	t_instruccion * instruccion = malloc(strlen(instruccionPosta) + 1);
 	instruccion->instruccion = instruccionPosta;
 	t_buffer_tamanio * buffer_tamanio;
-	buffer_tamanio = serializarInstruccion(instruccion, offset + 5);
+	buffer_tamanio = serializarInstruccion(instruccion, strlen(instruccionPosta) + 1);
 
 	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 //	free(instruccion->instruccion);

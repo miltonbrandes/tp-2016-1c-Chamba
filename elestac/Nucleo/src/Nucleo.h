@@ -8,64 +8,69 @@
 #ifndef SRC_NUCLEO_H_
 #define SRC_NUCLEO_H_
 #include <pthread.h>
+
 uint32_t nroProg = 1;
-char *ipUMC;
-fd_set sockets, tempSockets; //descriptores
-int *listaCpus;
 int cpuAcerrar = 0;
-int i = 0;
+
+char *ipUMC;
+int *listaCpus;
 int puertoConexionUMC;
 //Variables de configuracion para establecer Conexiones
 int puertoReceptorCPU, puertoReceptorConsola;
 //Variables propias del Nucleo
 int quantum, quantumSleep;
-//Socket que recibe conexiones de CPU y Consola
-int socketReceptorCPU, socketReceptorConsola;
-int socketUMC;
+
+//Variables necesarias, vienen de UMC
+uint32_t tamanioStack;
+uint32_t tamanioMarcos;
+
+//Para manejo del select
+fd_set sockets, tempSockets;
+
+//Sockets para comunicacion
+int socketReceptorCPU, socketReceptorConsola, socketUMC;
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_pid_counter = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
-sem_t semFinalizoDeImprimir;
-sem_t semLiberoPrograma;
+pthread_mutex_t mutexListaPCBEjecutando = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_t hiloCpuOciosa;
-pthread_t threadPlanificador;
 pthread_t threadSocket;
 pthread_t hiloIO;
 pthread_t threadExit;
 pthread_t hiloPcbFinalizarError;
+
+sem_t semLiberoPrograma;
 sem_t semCpuOciosa;
-sem_t semMensajeImpresion;
 sem_t semNuevoPcbColaReady;
 sem_t semNuevoProg;
 sem_t semProgExit;
 sem_t semProgramaFinaliza;
-t_config* config;
-t_EstructuraInicial *estructuraInicial;
-t_list *listaDispositivosIO,
-*listaSemaforos, *listaVariablesCompartidas;
+
+t_list *listaDispositivosIO, *listaSemaforos, *listaVariablesCompartidas;
 t_list* listaSocketsConsola;
 t_list* listaSocketsCPUs;
+
 t_list* colaNew;
-//Archivo de Log
+t_list* colaBloqueados;
+t_list* colaExecute;
+t_queue* colaExit;
+t_queue* colaReady;
+
+uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
 
 t_pcb* crearPCB(char* programa, int socket);
-t_list* colaBloqueados;
-t_queue* colaExit;
-t_queue* colaImprimibles;
-t_queue* colaReady;
-uint32_t handshakeumv = 0;
-uint32_t pcbAFinalizar;
-uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
-uint32_t tamanioStack;
-uint32_t tamanioMarcos;
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB);
-void operacionesConSemaforos(uint32_t operacion, char* buffer,
-		t_clienteCpu *unCliente);
-
+void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unCliente);
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer);
 t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
 int indiceConsolaEnLista(uint32_t pid);
+
+void mensajesPrograma(uint32_t pcbId, uint32_t tipoDeValor, char * mensaje);
+void borrarPCBDeColaExecute(uint32_t pcbId);
+void borrarPCBDeColaExecuteYMeterEnColaExit(uint32_t pcbId);
 
 
 #endif /* SRC_NUCLEO_H_ */
