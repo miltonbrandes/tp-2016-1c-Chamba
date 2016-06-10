@@ -527,13 +527,15 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				memcpy(buffAux, buffer, strlen(buffer));
 				if(tamanio > strlen(buffer)) {
 					int i;
-					for(i = strlen(buffer); i < tamanio; i++) {
+					for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
 						char * auxito = "~";
 						memcpy(buffAux + i, auxito, 1);
 					}
 				}
 				memcpy(registroTLB->contenido + offset, buffAux, tamanio);
 				free(buffAux);
+
+				log_debug(ptrLog, "Estado del Registro TLB luego de escritura: %s", registroTLB->contenido);
 
 				registro->modificado = 1;
 			} else {
@@ -545,12 +547,13 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					memcpy(buffAux, buffer, strlen(buffer));
 					if(tamanio > strlen(buffer)) {
 						int i;
-						for(i = 1; i <= (tamanio-strlen(buffer)); i++) {
+						for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
 							char * auxito = "~";
 							memcpy(buffAux + i, auxito, 1);
 						}
 					}
 					memcpy(frame->contenido + offset, buffAux, tamanio);
+					free(buffAux);
 
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 
@@ -568,7 +571,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					memcpy(buffAux, buffer, strlen(buffer));
 					if(tamanio > strlen(buffer)) {
 						int i;
-						for(i = 1; i <= (tamanio-strlen(buffer)); i++) {
+						for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
 							char * auxito = "~";
 							memcpy(buffAux + i, auxito, 1);
 						}
@@ -751,7 +754,7 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
 
 		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo, pagina);
-		log_info(ptrLog, "se agrego la pagina %i a umc", pagina);
+		log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
 
 		free(paginaSwap);
 		return frame;
