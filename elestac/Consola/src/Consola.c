@@ -130,14 +130,14 @@ int main(int argc, char **argv) {
 			int valor = 0;
 			bool salir = false;
 			while (1) {
-				server_reply = recibirDatos(socketConexionNucleo, &operacion,
-						&id);
+				server_reply = recibirDatos(socketConexionNucleo, &operacion, &id);
 				if (strlen(server_reply) < 0) {
 					log_error(ptrLog, "Error al recibir datos del servior.");
 					free(server_reply);
 					return EXIT_FAILURE;
 				} else if (strcmp("ERROR", server_reply) == 0) {
-
+					log_error(ptrLog, "No se recibio nada de Nucleo. Cierro la conexion");
+					break;
 				} else {
 					switch (operacion) {
 					case IMPRIMIR_TEXTO:

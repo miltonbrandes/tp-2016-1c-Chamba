@@ -203,7 +203,7 @@ t_nuevo_prog_en_umc * deserializarNuevoProgEnUMC(char * buffer) {
 t_buffer_tamanio * serializarIniciarPrograma(t_iniciar_programa * iniciarPrograma) {
 	int tmp_size = sizeof(uint32_t), offset = 0;
 	uint32_t tamanioCodigo = strlen(iniciarPrograma->codigoAnsisop) + 1;
-	uint32_t tamanioBuffer = (sizeof(uint32_t) * 2) + tamanioCodigo;
+	uint32_t tamanioBuffer = (sizeof(uint32_t) * 3) + tamanioCodigo;
 	char * buffer = malloc(tamanioBuffer);
 
 	memcpy(buffer+offset, &(tamanioCodigo), tmp_size);
@@ -679,6 +679,9 @@ t_pcb* deserializar_pcb(char* package) {
  		pcb->ind_etiq = NULL;
  	}
 
+ 	free(bufferIndiceDeCodigo);
+ 	free(bufferIndiceStack);
+
  	return pcb;
  }
  
@@ -812,8 +815,8 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		tamanioStackParticular += cantidadArgumentos * sizeof(t_argumento);
 
 		int cantidadVariables = list_size(linea->variables);
-		tamanioTotalBuffer += cantidadVariables * ((sizeof(uint32_t) * 3) + sizeof(char)); //tamanio lista de variables
-		tamanioStackParticular += cantidadVariables * ((sizeof(uint32_t) * 3) + sizeof(char));
+		tamanioTotalBuffer += cantidadVariables * sizeof(t_variable); //tamanio lista de variables
+		tamanioStackParticular += cantidadVariables * sizeof(t_variable);
 
 		tamanioTotalBuffer += sizeof(uint32_t); //tamanio de variable direcretorno
 		tamanioStackParticular += sizeof(uint32_t);
@@ -955,7 +958,7 @@ t_list* deserializarIndiceStack(char* buffer) {
 		memcpy(&cantidadVariablesStack, buffer + offset, tamanioUint32);
 		offset += tamanioUint32;
 		for(p = 0; p < cantidadVariablesStack; p++) {
-			t_variable * varStack = malloc(((sizeof(uint32_t) * 3) + sizeof(char)));
+			t_variable * varStack = malloc(sizeof(t_variable));
 			memcpy(&(varStack->idVariable), buffer + offset, sizeof(char));
 			offset += sizeof(char);
 			memcpy(&(varStack->pagina), buffer + offset, tamanioUint32);

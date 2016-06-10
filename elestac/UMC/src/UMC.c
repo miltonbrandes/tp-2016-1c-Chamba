@@ -298,6 +298,9 @@ void recibirPeticionesNucleo(){
 						notificarProcesoNoIniciadoANucleo();
 					}
 				}
+
+				free(iniciarProg->codigoAnsisop);
+				free(iniciarProg);
 			}else if (operacion == FINALIZARPROGRAMA) {
 				t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
 				uint32_t PID = finalizar->programID;
@@ -306,6 +309,7 @@ void recibirPeticionesNucleo(){
 
 			} else {
 				operacion = ERROR;
+				log_error(ptrLog, "No se recibio nada de Nucleo");
 			}
 			free(mensajeRecibido);
 		}
@@ -317,6 +321,7 @@ void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma) {
 	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
 	free(mensaje->buffer);
 	free(mensaje);
+	free(nuevoPrograma);
 	if(enviarRespuesta <= 0) {
 		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
 	}
@@ -380,8 +385,9 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 		}
 
 		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
-		enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
+		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
 
+		free(resultadoSwap);
 		free(escribirEnSwap->contenido);
 		free(escribirEnSwap);
 		free(buffer_tamanio->buffer);
@@ -449,6 +455,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
 		if(strcmp(mensajeRecibido, "ERROR") == 0) {
+			log_error(ptrLog, "No se recibio ningun dato de CPU %d. Cierro conexion", cpuEnAccion->numCpu);
 			finalizarConexion(socketCpu);
 			pthread_join(cpuEnAccion->hiloCpu, NULL);
 			borrarCpuMuerta(cpuEnAccion);
@@ -718,12 +725,9 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 	buffer_tamanio = serializarInstruccion(instruccion, offset + 5);
 
 	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
-	free(instruccion);
-//	free(buffer_tamanio->buffer);
-//	free(buffer_tamanio);
-//	free(instruccionPosta);
 //	free(instruccion->instruccion);
 //	free(instruccion);
+//	free(buffer_tamanio);
 //	free(datosParaCPU);
 }
 
@@ -743,10 +747,13 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		return NULL;
 	}else{
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
+		free(mensajeDeSwap);
 		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
 
 		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo, pagina);
 		log_info(ptrLog, "se agrego la pagina %i a umc", pagina);
+
+		free(paginaSwap);
 		return frame;
 	}
 	return NULL;
@@ -866,44 +873,47 @@ void finalizarPrograma(uint32_t PID){
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 
-	uint32_t respuesta = deserializarUint32(respuestaSwap);
+	if(strcmp(respuestaSwap, "ERROR") == 0) {
+		log_error(ptrLog, "No se recibio nada de Swap");
+		return;
+	}else{
+		uint32_t respuesta = deserializarUint32(respuestaSwap);
 
-	if(respuesta == SUCCESS){
-		borrarEstructurasDeProceso(PID);
-		log_info(ptrLog, "Se borraron las estructuras relacionadas al Proceso %d", PID);
-	} else {
-		log_info(ptrLog, "Ocurrio un error al borrar las estructuras relacionadas al Proceso %d", PID);
+		if(respuesta == SUCCESS){
+			borrarEstructurasDeProceso(PID);
+			log_info(ptrLog, "Se borraron las estructuras relacionadas al Proceso %d", PID);
+		} else {
+			log_info(ptrLog, "Ocurrio un error al borrar las estructuras relacionadas al Proceso %d", PID);
+		}
+
+		free(finalizarProg);
+		free(respuestaSwap);
 	}
-
-	free(finalizarProg);
-	free(respuestaSwap);
 }
 
 void borrarEstructurasDeProceso(uint32_t pid) {
 	tlbFlushDeUnPID(pid);
 	t_tabla_de_paginas * tablaAEliminar = buscarTablaDelProceso(pid);
-	int i;
-	for(i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
-		t_registro_tabla_de_paginas * registro = list_get(tablaAEliminar->tablaDePaginas, i);
-		if(registro->estaEnUMC == 1) {
-			pthread_mutex_lock(&accesoAFrames);
-			t_frame * frame = list_get(frames, registro->frame);
-			posibleProximaVictimaClock++;
-			frame->bitDeReferencia = 0;
-			frame->disponible = 1;
-			frame->numeroFrame = i;
-			free(frame->contenido);
-			frame->contenido = malloc(marcosSize);
-			pthread_mutex_unlock(&accesoAFrames);
+	if(tablaAEliminar != NULL) {
+		int i;
+		for(i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
+			t_registro_tabla_de_paginas * registro = list_get(tablaAEliminar->tablaDePaginas, i);
+			if(registro != NULL && registro->estaEnUMC == 1) {
+				pthread_mutex_lock(&accesoAFrames);
+				t_frame * frame = list_get(frames, registro->frame);
+				posibleProximaVictimaClock++;
+				frame->bitDeReferencia = 0;
+				frame->disponible = 1;
+				frame->numeroFrame = i;
+				pthread_mutex_unlock(&accesoAFrames);
+			}
+			free(registro);
 		}
-		free(registro);
+
+		int indexDeTablaAEliminar = indiceDeTablaDelProceso(pid);
+		list_remove(tablaProcesosPaginas, indexDeTablaAEliminar);
+		free(tablaAEliminar);
 	}
-
-	int indexDeTablaAEliminar = indiceDeTablaDelProceso(pid);
-	list_remove(tablaProcesosPaginas, indexDeTablaAEliminar);
-	free(tablaAEliminar);
-
-
 }
 
 uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
@@ -954,6 +964,9 @@ t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
 	list_remove(TLB, entradaTLB);
 	list_add(TLB, nuevoRegistroTLB);
 	pthread_mutex_unlock(&accesoATLB);
+
+	free(tlbRegistro->contenido);
+	free(tlbRegistro);
 
 	return nuevoRegistroTLB;
 }
@@ -1084,7 +1097,7 @@ void tlbFlush() {
 
 void tlbFlushDeUnPID(int PID) {
 	int i = 0;
-	if ((entradasTLB) != 0) {
+	if ((entradasTLB) != 0 && TLB != NULL) {
 		pthread_mutex_lock(&accesoATLB);
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
@@ -1178,9 +1191,8 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 		frame->bitDeReferencia = 1;
 		frame->numeroFrame = posibleProximaVictimaClock;
 
-
 		int posEnTlb = pagEstaEnTLB(pid, pagina);
-		if(posEnTlb < list_size(TLB) && posEnTlb != -1){
+		if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
 			//la tengo que eliminar
 			pthread_mutex_lock(&accesoATLB);
 			t_tlb * aEliminar =	list_get(TLB, posEnTlb);

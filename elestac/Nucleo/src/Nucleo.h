@@ -59,7 +59,7 @@ uint32_t pcbAFinalizar;
 uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
 uint32_t tamanioStack;
 uint32_t tamanioMarcos;
-void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado);
+void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB);
 void operacionesConSemaforos(uint32_t operacion, char* buffer,
 		t_clienteCpu *unCliente);
 

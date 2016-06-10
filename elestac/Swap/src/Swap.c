@@ -156,9 +156,8 @@ void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* li
 		char * buffer = recibirDatos(socketUMC, &operacion, &id);
 
 		if (strcmp("ERROR", buffer) == 0) {
-			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC");
+			log_info(ptrLog, "Ocurrio un error al Leer datos de UMC. Finalizo la conexion");
 			finalizarConexion(socketUMC);
-			//free(buffer);
 			return;
 		} else {
 			int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);
@@ -279,6 +278,8 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			paginaDeSwap = malloc(tamanoPagina);
 			paginaDeSwap->paginaSolicitada = leido;
 
+			free(solicitudPagina);
+
 			buffer_tamanio = serializarPaginaDeSwap(paginaDeSwap, tamanoPagina);
 			int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_PAGINA_A_UMC, SWAP);
 			if(bytesEnviados <= 0) {
@@ -296,12 +297,14 @@ int interpretarMensajeRecibido(char* buffer,int op, int socketUMC, t_list* lista
 			log_info(ptrLog, "UMC Solicita la escritura de la Pagina %d del Proceso %d", escritura->paginaProceso, escritura->pid);
 
 			escribirProceso(escritura->paginaProceso, escritura->contenido, listaDeOcupados, escritura->pid);
+			free(escritura->contenido);
+			free(escritura);
+
 			buffer_tamanio = serializarUint32(SUCCESS);
 			int bytesEnviadosEscritura = enviarDatos(socketUMC, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ESCRITURA_OK_UMC, SWAP);
 			if(bytesEnviadosEscritura <= 0) {
 				log_error(ptrLog, "Ocurrio un error al Notificar a UMC que se escribio la Pagina %d del Proceso %d.", escritura->paginaProceso, escritura->pid);
 			}
-			free(escritura);
 			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 			free(buffer);
@@ -356,6 +359,7 @@ void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, ui
 			(paginaProceso*tamanoPagina),
 			pid,
 			escrito);
+	free(escrito);
 }
 
 //funciones para asignar memoria
@@ -640,14 +644,11 @@ int main() {
 			cerrarSwap();
 		}
 
-		do {
-			log_info(ptrLog, "Esperando conexiones");
-			int socketUMC = AceptarConexionCliente(socketReceptorUMC);
-			log_info(ptrLog, "Conexion de UMC aceptada");
-			manejarConexionesRecibidas(socketUMC,listaDeLibres, listaDeOcupados);
+		log_info(ptrLog, "Esperando conexiones");
+		int socketUMC = AceptarConexionCliente(socketReceptorUMC);
+		log_info(ptrLog, "Conexion de UMC aceptada");
 
-
-		} while (1);
+		manejarConexionesRecibidas(socketUMC,listaDeLibres, listaDeOcupados);
 
 	} else {
 		log_info(ptrLog, "El SWAP no pudo inicializarse correctamente");

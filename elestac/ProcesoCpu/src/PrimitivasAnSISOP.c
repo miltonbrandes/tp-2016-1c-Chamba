@@ -170,7 +170,6 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 	char* resp = enviarOperacion(ESCRIBIR, enviar, socketUMC);
 	if(resp != NULL && resp[0] == -1){
 		operacion = ERROR;
-		free(resp);
 		free(enviar->buffer);
 		free(enviar);
 		return;

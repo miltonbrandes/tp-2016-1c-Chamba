@@ -322,25 +322,32 @@ void comenzarEjecucionDePrograma() {
 			return;
 		}else{
 			char* proximaInstruccion = solicitarProximaInstruccionAUMC();
-			limpiarInstruccion(proximaInstruccion);
-			log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
-			analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
-			contador++;
-			pcb->PC = (pcb->PC) + 1;
-		}
-		switch(operacion){
-			case IO:
-				log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
-				finalizarEjecucionPorIO();
+			if(proximaInstruccion != NULL) {
+				limpiarInstruccion(proximaInstruccion);
+				log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
+				analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+				contador++;
+				pcb->PC = (pcb->PC) + 1;
+				switch(operacion){
+					case IO:
+						log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
+						finalizarEjecucionPorIO();
+						return;
+					case WAIT:
+						log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
+						finalizarEjecucionPorWait();
+						return;
+					default:
+						break;
+				}
+				sleep(quantumSleep);
+			}else{
+				log_info(ptrLog, "No se pudo recibir la instruccion de UMC. Cierro la conexion");
+				finalizarConexion(socketUMC);
 				return;
-			case WAIT:
-				log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
-				finalizarEjecucionPorWait();
-				return;
-			default:
-				break;
+			}
 		}
-		sleep(quantumSleep);
+
 	}
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
@@ -422,8 +429,12 @@ char * solicitarProximaInstruccionAUMC() {
 		log_info(ptrLog, "Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d", pcb->PC, pcb->pcb_id, paginaAPedir, requestStart, requestOffset);
 		uint32_t op, id;
 		char* instruccionRecibida = recibirDatos(socketUMC, &op, &id);
-		t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
-		free(instruccionRecibida);
-		return instruccion->instruccion;
+		if(strcmp(instruccionRecibida, "ERROR") == 0) {
+			return NULL;
+		}else{
+			t_instruccion * instruccion = deserializarInstruccion(instruccionRecibida);
+			free(instruccionRecibida);
+			return instruccion->instruccion;
+		}
 	}
 }
