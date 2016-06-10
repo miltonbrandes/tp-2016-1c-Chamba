@@ -619,7 +619,9 @@ t_pcb* deserializar_pcb(char* package) {
 
  	//Tomo el tamanio del PCB
   	memcpy(&tamanioPCB, package + offset, tmp_size);
- 	t_pcb *pcb = malloc(tamanioPCB);
+ 	t_pcb *pcb;
+
+ 	pcb = malloc(tamanioPCB);
   	offset += tmp_size;
   	printf("");
 
