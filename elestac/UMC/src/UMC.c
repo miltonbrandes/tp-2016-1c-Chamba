@@ -718,7 +718,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 	buffer_tamanio = serializarInstruccion(instruccion, offset + 5);
 
 	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
-
+	free(instruccion);
 //	free(buffer_tamanio->buffer);
 //	free(buffer_tamanio);
 //	free(instruccionPosta);

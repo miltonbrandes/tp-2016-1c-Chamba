@@ -310,6 +310,7 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d", unCliente->pcbAsignado->pcb_id);
 		queue_push(colaExit, unCliente->pcbAsignado);
 		sem_post(&semProgExit);
+		sem_wait(&semLiberoPrograma);
 		pthread_mutex_unlock(&mutex_exit);
 	}
 	list_remove_by_condition(listaSocketsCPUs, (void*) _sacarCliente);
@@ -433,7 +434,7 @@ void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion) {
 	}
 
 	t_clienteCpu* unCliente = list_get(list_filter(listaSocketsCPUs, (void *)buscarCpuPorSocket), 0);
-	log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
+	//log_info(ptrLog, "Mensaje recibido de la cpu: %i porque: %i", unCliente->id, operacion);
 	pthread_mutex_lock(&mutex_cpu);
 	comprobarMensajesDeClientes(unCliente, socketFor, operacion, buffer);
 	//pthread_mutex_unlock(&mutex_cpu);
@@ -519,7 +520,7 @@ void operacionQuantum(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
 	pthread_mutex_lock(&mutex);
 	queue_push(colaReady, (void*) unPCB);
 	pthread_mutex_unlock(&mutex);
-	log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",unPCB->pcb_id);
+	//log_debug(ptrLog, "Agregado a la colaReady el PCB del pid: %d",unPCB->pcb_id);
 	if (cpuAcerrar != unCliente->socket) {
 		unCliente->fueAsignado = false;
 		sem_post(&semCpuOciosa);
@@ -563,7 +564,7 @@ void operacionIO(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
 
 void operacionEXIT(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
 	log_debug(ptrLog, "Se ingresa a operacionExit");
-	log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
+	//log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
 	unPCB = deserializar_pcb(buffer); //debo deserializar el pcb que me envio la cpu
 	char* texto = "Se ha finalizado el programa correctamente";
 	t_imprimibles *imp = malloc(sizeof(uint32_t)*2+43);
@@ -573,10 +574,10 @@ void operacionEXIT(t_clienteCpu* unCliente, char* buffer, t_pcb* unPCB){
 	queue_push(colaImprimibles, imp);
 	sem_post(&semMensajeImpresion);
 	sem_wait(&semFinalizoDeImprimir);
-	log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %i", unPCB->pcb_id);
+	//log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %i", unPCB->pcb_id);
 	queue_push(colaExit, (void*) unPCB);
 	sem_post(&semProgExit);
-	pthread_mutex_unlock(&mutex_exit);
+	sem_wait(&semLiberoPrograma);
 	if (cpuAcerrar != unCliente->socket) {
 		unCliente->fueAsignado = false;
 		sem_post(&semCpuOciosa);
@@ -732,7 +733,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer,
 }
 
 t_pcb* crearPCB(char* programa, int socket) {
-	log_debug(ptrLog, "Procedo a crear el pcb del programa recibido");
+	printf("Procedo a crear el pcb del programa solicitado");
 	// lo que esta comentado en esta funcion hay que descomentarlo cuando este hecho el leer y escribir
 	t_metadata_program* datos;
 
@@ -778,6 +779,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 		free(nuevoProgEnUMC);
 		queue_push(colaExit, pcb);
 		sem_post(&semProgExit);
+		sem_wait(&semLiberoPrograma);
 		return NULL;
 	} else {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
@@ -965,13 +967,13 @@ void* vaciarColaExit(){
 		finalizarProg->programID = aux->pcb_id;
 		if((enviarOperacion(FINALIZARPROGRAMA, finalizarProg, socketUMC)) < 0){
 			log_error(ptrLog,"Error al borrar las paginas del pcb con pid: %d",aux->pcb_id);
-		}else{
-			log_info(ptrLog,"Borrados las paginas del programa:%d",aux->pcb_id);
-		}
+		}/*else{
+			log_info(ptrLog,"Borrados las paginas del programa");
+		}*/
 		free(finalizarProg);
 		free(aux);
+		sem_post(&semLiberoPrograma);
 		pthread_mutex_unlock(&mutex_cpu);
-		pthread_mutex_unlock(&mutex_exit);
 	}
 	return 0;
 }
@@ -1047,6 +1049,7 @@ void* hiloPCBaFinalizar() {
 			if (pcbBlock != NULL ) {
 				queue_push(colaExit, pcbBlock->pcb);
 				sem_post(&semProgExit);
+				sem_wait(&semLiberoPrograma);
 				pthread_mutex_unlock(&mutex_exit);
 				log_debug(ptrLog, "El pcb se encontraba en la cola de bloqueados");
 				break;
@@ -1056,6 +1059,7 @@ void* hiloPCBaFinalizar() {
 			if (pcb != NULL ) {
 				queue_push(colaExit, pcb);
 				sem_post(&semProgExit);
+				sem_wait(&semLiberoPrograma);
 				pthread_mutex_unlock(&mutex_exit);
 				log_debug(ptrLog, "El pcb se encontraba en la cola de ready");
 				break;
@@ -1067,6 +1071,7 @@ void* hiloPCBaFinalizar() {
 				cliente->fueAsignado=false;
 				queue_push(colaExit, cliente->pcbAsignado);
 				sem_post(&semProgExit);
+				sem_wait(&semLiberoPrograma);
 				pthread_mutex_unlock(&mutex_exit);
 				log_debug(ptrLog, "El programa se encontraba en ejecucion");
 				break;
@@ -1148,7 +1153,7 @@ int main() {
 	listaSocketsCPUs = list_create();		//lista de cpus conectadas
 	listaSocketsConsola = list_create();	//lista de consolas conectadas
 	colaBloqueados = list_create();			//lista de procesos bloqueados
-
+	sem_init(&semLiberoPrograma, 1, 0); //para ver cuando termina un programa
 	sem_init(&semNuevoProg, 1, 0);// Para sacar de la cola New solo cuando se manda señal de que se creó uno
 	sem_init(&semProgExit, 1, 0);// Misma funcion que semNuevoProg pero para los prog en Exit
 	sem_init(&semCpuOciosa, 1, 0);		// Semaforo para clientes ociosos
