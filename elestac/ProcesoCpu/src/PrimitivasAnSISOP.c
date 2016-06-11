@@ -142,7 +142,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	solicitar->pagina = posicionRet.pagina;
 	solicitar->offset = TAMANIO_VARIABLE;
 	solicitar->start = posicionRet.offset;
-	char* buffer = enviarOperacion(LEER, solicitar, socketUMC);
+	char* buffer = enviarOperacion(LEER_VALOR_VARIABLE, solicitar, socketUMC);
 	if(buffer != NULL) {
 		t_instruccion * instruccion = deserializarInstruccion(buffer);
 		int valueAsInt = atoi(instruccion->instruccion);

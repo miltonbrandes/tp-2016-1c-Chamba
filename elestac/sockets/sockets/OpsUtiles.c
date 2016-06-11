@@ -263,6 +263,26 @@ char* enviarOperacion(uint32_t operacion, void* estructuraDeOperacion,int server
 		free(buffer_tamanio->buffer);
 		free(buffer_tamanio);
 		break;
+	case LEER_VALOR_VARIABLE:
+		//esta parte iria en cpu, para pedirle a la umc la pagina que necesite...
+		buffer_tamanio = serializarSolicitarBytes(estructuraDeOperacion);
+		if ((enviarDatos(serverSocket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, LEER_VALOR_VARIABLE, NUCLEO)) < 0) {
+			free(buffer_tamanio->buffer);
+			free(buffer_tamanio);
+			return NULL;
+		}
+		//####		Recibo buffer pedidos		####
+		respuestaOperacion = recibirDatos(serverSocket, NULL, &id);
+		if (strcmp(respuestaOperacion, "ERROR") == 0) {
+			free(buffer_tamanio->buffer);
+			free(buffer_tamanio);
+			free(respuestaOperacion);
+			return NULL;
+		}
+
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
+		break;
 	case ESCRIBIR:
 		//esta parte iria en cpu, para esciribir en la umc la pagina que necesite
 		buffer_tamanio = serializarEnviarBytes((t_enviarBytes *) estructuraDeOperacion);
@@ -549,7 +569,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	if (pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
 		tamanioPCB += strlen(pcb->ind_etiq);
 	}
-	tamanioPCB += (sizeof(uint32_t) * 9); //Cantidad de uint32_t que tiene PCB
+	tamanioPCB += (sizeof(uint32_t) * 11); //Cantidad de uint32_t que tiene PCB
 	tamanioPCB += sizeof(uint32_t); //Para indicar tamanio de PCBs
 
 	//Comienzo serializacion
@@ -579,6 +599,10 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &(pcb->paginaStackActual), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->primerPaginaStack), tmp_size);
+	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->quantum), tmp_size);
+	offset += tmp_size;
+	memcpy(paqueteSerializado + offset, &(pcb->quantumSleep), tmp_size);
 	offset += tmp_size;
 
 	//Serializo Indice de Codigo
@@ -644,6 +668,10 @@ t_pcb* deserializar_pcb(char* package) {
  	offset += tmp_size;
  	memcpy(&(pcb->primerPaginaStack), package + offset, tmp_size);
  	offset += tmp_size;
+ 	memcpy(&(pcb->quantum), package + offset, tmp_size);
+ 	offset += tmp_size;
+ 	memcpy(&(pcb->quantumSleep), package + offset, tmp_size);
+ 	offset += tmp_size;
 
  	//Tomo Indice de Codigo
  	uint32_t itemsIndiceDeCodigo;
@@ -688,8 +716,7 @@ t_pcb* deserializar_pcb(char* package) {
 
 t_buffer_tamanio * serializar_EstructuraInicial(t_EstructuraInicial * estructuraInicial) {
 	char* buffer = malloc(sizeof(t_EstructuraInicial));
-	memcpy(buffer, &(estructuraInicial->Quantum), sizeof(uint32_t));
-	memcpy(buffer + sizeof(uint32_t), &(estructuraInicial->RetardoQuantum), sizeof(uint32_t));
+	memcpy(buffer, &(estructuraInicial->tamanioStack), sizeof(uint32_t));
 
 	t_buffer_tamanio * buffer_tamanio = malloc(sizeof(uint32_t) + sizeof(t_EstructuraInicial));
 	buffer_tamanio->tamanioBuffer = sizeof(t_EstructuraInicial);
@@ -703,9 +730,7 @@ t_EstructuraInicial* deserializar_EstructuraInicial(char* package) {
 	int offset = 0;
 	int tmp_size = sizeof(uint32_t);
 
-	memcpy(&estructuraInicial->Quantum, package + offset, tmp_size);
-	offset += tmp_size;
-	memcpy(&estructuraInicial->RetardoQuantum, package + offset, tmp_size);
+	memcpy(&estructuraInicial->tamanioStack, package + offset, tmp_size);
 
 	return estructuraInicial;
 }

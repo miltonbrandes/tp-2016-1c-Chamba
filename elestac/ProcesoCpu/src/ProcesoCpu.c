@@ -24,8 +24,6 @@
 
 #define MAX_BUFFER_SIZE 4096
 t_pcb *pcb;
-uint32_t quantum, quantumSleep;
-//uint32_t tamanioPagina;
 t_config* config;
 
 AnSISOP_funciones functions = {
@@ -152,8 +150,8 @@ void manejarMensajeRecibido(uint32_t id, uint32_t op, char *mensaje) {
 
 void manejarMensajeRecibidoNucleo(uint32_t op, char *mensaje) {
 	switch (op) {
-	case QUANTUM_PARA_CPU:
-		recibirQuantum(mensaje);
+	case TAMANIO_STACK_PARA_CPU:
+		recibirTamanioStack(mensaje);
 		break;
 	case EXECUTE_PCB:
 		recibirPCB(mensaje);
@@ -193,11 +191,10 @@ void recibirPCB(char *mensaje) {
 	comenzarEjecucionDePrograma();
 }
 
-void recibirQuantum(char *mensaje) {
+void recibirTamanioStack(char *mensaje) {
 	t_EstructuraInicial *estructuraInicial = deserializar_EstructuraInicial(mensaje);
-	quantum = estructuraInicial->Quantum;
-	quantumSleep = estructuraInicial->RetardoQuantum;
-	log_info(ptrLog, "Quantum: %d - Quantum Sleep: %d\n", quantum, quantumSleep);
+	tamanioStack = estructuraInicial->tamanioStack;
+	log_info(ptrLog, "Tamanio Stack: %d", tamanioStack);
 	free(mensaje);
 	free(estructuraInicial);
 }
@@ -316,7 +313,7 @@ void comenzarEjecucionDePrograma() {
 	log_info(ptrLog, "Recibo PCB id: %i", pcb->pcb_id);
 	int contador = 1;
 
-	while (contador <= quantum) {
+	while (contador <= pcb->quantum) {
 		if(pcb->PC >= (pcb->codigo-1)) {
 			finalizarEjecucionPorExit();
 			return;
@@ -340,7 +337,7 @@ void comenzarEjecucionDePrograma() {
 					default:
 						break;
 				}
-				sleep(quantumSleep);
+				sleep(pcb->quantumSleep);
 			}else{
 				log_info(ptrLog, "No se pudo recibir la instruccion de UMC. Cierro la conexion");
 				finalizarConexion(socketUMC);

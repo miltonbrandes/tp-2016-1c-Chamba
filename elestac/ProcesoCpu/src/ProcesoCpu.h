@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <commons/log.h>
 #include <commons/config.h>
+
+uint32_t tamanioStack;
 uint32_t tamanioPagina;
 t_log* ptrLog;
 t_config* config;
@@ -35,7 +37,7 @@ void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);
 void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje);
 
 void recibirPCB(char *mensaje);
-void recibirQuantum(char *mensaje);
+void recibirTamanioStack(char *mensaje);
 void recibirTamanioPagina(char *mensaje);
 void recibirSignalSemaforo(char *mensaje);
 void recibirAsignacionVariableCompartida(char *mensaje);

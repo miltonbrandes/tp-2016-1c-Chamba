@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <commons/log.h>
@@ -461,7 +462,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 			borrarCpuMuerta(cpuEnAccion);
 			break;
 		}else{
-			if (operacion == LEER) {
+			if (operacion == LEER || operacion == LEER_VALOR_VARIABLE) {
 				t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
 
 				uint32_t pagina = leer->pagina;
@@ -469,7 +470,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 				uint32_t offset = leer->offset;
 				log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
 
-				enviarDatoACPU(cpuEnAccion, pagina, start, offset);
+				enviarDatoACPU(cpuEnAccion, pagina, start, offset, operacion);
 
 				free(leer);
 			}else if (operacion == ESCRIBIR) {
@@ -523,17 +524,8 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 
-				char *buffAux = malloc(tamanio);
-				memcpy(buffAux, buffer, strlen(buffer));
-				if(tamanio > strlen(buffer)) {
-					int i;
-					for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
-						char * auxito = "~";
-						memcpy(buffAux + i, auxito, 1);
-					}
-				}
-				memcpy(registroTLB->contenido + offset, buffAux, tamanio);
-				free(buffAux);
+				int bufferAsInt = atoi(buffer);
+				memcpy(registroTLB->contenido + offset, &bufferAsInt, tamanio);
 
 				log_debug(ptrLog, "Estado del Registro TLB luego de escritura: %s", registroTLB->contenido);
 
@@ -543,17 +535,8 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 
-					char *buffAux = malloc(tamanio);
-					memcpy(buffAux, buffer, strlen(buffer));
-					if(tamanio > strlen(buffer)) {
-						int i;
-						for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
-							char * auxito = "~";
-							memcpy(buffAux + i, auxito, 1);
-						}
-					}
-					memcpy(frame->contenido + offset, buffAux, tamanio);
-					free(buffAux);
+					int bufferAsInt = atoi(buffer);
+					memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
 
@@ -567,17 +550,8 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
-					char *buffAux = malloc(tamanio);
-					memcpy(buffAux, buffer, strlen(buffer));
-					if(tamanio > strlen(buffer)) {
-						int i;
-						for(i = strlen(buffer); i < strlen(buffer) + tamanio; i++) {
-							char * auxito = "~";
-							memcpy(buffAux + i, auxito, 1);
-						}
-					}
-					memcpy(frameSolicitado->contenido + offset, buffAux, tamanio);
-					free(buffAux);
+					int bufferAsInt = atoi(buffer);
+					memcpy(frameSolicitado->contenido + offset, &bufferAsInt, tamanio);
 
 					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 
@@ -618,7 +592,7 @@ void limpiarInstruccion(char * instruccion) {
      *p2 = '\0';
  }
 
-void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset) {
+void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset, uint32_t operacion) {
 	uint32_t offsetMemcpy = 0;
 	t_list * datosParaCPU = list_create();
 
@@ -637,17 +611,12 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 
 					char * bufferAux = calloc(1, auxiliar->offset);
-					memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
-
-					int tieneCaracterEspecial = 0, i;
-					for(i = 0; i < auxiliar->offset; i++) {
-						if(bufferAux[i] == '~') {
-							tieneCaracterEspecial = 1;
-						}
-					}
-					if(tieneCaracterEspecial == 1) {
+					if(operacion == LEER) {
 						memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
-						limpiarInstruccion(bufferAux);
+					}else{
+						int bufferInt;
+						memcpy(&bufferInt, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
+						sprintf(bufferAux, "%d", bufferInt);
 					}
 
 					list_add(datosParaCPU, bufferAux);
@@ -657,18 +626,14 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					sleep(retardo);
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
-						char * bufferAux = calloc(1, auxiliar->offset);
-						memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
 
-						int tieneCaracterEspecial = 0, i;
-						for(i = 0; i < auxiliar->offset; i++) {
-							if(bufferAux[i] == '~') {
-								tieneCaracterEspecial = 1;
-							}
-						}
-						if(tieneCaracterEspecial == 1) {
+						char * bufferAux = calloc(1, auxiliar->offset);
+						if(operacion == LEER) {
 							memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
-							limpiarInstruccion(bufferAux);
+						}else{
+							int bufferInt;
+							memcpy(&bufferInt, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+							sprintf(bufferAux, "%d", bufferInt);
 						}
 
 						list_add(datosParaCPU, bufferAux);
@@ -683,17 +648,13 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
 						char * bufferAux = calloc(1, auxiliar->offset);
-						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
 
-						int tieneCaracterEspecial = 0, i;
-						for(i = 0; i < auxiliar->offset; i++) {
-							if(bufferAux[i] == '~') {
-								tieneCaracterEspecial = 1;
-							}
-						}
-						if(tieneCaracterEspecial == 1) {
+						if(operacion == LEER) {
 							memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
-							limpiarInstruccion(bufferAux);
+						}else{
+							int bufferInt;
+							memcpy(&bufferInt, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+							sprintf(bufferAux, "%d", bufferInt);
 						}
 
 						list_add(datosParaCPU, bufferAux);

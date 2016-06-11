@@ -302,10 +302,9 @@ void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion) {
 	cliente->programaCerrado = false;
 	list_add(listaSocketsCPUs, cliente);
 	t_EstructuraInicial * estructuraInicial = malloc(sizeof(t_EstructuraInicial));
-	estructuraInicial->Quantum = quantum;
-	estructuraInicial->RetardoQuantum = quantumSleep;
+	estructuraInicial->tamanioStack = tamanioStack;
 	t_buffer_tamanio * buffer_tamanio = serializar_EstructuraInicial(estructuraInicial);
-	enviarDatos(cliente->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, QUANTUM_PARA_CPU, NUCLEO);
+	enviarDatos(cliente->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, TAMANIO_STACK_PARA_CPU, NUCLEO);
 	sem_post(&semCpuOciosa);
 	log_debug(ptrLog, "Cliente aceptado y quantum enviado");
 	free(estructuraInicial);
@@ -767,6 +766,9 @@ t_pcb* crearPCB(char* programa, int socket) {
 		return NULL;
 	} else {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);
+
+		pcb->quantum = quantum;
+		pcb->quantumSleep = quantumSleep;
 
 		pcb->paginaCodigoActual = 0;
 		pcb->paginaStackActual = iniciarProg->tamanio - tamanioStack;

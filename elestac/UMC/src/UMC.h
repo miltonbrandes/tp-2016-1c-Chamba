@@ -82,7 +82,7 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg);
 void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma);
 void notificarProcesoNoIniciadoANucleo();
 
-void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset);
+void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start, uint32_t offset, uint32_t operacion);
 void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer);
 
 void enviarPaginasASwap(t_iniciar_programa * iniciarProg);

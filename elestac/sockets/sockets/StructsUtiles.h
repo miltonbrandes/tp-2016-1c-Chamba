@@ -39,6 +39,8 @@ typedef struct stack{
 	t_argumento * retVar;
 }t_stack;
 typedef struct pcb {
+	uint32_t quantum;
+	uint32_t quantumSleep;
 	uint32_t pcb_id;
 	uint32_t codigo;
 	t_list* ind_codigo;
@@ -67,8 +69,7 @@ typedef struct{
 }t_solicitudes;
 
 typedef struct estructuraInicial {
-	uint32_t Quantum;
-	uint32_t RetardoQuantum;
+	uint32_t tamanioStack;
 } t_EstructuraInicial;
 
 typedef struct clienteCpu{
