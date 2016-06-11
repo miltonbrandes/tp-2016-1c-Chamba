@@ -94,19 +94,19 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}/home/utnso/tp-2016-1c-Chamba/elestac/L
 #Hago los make
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
-sudo make
+sudo make all
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
-sudo make
+sudo make all
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
-sudo make
+sudo make all
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
-sudo make
+sudo make all
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
-sudo make
+sudo make all
 
 #Agrego variables de entorno necesarias
 
@@ -124,6 +124,5 @@ export CPU_CONFIG=/home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/ProcesoCpu.tx
 
 export UMC_LOG=/home/utnso/tp-2016-1c-Chamba/elestac/UMC/log.txt
 export UMC_CONFIG=/home/utnso/tp-2016-1c-Chamba/elestac/UMC/UMC.txt
-
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/

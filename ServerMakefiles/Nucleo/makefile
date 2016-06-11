@@ -31,10 +31,10 @@ dependents:
 	-cd /tp-2016-1c-Chamba/elestac/sockets/Debug && $(MAKE) all
 
 # Tool invocations
-Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so /home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/libparser-ansisop.so
+Nucleo: $(OBJS) $(USER_OBJS) /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libcommons.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libsockets.so /home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libparser-ansisop.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build" -L"/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug" -L"/home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS" -o "Nucleo" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -45,8 +45,8 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so:
-/home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/libparser-ansisop.so:
-/home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so:
+/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libcommons.so:
+/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libparser-ansisop.so:
+/home/utnso/tp-2016-1c-Chamba/elestac/LIBRERIAS/libsockets.so:
 
 -include ../makefile.targets
