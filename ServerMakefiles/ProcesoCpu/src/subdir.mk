@@ -4,12 +4,15 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/PrimitivasAnSISOP.c \
 ../src/ProcesoCpu.c 
 
 OBJS += \
+./src/PrimitivasAnSISOP.o \
 ./src/ProcesoCpu.o 
 
 C_DEPS += \
+./src/PrimitivasAnSISOP.d \
 ./src/ProcesoCpu.d 
 
 
