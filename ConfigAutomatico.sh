@@ -67,9 +67,9 @@ git clone https://github.com/sisoputnfrba/ansisop-parser.git
 
 echo "DESCARGA DEL PARSER COMPLETA"
 echo "PROCEDEMOS A INSTALARLA"
-cd ansisop-parser/parser
-sudo make clean
+cd ansisop-parser/parser 
 sudo make all
+ls build/
 sudo make install
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/
