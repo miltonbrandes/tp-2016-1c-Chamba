@@ -25,14 +25,11 @@ endif
 # All Target
 all: libsockets.so
 
-dependents:
-	-cd /tp-2016-1c-Chamba/so-commons-library && $(MAKE) all
-
 # Tool invocations
-libsockets.so: $(OBJS) $(USER_OBJS) /home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so
+libsockets.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build" -shared -o "libsockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -shared -o "libsockets.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -41,14 +38,7 @@ clean:
 	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libsockets.so
 	-@echo ' '
 
-install: all
-	cp -u /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/libsockets.so /usr/lib
-
-uninstall:
-	rm -f /usr/lib/libsockets.so
-
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/libcommons.so:
 
 -include ../makefile.targets
