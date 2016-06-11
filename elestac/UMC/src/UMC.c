@@ -636,11 +636,11 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB en la entrada: %i", pagina, cpu->procesoActivo, entradaTLB);
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 
-					char * bufferAux = calloc(1, auxiliar->offset + 1);
+					char * bufferAux = calloc(1, auxiliar->offset);
 					memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
 
 					int tieneCaracterEspecial = 0, i;
-					for(i = 0; i < auxiliar->offset + 2; i++) {
+					for(i = 0; i < auxiliar->offset; i++) {
 						if(bufferAux[i] == '~') {
 							tieneCaracterEspecial = 1;
 						}
@@ -651,17 +651,17 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					}
 
 					list_add(datosParaCPU, bufferAux);
-					offsetMemcpy += auxiliar->offset + 1;
+					offsetMemcpy += auxiliar->offset;
 
 				} else {
 					sleep(retardo);
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
-						char * bufferAux = calloc(1, auxiliar->offset + 2);
+						char * bufferAux = calloc(1, auxiliar->offset);
 						memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
 
 						int tieneCaracterEspecial = 0, i;
-						for(i = 0; i < auxiliar->offset + 2; i++) {
+						for(i = 0; i < auxiliar->offset; i++) {
 							if(bufferAux[i] == '~') {
 								tieneCaracterEspecial = 1;
 							}
@@ -672,7 +672,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						}
 
 						list_add(datosParaCPU, bufferAux);
-						offsetMemcpy += auxiliar->offset + 1;
+						offsetMemcpy += auxiliar->offset;
 
 						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
 
@@ -682,11 +682,11 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
-						char * bufferAux = calloc(1, auxiliar->offset + 2);
-						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start) + 1, auxiliar->offset);
+						char * bufferAux = calloc(1, auxiliar->offset);
+						memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
 
 						int tieneCaracterEspecial = 0, i;
-						for(i = 0; i < auxiliar->offset + 2; i++) {
+						for(i = 0; i < auxiliar->offset; i++) {
 							if(bufferAux[i] == '~') {
 								tieneCaracterEspecial = 1;
 							}
@@ -697,7 +697,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 						}
 
 						list_add(datosParaCPU, bufferAux);
-						offsetMemcpy += auxiliar->offset + 1;
+						offsetMemcpy += auxiliar->offset;
 
 						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
 
@@ -708,6 +708,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 			}
 			for(i = 0; i < list_size(listaRegistros); i++) {
 				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
+				//free(auxiliar->registro);
 				free(auxiliar);
 			}
 			free(listaRegistros);
@@ -728,9 +729,9 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 	buffer_tamanio = serializarInstruccion(instruccion, strlen(instruccionPosta) + 1);
 
 	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
+	free(instruccion);
 //	free(instruccion->instruccion);
 //	free(instruccion);
-//	free(buffer_tamanio);
 //	free(datosParaCPU);
 }
 
@@ -800,7 +801,7 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			t_registro_tabla_de_paginas * registroAdicional2 = buscarPaginaEnTabla(tablaDeProceso, pagina);
 			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
 			auxiliarAdicional2->registro = registroAdicional2;
-			auxiliarAdicional2->start = -1;
+			auxiliarAdicional2->start = 0;
 			//if(offset == 0) {
 				auxiliarAdicional2->offset = offset;
 			/*}else{

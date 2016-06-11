@@ -15,7 +15,7 @@
 
 t_buffer_tamanio * serializarInstruccion(t_instruccion * instruccion, int tamanioInstruccion) {
 	int offset = 0, tmp_size = sizeof(uint32_t);
-	char * buffer = malloc(tamanioInstruccion);
+	char * buffer = malloc(tamanioInstruccion + 4);
 
 	memcpy(buffer, &tamanioInstruccion, tmp_size);
 	offset += tmp_size;
