@@ -4,43 +4,53 @@
 #Primero los borro
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
 sudo rm makefile
+sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/src/
 sudo rm subdir.mk
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
 sudo rm makefile
+sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/src/
 sudo rm subdir.mk
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
 sudo rm makefile
+sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/src/
 sudo rm subdir.mk
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
 sudo rm makefile
+sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/src/
 sudo rm subdir.mk
 
 cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
 sudo rm makefile
+sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/src/
 sudo rm subdir.mk
 
 #Ahora agrego los makefile modificados que tenemos en la otra carpeta
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/src/
 
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Nucleo/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Nucleo/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Nucleo/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/Nucleo/Debug/src/
 
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/ProcesoCpu/makefile /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/ProcesoCpu/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/ProcesoCpu/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/ProcesoCpu/Debug/src/
 
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Swap/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Swap/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Swap/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/Swap/Debug/src/
 
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/makefile /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
+cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/src/
 
 #Libraries
