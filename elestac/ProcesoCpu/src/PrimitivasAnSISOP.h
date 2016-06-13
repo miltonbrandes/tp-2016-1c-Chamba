@@ -45,7 +45,7 @@ void imprimir(t_valor_variable valor_mostrar);
 void imprimirTexto(char*	texto);
 void entradaSalida(t_nombre_dispositivo dispositivo, int	tiempo);
 void wait(t_nombre_semaforo	identificador_semaforo);
-void signal(t_nombre_semaforo identificador_semaforo);
+void ansisop_signal(t_nombre_semaforo identificador_semaforo);
 extern int socketNucleo;
 extern int socketNucleo;
 extern int socketUMC;

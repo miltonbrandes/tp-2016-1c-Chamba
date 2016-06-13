@@ -6,7 +6,7 @@
  */
 
 #include "ProcesoCpu.h"
-
+//TODO: probar el sigusr1 en cpu y probar instrucciones de semaforo entrada salida y variables compartidas
 #include <commons/collections/list.h>
 #include <commons/config.h>
 #include <commons/log.h>
@@ -19,12 +19,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <stdbool.h>
 #include "PrimitivasAnSISOP.h"
-
+#include <signal.h>
 #define MAX_BUFFER_SIZE 4096
 t_pcb *pcb;
 t_config* config;
+bool cerrarCPU = false;
 
 AnSISOP_funciones functions = {
 		.AnSISOP_asignar = asignar,
@@ -41,7 +42,7 @@ AnSISOP_funciones functions = {
 		.AnSISOP_llamarConRetorno = llamarConRetorno };
 
 AnSISOP_kernel kernel_functions = {
-		.AnSISOP_signal = signal,
+		.AnSISOP_signal = ansisop_signal,
 		.AnSISOP_wait = wait };
 
 int crearLog() {
@@ -52,13 +53,33 @@ int crearLog() {
 		return 0;
 	}
 }
+void revisarSigusR1(int signo) {
+	if (signo == SIGUSR1)
+	{
+		char * buffer = "SIGUSR1";
+		uint32_t tam = 8;
+		log_info(ptrLog, "Se ha recibido la senial SIGUSR1");
+		if (operacion == NOTHING)
+		{
+			finalizarConexion(socketNucleo);
+			return;
+		}
+		cerrarCPU = true;
+		enviarDatos(socketNucleo, buffer, tam, SIGUSR, CPU);
+		log_debug(ptrLog, "Se termina de ejecutar la rafaga actual y luego se cierra esta CPU");
+		free(buffer);
+	}
+}
 int main() {
 	crearLog();
 	config = config_create(getenv("CPU_CONFIG"));
 	char *direccionUmc = config_get_string_value(config, "IP_UMC");
 	int puertoUmc = config_get_int_value(config, "PUERTO_UMC");
 	socketUMC = crearSocketCliente(direccionUmc, puertoUmc);
-
+	/*
+	 * Manejo de la interrupcion SIGUSR1
+	 */
+	signal(SIGUSR1, revisarFinalizarCPU());
 	if (socketUMC > 0) {
 		if (manejarPrimeraConexionConUMC()) {
 			char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
@@ -254,6 +275,16 @@ void finalizarEjecucionPorExit() {
 	}
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
+	if(cerrarCPU){
+		log_debug(ptrLog, "Cerrando CPU");
+		if (operacion != NOTHING)
+			finalizarConexion(socketNucleo);
+		finalizarConexion(socketUMC);
+		log_info(ptrLog, "CPU cerrada");
+		log_destroy(ptrLog);
+		config_destroy(config);
+		return;
+	}
 }
 
 void finalizarEjecucionPorIO(){
@@ -307,7 +338,18 @@ void limpiarInstruccion(char * instruccion) {
      }
      *p2 = '\0';
  }
-
+void revisarFinalizarCPU(){
+	if(cerrarCPU){
+			log_debug(ptrLog, "Cerrando CPU");
+			if (operacion != NOTHING)
+				finalizarConexion(socketNucleo);
+			finalizarConexion(socketUMC);
+			log_info(ptrLog, "CPU cerrada");
+			log_destroy(ptrLog);
+			config_destroy(config);
+			return;
+		}
+}
 
 void comenzarEjecucionDePrograma() {
 	log_info(ptrLog, "Recibo PCB id: %i", pcb->pcb_id);
@@ -316,6 +358,7 @@ void comenzarEjecucionDePrograma() {
 	while (contador <= pcb->quantum) {
 		if(pcb->PC >= (pcb->codigo-1)) {
 			finalizarEjecucionPorExit();
+			revisarFinalizarCPU();
 			return;
 		}else{
 			char* proximaInstruccion = solicitarProximaInstruccionAUMC();
@@ -329,10 +372,12 @@ void comenzarEjecucionDePrograma() {
 					case IO:
 						log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
 						finalizarEjecucionPorIO();
+						revisarFinalizarCPU();
 						return;
 					case WAIT:
 						log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
 						finalizarEjecucionPorWait();
+						revisarFinalizarCPU();
 						return;
 					default:
 						break;
@@ -345,11 +390,14 @@ void comenzarEjecucionDePrograma() {
 			}
 		}
 
+
 	}
 	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
 	finalizarEjecucionPorQuantum();
+
 	free(pcb);
 	//freePCB();
+	revisarFinalizarCPU();
 }
 
 void freePCB() {

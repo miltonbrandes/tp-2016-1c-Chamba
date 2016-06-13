@@ -59,43 +59,46 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
 	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-
-	if(lineaStack == NULL){
-		//el tamaño de la linea del stack seria delos 4 ints mas
-		uint32_t tamLineaStack = 7*sizeof(uint32_t)+1;
-		lineaStack = malloc(tamLineaStack);
-		lineaStack->retVar = NULL;
-		lineaStack->direcretorno = 0;
-		lineaStack->argumentos = list_create();
-		lineaStack->variables = list_create();
-		//lineaStack->variables = malloc((sizeof(uint32_t)*3)+1);
-		//pcb->ind_stack = malloc(tamLineaStack);
-		list_add(pcb->ind_stack, lineaStack);
+	if((pcb->paginaStackActual - tamanioStack) == 1 && pcb->stackPointer + 4 >= tamanioPagina){
+		log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+		return -1;
 	}else{
+		if(lineaStack == NULL){
+			//el tamaño de la linea del stack seria delos 4 ints mas
+			uint32_t tamLineaStack = 7*sizeof(uint32_t)+1;
+			lineaStack = malloc(tamLineaStack);
+			lineaStack->retVar = NULL;
+			lineaStack->direcretorno = 0;
+			lineaStack->argumentos = list_create();
+			lineaStack->variables = list_create();
+			//lineaStack->variables = malloc((sizeof(uint32_t)*3)+1);
+			//pcb->ind_stack = malloc(tamLineaStack);
+			list_add(pcb->ind_stack, lineaStack);
+		}
+		//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
+		if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
+			nuevaVar->idVariable = identificador_variable;
+			pcb->paginaStackActual++;
+			nuevaVar->pagina = pcb->paginaStackActual;
+			nuevaVar->size = TAMANIO_VARIABLE;
+			nuevaVar->offset = 0;
+			pcb->stackPointer += TAMANIO_VARIABLE;
+			list_add(lineaStack->variables, nuevaVar);
+		}else{
+			nuevaVar->idVariable = identificador_variable;
+			nuevaVar->pagina = pcb->paginaStackActual;
+			nuevaVar->size = TAMANIO_VARIABLE;
+			nuevaVar->offset = pcb->stackPointer;
+			pcb->stackPointer+= TAMANIO_VARIABLE;
+			list_add(lineaStack->variables, nuevaVar);
+		}
+		//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
+		uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset;
+		log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
+		return posicionRet;
 	}
-
-	//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
-	if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
-		nuevaVar->idVariable = identificador_variable;
-		pcb->paginaStackActual++;
-		nuevaVar->pagina = pcb->paginaStackActual;
-		nuevaVar->size = TAMANIO_VARIABLE;
-		nuevaVar->offset = 0;
-		pcb->stackPointer += TAMANIO_VARIABLE;
-		list_add(lineaStack->variables, nuevaVar);
-	}else{
-		nuevaVar->idVariable = identificador_variable;
-		nuevaVar->pagina = pcb->paginaStackActual;
-		nuevaVar->size = TAMANIO_VARIABLE;
-		nuevaVar->offset = pcb->stackPointer;
-		pcb->stackPointer+= TAMANIO_VARIABLE;
-		list_add(lineaStack->variables, nuevaVar);
-	}
-	//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
-	uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset;
-	log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
-	return posicionRet;
 }
+
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	//ver bien que deberia devolver aca, como calcular el stack pointer...
@@ -285,7 +288,7 @@ void imprimirTexto(char* texto) {
 
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 
-	uint32_t operacion = IO;
+	operacion = IO;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(dispositivo)+1+8;
 	log_debug(ptrLog, "Se efectua la operacion de Entrada/Salida");
@@ -325,7 +328,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 }
 
-void signal(t_nombre_semaforo identificador_semaforo) {
+void ansisop_signal(t_nombre_semaforo identificador_semaforo) {
 	uint32_t op = SIGNAL;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(identificador_semaforo)+1;

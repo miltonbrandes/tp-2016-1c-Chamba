@@ -526,6 +526,7 @@ void operacionQuantum(t_clienteCpu* unCliente, char* buffer){
 		sem_post(&semCpuOciosa);
 		sem_post(&semNuevoPcbColaReady);
 	}else{
+		cerrarConexionCliente(unCliente);
 		sem_post(&semNuevoPcbColaReady);
 	}
 }
@@ -535,9 +536,12 @@ void operacionIO(t_clienteCpu* unCliente, char* buffer){
 	t_solicitudes *solicitud = malloc(sizeof(t_solicitudes));
 	t_dispositivo_io* opIO;
 	log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
-
+	uint32_t op;
+	uint32_t id;
 	//TODO: Ver esta linea comentada
-//	opIO = deserializar_opIO(buffer);
+	opIO = deserializar_opIO(buffer);
+	free(buffer);
+	buffer = recibirDatos(unCliente->socket, &op, &id);
 	t_pcb* unPCB = deserializar_pcb(buffer);
 
 	pthread_mutex_lock(&mutexListaPCBEjecutando);
@@ -565,6 +569,8 @@ void operacionIO(t_clienteCpu* unCliente, char* buffer){
 	if (cpuAcerrar != unCliente->socket) {
 		unCliente->fueAsignado = false;
 		sem_post(&semCpuOciosa);
+	}else{
+		cerrarConexionCliente(unCliente);
 	}
 }
 
@@ -586,6 +592,9 @@ void operacionEXIT(t_clienteCpu* unCliente, char* buffer){
 	if (cpuAcerrar != unCliente->socket) {
 		unCliente->fueAsignado = false;
 		sem_post(&semCpuOciosa);
+	}
+	else{
+		cerrarConexionCliente(unCliente);
 	}
 }
 
@@ -681,8 +690,13 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 			free(bufferPCB);
 			list_add(colaBloqueados, unPcbBlocked);
 			log_debug(ptrLog, "Agregado a la colaBlockeadoPorSemaforo el PCB del pid: %d", unPcbBlocked->pcb->pcb_id);
-			unCliente->fueAsignado = false;
-			sem_post(&semCpuOciosa);
+
+			if(cpuAcerrar != unCliente->socket){
+				sem_post(&semCpuOciosa);
+				unCliente->fueAsignado = false;
+			}else{
+				cerrarConexionCliente(unCliente);
+			}
 		}
 		semaforo->valor--;
 		free(buffer);

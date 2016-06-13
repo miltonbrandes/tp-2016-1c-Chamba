@@ -25,7 +25,6 @@ typedef enum {
 	WAIT,
 	SIGNAL,
 	SIGUSR,
-	SIGUSR1,
 	IO,
 } cpu_ops;
 typedef enum {
