@@ -29,7 +29,6 @@ int socketReceptorNucleo;
 int socketReceptorCPU;
 int socketSwap;
 int socketClienteNucleo;
-int datoGuardado = 0;
 //Archivo de Log
 t_log* ptrLog;
 
@@ -48,8 +47,6 @@ t_list * listaCpus;
 t_list * frames;
 t_list * tablaProcesosPaginas;
 t_list * TLB;
-
-int posibleProximaVictimaClock;
 
 //Variables Hilos
 pthread_t hiloConexiones;
@@ -124,15 +121,12 @@ void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 	int i;
 	for(i = 0; i < cantidadMarcos; i++) {
 		t_frame * frame = malloc((sizeof(uint32_t) * 3) + tamanioMarco);
-		frame->bitDeReferencia = 0;
 		frame->disponible = 1;
 		frame->numeroFrame = i;
 		frame->contenido = malloc(tamanioMarco);
 
 		list_add(frames, frame);
 	}
-
-	posibleProximaVictimaClock = 0;
 }
 
 void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion) {
@@ -280,24 +274,19 @@ void recibirPeticionesNucleo(){
 			if (operacion == NUEVOPROGRAMA) {
 				t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
 
-				if(iniciarProg->tamanio > marcoXProc) {
-					log_info(ptrLog, "No se puede iniciar el Proceso %d porque supera la cantidad de paginas permitidas", iniciarProg->programID);
+				log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
+
+				uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
+
+				if (pudoSwap == SUCCESS) {
+					log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
+					log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
+					t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
+					notificarProcesoIniciadoANucleo(iniciarPrograma);
+				} else {
+					operacion = ERROR;
+					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
 					notificarProcesoNoIniciadoANucleo();
-				}else{
-					log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
-
-					uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
-
-					if (pudoSwap == SUCCESS) {
-						log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
-						log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
-						t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
-						notificarProcesoIniciadoANucleo(iniciarPrograma);
-					} else {
-						operacion = ERROR;
-						log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
-						notificarProcesoNoIniciadoANucleo();
-					}
 				}
 
 				free(iniciarProg->codigoAnsisop);
@@ -351,8 +340,9 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg){
 		list_add(tablaDePaginas, registro);
 	}
 
-	t_tabla_de_paginas * tablaDeUnProceso = malloc(sizeof(uint32_t) + (sizeof(t_registro_tabla_de_paginas) * list_size(tablaDePaginas)));
+	t_tabla_de_paginas * tablaDeUnProceso = malloc((sizeof(uint32_t) * 2) + (sizeof(t_registro_tabla_de_paginas) * list_size(tablaDePaginas)));
 	tablaDeUnProceso->pID = iniciarProg->programID;
+	tablaDeUnProceso->posibleProximaVictima = 0;
 	tablaDeUnProceso->tablaDePaginas = tablaDePaginas;
 
 	list_add(tablaProcesosPaginas, tablaDeUnProceso);
@@ -403,6 +393,7 @@ t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presen
 	regPagina->frame = marco;
 	regPagina->modificado = modificado;
 	regPagina->estaEnUMC = presencia;
+	regPagina->bitDeReferencia = 0;
 
 	return regPagina;
 }
@@ -545,7 +536,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->estaEnUMC = 1;
 					registro->frame = frame->numeroFrame;
 					registro->modificado = 1;
-					frame->bitDeReferencia = 1;
+					registro->bitDeReferencia = 1;
 				} else {
 					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
@@ -560,7 +551,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->estaEnUMC = 1;
 					registro->frame = frameSolicitado->numeroFrame;
 					registro->modificado = 1;
-					frameSolicitado->bitDeReferencia = 1;
+					registro->bitDeReferencia = 1;
 				}
 			}
 
@@ -622,6 +613,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					list_add(datosParaCPU, bufferAux);
 					offsetMemcpy += auxiliar->offset;
 
+					registro->bitDeReferencia = 1;
 				} else {
 					sleep(retardo);
 					if (registro->estaEnUMC == 1) {
@@ -643,6 +635,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 						registro->estaEnUMC = 1;
 						registro->frame = frame->numeroFrame;
+						registro->bitDeReferencia = 1;
 					} else {
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 
@@ -664,12 +657,12 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 						registro->estaEnUMC = 1;
 						registro->frame = frameSolicitado->numeroFrame;
+						registro->bitDeReferencia = 1;
 					}
 				}
 			}
 			for(i = 0; i < list_size(listaRegistros); i++) {
 				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
-				//free(auxiliar->registro);
 				free(auxiliar);
 			}
 			free(listaRegistros);
@@ -691,9 +684,6 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 
 	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 	free(instruccion);
-//	free(instruccion->instruccion);
-//	free(instruccion);
-//	free(datosParaCPU);
 }
 
 t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
@@ -866,8 +856,6 @@ void borrarEstructurasDeProceso(uint32_t pid) {
 			if(registro != NULL && registro->estaEnUMC == 1) {
 				pthread_mutex_lock(&accesoAFrames);
 				t_frame * frame = list_get(frames, registro->frame);
-				posibleProximaVictimaClock++;
-				frame->bitDeReferencia = 0;
 				frame->disponible = 1;
 				frame->numeroFrame = i;
 				pthread_mutex_unlock(&accesoAFrames);
@@ -1110,80 +1098,102 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_
 	}
 }
 
-t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
-	int indiceFrameLibre = buscarFrameLibre();
+int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
+	int framesOcupados = 0, i;
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+	for(i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tablaDeProceso->tablaDePaginas, i);
+		if(registro->estaEnUMC == 1) {
+			framesOcupados++;
+		}
+	}
 
-	if(indiceFrameLibre > -1) {
-		t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
-		frame->contenido = paginaSwap->paginaSolicitada;
-		frame->disponible = 0;
-		frame->bitDeReferencia = 1;
-		frame->numeroFrame = indiceFrameLibre;
-
-		pthread_mutex_lock(&accesoAFrames);
-		list_remove(frames, indiceFrameLibre);
-		list_add_in_index(frames, indiceFrameLibre, frame);
-
-		//Actualizo Tabla de Paginas del Proceso
-		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
-		registroTabla->estaEnUMC = 1;
-		registroTabla->frame = frame->numeroFrame;
-		pthread_mutex_unlock(&accesoAFrames);
-
-		return frame;
+	if(framesOcupados < marcoXProc) {
+		return 1;
 	}else{
-		return desalojarFrameConClock(paginaSwap, pid, pagina);
+		return -1;
 	}
 }
 
-t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
-	if(posibleProximaVictimaClock >= marcos) {
-		posibleProximaVictimaClock = 0;
+t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
+	if(procesoPuedeGuardarFrameSinDesalojar(pid)) {
+		int indiceFrameLibre = buscarFrameLibre();
+		if(indiceFrameLibre > -1) {
+			t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
+			frame->contenido = paginaSwap->paginaSolicitada;
+			frame->disponible = 0;
+			frame->numeroFrame = indiceFrameLibre;
+
+			pthread_mutex_lock(&accesoAFrames);
+			list_remove(frames, indiceFrameLibre);
+			list_add_in_index(frames, indiceFrameLibre, frame);
+
+			//Actualizo Tabla de Paginas del Proceso - Actualizar puntero
+			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			registroTabla->estaEnUMC = 1;
+			registroTabla->frame = frame->numeroFrame;
+			registroTabla->bitDeReferencia = 1;
+			pthread_mutex_unlock(&accesoAFrames);
+
+			return frame;
+		}else{
+			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+			return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+		}
+	}else{
+		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+		return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+	}
+}
+
+t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
+	if(tablaDeProceso->posibleProximaVictima >= list_size(tablaDeProceso->tablaDePaginas)) {
+		tablaDeProceso->posibleProximaVictima = 0;
 	}
 
 	pthread_mutex_lock(&accesoAFrames);
-	t_frame * frameCandidato = list_get(frames, posibleProximaVictimaClock);
+	t_registro_tabla_de_paginas * registroCandidato = list_get(tablaDeProceso->tablaDePaginas, tablaDeProceso->posibleProximaVictima);
 	pthread_mutex_unlock(&accesoAFrames);
-	if(frameCandidato->bitDeReferencia == 1) {
-		frameCandidato->bitDeReferencia = 0;
-		posibleProximaVictimaClock++;
-		return desalojarFrameConClock(paginaSwap, pid, pagina);
-	}else{
-		t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
-		frame->contenido = paginaSwap->paginaSolicitada;
-		frame->disponible = 0;
-		frame->bitDeReferencia = 1;
-		frame->numeroFrame = posibleProximaVictimaClock;
 
-		int posEnTlb = pagEstaEnTLB(pid, pagina);
-		if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
-			//la tengo que eliminar
-			pthread_mutex_lock(&accesoATLB);
-			t_tlb * aEliminar =	list_get(TLB, posEnTlb);
-			frameCandidato->contenido = malloc(marcosSize);
-			memcpy(frameCandidato->contenido, aEliminar->contenido, marcosSize);
-			//log_info(ptrLog, "Actualize la tlb en umc porque hubo un flush");
-			aEliminar->pid = -1;
-			aEliminar->numPag = 0;
-			aEliminar->numFrame = -1;
-			aEliminar->contenido = NULL;
-			pthread_mutex_unlock(&accesoATLB);
+
+	if(registroCandidato->estaEnUMC == 1) {
+		if(registroCandidato->bitDeReferencia == 1) {
+			registroCandidato->bitDeReferencia = 0;
+			tablaDeProceso->posibleProximaVictima++;
+			return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+		}else {
+			t_frame * frame = list_get(frames, registroCandidato->frame);
+			frame->disponible = 0;
+
+			int posEnTlb = pagEstaEnTLB(pid, pagina);
+			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
+				//la tengo que eliminar
+				pthread_mutex_lock(&accesoATLB);
+				t_tlb * aEliminar =	list_get(TLB, posEnTlb);
+				frame->contenido = malloc(marcosSize);
+				memcpy(frame->contenido, aEliminar->contenido, marcosSize);
+				aEliminar->pid = -1;
+				aEliminar->numPag = 0;
+				aEliminar->numFrame = -1;
+				aEliminar->contenido = NULL;
+				pthread_mutex_unlock(&accesoATLB);
+			}
+			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
+			pthread_mutex_lock(&accesoAFrames);
+			frame->contenido = paginaSwap->paginaSolicitada;
+
+			tablaDeProceso->posibleProximaVictima++;
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			registroTabla->estaEnUMC = 1;
+			registroTabla->frame = frame->numeroFrame;
+			pthread_mutex_unlock(&accesoAFrames);
+
+			return frame;
 		}
-		chequearSiHayQueEscribirEnSwapLaPagina(posibleProximaVictimaClock);
-		pthread_mutex_lock(&accesoAFrames);
-		list_remove(frames, posibleProximaVictimaClock);
-		list_add_in_index(frames, posibleProximaVictimaClock, frame);
-		posibleProximaVictimaClock++;
-
-		//Actualizo Tabla de Paginas del Proceso
-		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-		t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
-		registroTabla->estaEnUMC = 1;
-		registroTabla->frame = frame->numeroFrame;
-		pthread_mutex_unlock(&accesoAFrames);
-
-		return frame;
+	}else{
+		tablaDeProceso->posibleProximaVictima++;
+		return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
 	}
 }
 
@@ -1192,23 +1202,14 @@ t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint
 	return NULL;
 }
 
-void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame) {
-	int i, j;
-	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
-		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
-		for(j = 0; j < list_size(tabla->tablaDePaginas); j++) {
-			t_registro_tabla_de_paginas * registroTabla = list_get(tabla->tablaDePaginas, j);
-			if(registroTabla->estaEnUMC && registroTabla->frame == nroFrame) {
-				if(registroTabla->modificado == 1) {
-					escribirFrameEnSwap(nroFrame, tabla->pID, registroTabla->paginaProceso);
-				}
-				registroTabla->estaEnUMC = 0;
-				registroTabla->frame = -1;
-				registroTabla->modificado = 0;
-				break;
-			}
-		}
+void chequearSiHayQueEscribirEnSwapLaPagina(uint32_t pid, t_registro_tabla_de_paginas * registro) {
+	if(registro->modificado == 1) {
+		escribirFrameEnSwap(registro->frame, pid, registro->paginaProceso);
 	}
+	registro->estaEnUMC = 0;
+	registro->frame = -1;
+	registro->modificado = 0;
+	registro->bitDeReferencia = 0;
 }
 
 void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {

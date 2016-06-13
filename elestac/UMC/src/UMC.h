@@ -27,6 +27,7 @@ typedef struct{
 
 typedef struct {
 	uint32_t pID;
+	uint32_t posibleProximaVictima;
 	t_list * tablaDePaginas;
 } t_tabla_de_paginas;
 
@@ -35,6 +36,7 @@ typedef struct {
 	uint32_t frame;
 	uint32_t modificado; //1 modificado, 0 no modificado. Para paginas de codigo es siempre 0
 	uint32_t estaEnUMC; //1 esta, 0 no esta. Para ver si hay que pedir o no la pagina a SWAP.
+	uint32_t bitDeReferencia; //Para Clock.
 } t_registro_tabla_de_paginas;
 
 typedef struct {
@@ -46,7 +48,6 @@ typedef struct {
 
 typedef struct {
 	uint32_t disponible;
-	uint32_t bitDeReferencia; //Para Clock.
 	uint32_t numeroFrame;
 	char * contenido;
 } t_frame;
@@ -98,10 +99,10 @@ void borrarEstructurasDeProceso(uint32_t pid);
 
 t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
 t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
-t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso);
 t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
 void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina);
-void chequearSiHayQueEscribirEnSwapLaPagina(int nroFrame);
+void chequearSiHayQueEscribirEnSwapLaPagina(uint32_t pid, t_registro_tabla_de_paginas * registro);
 int buscarFrameLibre();
 
 //funciones TLB
