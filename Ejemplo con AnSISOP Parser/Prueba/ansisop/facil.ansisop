@@ -1,6 +1,7 @@
 #!/usr/bin/ansisop
 begin
 	variables a, b
+	io Impresora 20
 	a = 3
 	b = 5
 	a = b + 12

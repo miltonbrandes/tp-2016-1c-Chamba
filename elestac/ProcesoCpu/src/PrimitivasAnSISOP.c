@@ -290,14 +290,15 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 
 	operacion = IO;
 	uint32_t id = CPU;
-	uint32_t lon = strlen(dispositivo)+1+8;
+	uint32_t lon = strlen(dispositivo)+1+sizeof(uint32_t) + sizeof(int);
 	log_debug(ptrLog, "Se efectua la operacion de Entrada/Salida");
 	t_dispositivo_io* op_IO = malloc(sizeof(t_dispositivo_io));
-	op_IO->nombre = malloc(strlen(dispositivo) + 1);
+	op_IO->nombre = malloc(strlen(dispositivo)+1);
 	strcpy(op_IO->nombre, dispositivo);
 	op_IO->tiempo = tiempo;
-	char* buffer = serializar_opIO(op_IO);
-	int bytesEnviados = enviarDatos(socketNucleo, &buffer, lon, operacion, id);
+	char* buffer;
+	buffer = (char *)serializar_opIO(op_IO);
+	enviarDatos(socketNucleo, buffer, lon, operacion, id);
 	log_debug(ptrLog, "Dispositivo '%s' con un tiempo de %d enviados al kernel",
 			dispositivo, tiempo);
 	free(buffer);

@@ -504,16 +504,16 @@ t_buffer_tamanio * serializarCambioProcActivo(t_cambio_proc_activo* cambioProcAc
 
 
 char* serializar_opIO(t_dispositivo_io* op_IO){
-	uint32_t longitud = strlen(op_IO->nombre) + 1;
+	uint32_t longitud = strlen(op_IO->nombre) +1;
 	uint32_t offset = 0, tmp_size = 0;
-	char * paqueteSerializado = malloc(8 + longitud);
-	tmp_size = 4;
+	char * paqueteSerializado = malloc(sizeof(uint32_t)+sizeof(int) + longitud);
+	tmp_size = sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, &(longitud), tmp_size);
 	offset += tmp_size;
 	tmp_size = longitud;
 	memcpy(paqueteSerializado + offset, op_IO->nombre, tmp_size);
 	offset += tmp_size;
-	tmp_size = sizeof(uint32_t);
+	tmp_size = sizeof(op_IO->tiempo);
 	memcpy(paqueteSerializado + offset, &(op_IO->tiempo), tmp_size);
 
 	return paqueteSerializado;
@@ -521,7 +521,7 @@ char* serializar_opIO(t_dispositivo_io* op_IO){
 
 t_dispositivo_io* deserializar_opIO(char* package){
 	t_dispositivo_io* op_IO = malloc(sizeof(t_dispositivo_io));
-	int longitud, offset = 0;
+	uint32_t longitud, offset = 0;
 	int tmp_size = sizeof(uint32_t);
 
 	memcpy(&longitud, package + offset, tmp_size);
@@ -530,8 +530,8 @@ t_dispositivo_io* deserializar_opIO(char* package){
 	op_IO->nombre = malloc(tmp_size);
 	memcpy(op_IO->nombre, package + offset, tmp_size);
 	offset += tmp_size;
-	tmp_size = sizeof(uint32_t);
-	memcpy(&op_IO->tiempo, package + offset, tmp_size);
+	tmp_size = sizeof(int);
+	memcpy(&(op_IO->tiempo), package + offset, tmp_size);
 
 	return op_IO;
 }

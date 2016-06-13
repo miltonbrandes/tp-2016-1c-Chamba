@@ -4,6 +4,7 @@
  * */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include <commons/config.h>
@@ -531,6 +532,29 @@ void operacionQuantum(t_clienteCpu* unCliente, char* buffer){
 	}
 }
 
+t_IO* BuscarIO(t_dispositivo_io* element) {
+	int i = 0;
+	for(i = 0; i < list_size(listaDispositivosIO); i++){
+		t_IO* io = list_get(listaDispositivosIO, i);
+		if(strcmp(io->nombre, element->nombre) == 0){
+			return io;
+		}
+	}
+	return NULL;
+}
+
+void mostrarVariables(t_stack* unpcb){
+	t_variable* var;
+	if(list_size(unpcb->variables) > 0){
+		var = list_get(unpcb->variables, 0);
+		log_debug(ptrLog, "nombre: %c, pagina: %i, offset: %i", var->idVariable, var->pagina, var->offset);
+		//free(var);
+		var = list_get(unpcb->variables, 1);
+		log_debug(ptrLog, "nombre: %c, pagina: %i, offset: %i", var->idVariable, var->pagina, var->offset);
+		//free(var);
+	}
+}
+
 void operacionIO(t_clienteCpu* unCliente, char* buffer){
 	log_debug(ptrLog, "Se ingresa a operacionIO");
 	t_solicitudes *solicitud = malloc(sizeof(t_solicitudes));
@@ -538,32 +562,32 @@ void operacionIO(t_clienteCpu* unCliente, char* buffer){
 	log_debug(ptrLog, "Cliente %d envía unPCB", unCliente->id);
 	uint32_t op;
 	uint32_t id;
-	//TODO: Ver esta linea comentada
 	opIO = deserializar_opIO(buffer);
 	free(buffer);
 	buffer = recibirDatos(unCliente->socket, &op, &id);
-	t_pcb* unPCB = deserializar_pcb(buffer);
-
+	t_pcb* elPCB = deserializar_pcb(buffer);
+	free(buffer);
+	solicitud->pcb = elPCB;
+	solicitud->valor = opIO->tiempo;
 	pthread_mutex_lock(&mutexListaPCBEjecutando);
-	borrarPCBDeColaExecute(unPCB->pcb_id);
+	borrarPCBDeColaExecute(elPCB->pcb_id);
 	pthread_mutex_unlock(&mutexListaPCBEjecutando);
 
-	solicitud->pcb = unPCB;
-	solicitud->valor = opIO->tiempo;
-	bool _BuscarIO(t_dispositivo_io* element) {
-		return (strcmp(opIO->nombre, element->nombre) == 0);
-	}
 	t_IO * entradaSalida;
-	entradaSalida = list_find(listaDispositivosIO, (void*) _BuscarIO);
+	entradaSalida = BuscarIO(opIO);
 	if (entradaSalida == NULL) {
 		log_error(ptrLog,
 			"Dispositivo IO no encontrado en archivo de configuracion");
 		log_debug(ptrLog, "Agregado el PCB_ID:%d a la cola Ready",
-			unPCB->pcb_id);
-		queue_push(colaReady, unPCB);
+			elPCB->pcb_id);
+		pthread_mutex_lock(&mutex);
+		queue_push(colaReady, solicitud->pcb);
+		pthread_mutex_unlock(&mutex);
 		sem_post(&semNuevoPcbColaReady);
+		free(solicitud);
 	}else {
 		queue_push(entradaSalida->colaSolicitudes, solicitud);
+		//solicitud = queue_pop(entradaSalida->colaSolicitudes);
 		sem_post(&entradaSalida->semaforo);
 	}
 	if (cpuAcerrar != unCliente->socket) {
@@ -619,7 +643,6 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 			break;
 		case IO:
 			operacionIO(unCliente, buffer);
-			free(buffer);
 			break;
 		case EXIT:
 			operacionEXIT(unCliente, buffer);
@@ -846,12 +869,12 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB) {
 	pthread_mutex_lock(&mutexListaPCBEjecutando);
 	list_add(colaExecute, unPCB);
 	pthread_mutex_unlock(&mutexListaPCBEjecutando);
-
 	enviarDatos(clienteSeleccionado->socket, pcbSer->buffer, pcbSer->tamanioBuffer, EXECUTE_PCB, NUCLEO);
 	log_debug(ptrLog, "PCB enviado al CPU %d", clienteSeleccionado->id);
 	clienteSeleccionado->pcbId = unPCB->pcb_id;
 	clienteSeleccionado->fueAsignado = true;
 	free(pcbSer->buffer);
+	free(pcbSer);
 }
 
 t_socket_pid * buscarConsolaPorProceso(uint32_t pid) {
@@ -948,6 +971,7 @@ void* vaciarColaExit(){
 		}/*else{
 			log_info(ptrLog,"Borrados las paginas del programa");
 		}*/
+
 		free(finalizarProg);
 		free(aux);
 		sem_post(&semLiberoPrograma);
@@ -956,31 +980,26 @@ void* vaciarColaExit(){
 }
 
 void *hiloPorIO(void* es) {
-	t_IO *entradaSalida = (t_IO*) es;
-	t_solicitudes *solicitud;
-	log_debug(ptrLog, "%s: Hilo creado, (ID:%d, colaSize:%d)",
-			entradaSalida->nombre, entradaSalida->ID_IO,
-			queue_size(entradaSalida->colaSolicitudes));
+	t_IO *entradaSalida = es;
+
+	log_debug(ptrLog, "%s: Hilo creado, (ID:%d, colaSize:%d)",entradaSalida->nombre, entradaSalida->ID_IO,queue_size(entradaSalida->colaSolicitudes));
 	while (1) {
 		//aca el if estaria de mas, despues sacarlo
-		if (queue_is_empty(entradaSalida->colaSolicitudes)) {
-			log_debug(ptrLog, "%s: Me quedo a la espera de solicitudes",
-					entradaSalida->nombre);
-			sem_wait(&entradaSalida->semaforo);
-			log_debug(ptrLog,
-					"\nPase semaforo entradaSalidaSemaforo ID:%s\n",
-					entradaSalida->nombre);
+		log_debug(ptrLog, "%s: Me quedo a la espera de solicitudes",entradaSalida->nombre);
+		sem_wait(&entradaSalida->semaforo);
+		log_debug(ptrLog,"Pase semaforo entradaSalidaSemaforo ID:%s",entradaSalida->nombre);
+		t_solicitudes *solicitud = queue_pop(entradaSalida->colaSolicitudes);
+		log_trace(ptrLog, "%s: Solicitud recibida, valor:%d", entradaSalida->nombre, solicitud->valor);
+		log_trace(ptrLog, "%s: Hago retardo de :%d milisegundos", entradaSalida->nombre, solicitud->valor * entradaSalida->valor);
+		sleep(solicitud->valor * entradaSalida->valor / 1000);
+		t_pcb* seguir = solicitud->pcb;
+		pthread_mutex_lock(&mutex);
+		queue_push(colaReady, seguir);
+		pthread_mutex_unlock(&mutex);
+		log_debug(ptrLog, "%s: Envio PCB ID:%d a colaReady", entradaSalida->nombre, solicitud->pcb->pcb_id);
+		free(solicitud);
+		sem_post(&semNuevoPcbColaReady);
 
-		} else {
-			solicitud = queue_pop(entradaSalida->colaSolicitudes);
-			log_trace(ptrLog, "%s: Solicitud recibida, valor:%d", entradaSalida->nombre, solicitud->valor);
-			log_trace(ptrLog, "%s: Hago retardo de :%d milisegundos", entradaSalida->nombre, solicitud->valor * entradaSalida->valor);
-			usleep(solicitud->valor * entradaSalida->valor / 1000);
-			queue_push(colaReady, solicitud->pcb);
-			sem_post(&semNuevoPcbColaReady);
-			log_debug(ptrLog, "%s: Envio PCB ID:%d a colaReady", entradaSalida->nombre, solicitud->pcb->pcb_id);
-			free(solicitud);
-		}
 	}
 	return 0;
 }
@@ -1136,15 +1155,15 @@ int main() {
 					sem_wait(&semNuevoProg);/*Este 1er semaforo espera que se cree un nuevo pcb y que mande signal para recien
 					 poder enviarlo a la cola de Ready*/
 					log_debug(ptrLog, "Se procede a pasar un pcb en estado New a la cola Ready");
-					t_pcb * aux = list_get(colaNew, 0);
-					list_remove(colaNew, 0);
-					log_debug(ptrLog, "Proceso %u pasa a la cola READY", aux->pcb_id);
-
-					pthread_mutex_lock(&mutex);
-					queue_push(colaReady, aux);
-					pthread_mutex_unlock(&mutex);
-
-					sem_post(&semNuevoPcbColaReady);
+					if(list_size(colaNew) > 0){
+						t_pcb * aux = list_get(colaNew, 0);
+						list_remove(colaNew, 0);
+						log_debug(ptrLog, "Proceso %i pasa a la cola READY", aux->pcb_id);
+						pthread_mutex_lock(&mutex);
+						queue_push(colaReady, aux);
+						pthread_mutex_unlock(&mutex);
+						sem_post(&semNuevoPcbColaReady);
+					}
 				}
 			}else{
 				returnInt = EXIT_FAILURE;
