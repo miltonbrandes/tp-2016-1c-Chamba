@@ -99,7 +99,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	}
 }
 
-
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	//ver bien que deberia devolver aca, como calcular el stack pointer...
 	t_variable* variable = malloc(sizeof(t_variable));
@@ -210,8 +209,6 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 		free(buffer);
 		return valor;
 	}
-
-
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {
@@ -282,7 +279,7 @@ void imprimirTexto(char* texto) {
 	uint32_t id = CPU;
 	uint32_t lon = strlen(texto)+1;
 	log_trace(ptrLog, "La cadena es:\n%s", texto);
-	int bytesEnviados = enviarDatos(socketNucleo, &texto, lon, op, id);
+	int bytesEnviados = enviarDatos(socketNucleo, texto, lon, op, id);
 	log_debug(ptrLog, "Cadena enviada");
 }
 
@@ -315,7 +312,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 
 	log_debug(ptrLog, "Enviado al kernel funcion WAIT para el semaforo '%s'",
 			identificador_semaforo);
-	enviarDatos(socketNucleo, &identificador_semaforo, lon, op, id);
+	enviarDatos(socketNucleo, identificador_semaforo, lon, op, id);
 	log_debug(ptrLog, "Esperando respuesta del kernel");
 	buffer = recibirDatos(socketNucleo, &op, &id);
 	if(operacion != NOTHING){

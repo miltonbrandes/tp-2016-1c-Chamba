@@ -35,7 +35,8 @@ pthread_mutex_t mutex_exit = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_pid_counter = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexListaPCBEjecutando = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t mutexVariablesCompartidas = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexSemaforos = PTHREAD_MUTEX_INITIALIZER;
 pthread_t hiloCpuOciosa;
 pthread_t threadSocket;
 pthread_t hiloIO;

@@ -35,7 +35,7 @@ int manejarPrimeraConexionConUMC();
 void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje);
 void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);
 void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje);
-
+void revisarFinalizarCPU();
 void recibirPCB(char *mensaje);
 void recibirTamanioStack(char *mensaje);
 void recibirTamanioPagina(char *mensaje);
