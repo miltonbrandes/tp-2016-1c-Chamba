@@ -1218,9 +1218,9 @@ int buscarFrameLibre() {
 void retardar(uint32_t retardoNuevo) {
 	if (retardoNuevo != NULL) {
 		retardo = retardoNuevo;
-		printf("Se modifico el retardo a:%d", retardoNuevo);
+		printf("Se modifico el retardo a: %d", retardoNuevo);
 	} else {
-		printf("No se modifico el retardo, sigue siendo:%d", retardo);
+		printf("No se modifico el retardo, sigue siendo: %d", retardo);
 	}
 }
 
@@ -1229,53 +1229,67 @@ void flushMemory(uint32_t pid) {
 	int i;
 
 	for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
-		pthread_mutex_lock(&accesoAFrames);
+		//pthread_mutex_lock(&accesoAFrames);
 		t_registro_tabla_de_paginas * registro = list_get(
 				tablaAModificar->tablaDePaginas, i);
 
 		registro->modificado = 1;
 
-		pthread_mutex_unlock(&accesoAFrames);
+		//pthread_mutex_unlock(&accesoAFrames);
 		free(registro);
 
-		printf("Se realizo flush a las TP del PID:%d", pid);
+		printf("Se realizo flush a las TP del PID: %d", pid);
 	}
 
 }
 
 void dumpDeUnPID(uint32_t pid) {
-
 	//traigo la tabla del proceso
 	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
 	int i;
 
 	if (tablaAMostrar != NULL) {
-		pthread_mutex_lock(&accesoAFrames);
+		//pthread_mutex_lock(&accesoAFrames);
+		int noHayAlgo = 1;
+
 		for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
-			//Traigo cada tabla de paginas
 			t_registro_tabla_de_paginas * registro = list_get(
 					tablaAMostrar->tablaDePaginas, i);
-
 			if (registro->estaEnUMC == 1) {
-
-				t_frame * frame = list_get(frames, registro->frame);
-				log_info(ptrLog, "Proceso: %d ; Pagina: %d ; Marco: %d ; Contenido: \"%s\"", pid,
-						registro->paginaProceso, registro->frame, frame->contenido);
-
-				escribirEnArchivo(pid,registro->paginaProceso,registro->frame, frame->contenido);
+				noHayAlgo = 0;
 			}
-			free(registro);
 		}
-		pthread_mutex_unlock(&accesoAFrames);
+
+		if (noHayAlgo) {
+			log_info(ptrLog, "No hay nada en memoria");
+		} else {
+			for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
+				//Traigo cada tabla de paginas
+				t_registro_tabla_de_paginas * registro = list_get(
+						tablaAMostrar->tablaDePaginas, i);
+
+				if (registro->estaEnUMC == 1) {
+
+					t_frame * frame = list_get(frames, registro->frame);
+					log_info(ptrLog,
+							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
+							pid, registro->paginaProceso, registro->frame,
+							frame->contenido);
+					log_info(ptrLog,
+							"__________________________________________________________________\n");
+					escribirEnArchivo(pid, registro->paginaProceso,
+							registro->frame, frame->contenido);
+				}
+			}
+		}
+		//pthread_mutex_unlock(&accesoAFrames);
 	} else {
 		log_info(ptrLog, "No se encontro Tabla de Paginas del PID: %d", pid);
 	}
-
 }
 
 void dump(uint32_t pid) {
-
-	//Me fijo si hay algo cargado en la TP
+//Me fijo si hay algo cargado en la TP
 	if (list_size(tablaProcesosPaginas) != 0) {
 		//caso que sea dump de 1 proceso especifico
 		if (pid != NULL) {
@@ -1324,7 +1338,8 @@ void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,
 	FILE*archivoDump = fopen("dump.txt", "a");
 
 	fprintf(archivoDump,
-			"Proceso: %d ; Pagina: %d ; Marco: %d ; Contenido: \"%s\" \n", pid,
+			"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\" \n", pid,
 			paginaProceso, frame, contenido);
+	fprintf(archivoDump,"__________________________________________________________________\n");
 	fclose(archivoDump);
 }

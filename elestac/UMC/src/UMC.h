@@ -18,7 +18,7 @@ pthread_mutex_t accesoAFrames = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t accesoATLB = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct{
-	int indice; //Cada vez que se asigna una se le da un indice, el indice menor es el que se saca. (-1 si esta libre)
+	int indice; //Cada vez que se asigna una se le da un indice (-1 si esta libre)
 	int pid;
 	int numPag;
 	int numFrame;
