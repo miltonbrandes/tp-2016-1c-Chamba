@@ -1000,13 +1000,6 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 			aInsertar->indice = list_size(TLB) - 1;
 			//Actualizo el Frame en Swap antes de eliminar
 			t_tlb * tlbAEliminar = list_get(TLB, 0);
-			if(tlbAEliminar->numFrame != -1){
-				pthread_mutex_lock(&accesoAFrames);
-				t_frame * frameSwap = list_get(frames, tlbAEliminar->numFrame);
-				frameSwap->contenido = malloc(marcosSize);
-				memcpy(frameSwap->contenido, tlbAEliminar->contenido, marcosSize);
-				pthread_mutex_unlock(&accesoAFrames);
-			}
 			//Elimino la primera entrada => La mas vieja
 			log_info(ptrLog, "Se elimina la primer entrada de la TLB que es de la pagina %i, proceso %i", tlbAEliminar->numPag, tlbAEliminar->pid);
 			pthread_mutex_lock(&accesoATLB);
@@ -1111,7 +1104,7 @@ int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 	if(framesOcupados < marcoXProc) {
 		return 1;
 	}else{
-		return -1;
+		return 0;
 	}
 }
 
