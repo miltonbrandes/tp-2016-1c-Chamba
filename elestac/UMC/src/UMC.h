@@ -22,7 +22,6 @@ typedef struct{
 	int pid;
 	int numPag;
 	int numFrame;
-	char * contenido;
 } t_tlb;
 
 typedef struct {

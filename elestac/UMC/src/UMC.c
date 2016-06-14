@@ -514,11 +514,12 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
+				t_frame * frame = list_get(frames, registroTLB->numFrame);
 
 				int bufferAsInt = atoi(buffer);
-				memcpy(registroTLB->contenido + offset, &bufferAsInt, tamanio);
+				memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-				log_debug(ptrLog, "Estado del Registro TLB luego de escritura: %s", registroTLB->contenido);
+				log_debug(ptrLog, "Estado del Registro TLB luego de escritura: %s", frame->contenido);
 
 				registro->modificado = 1;
 			} else {
@@ -600,13 +601,14 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 				if (entradasTLB > 0 && entradaTLB != -1) {
 					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB en la entrada: %i", pagina, cpu->procesoActivo, entradaTLB);
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
+					t_frame * frame = list_get(frames, registroTLB->numFrame);
 
 					char * bufferAux = calloc(1, auxiliar->offset);
 					if(operacion == LEER) {
-						memcpy(bufferAux, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
+						memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
 					}else{
 						int bufferInt;
-						memcpy(&bufferInt, (registroTLB->contenido) + (auxiliar->start), auxiliar->offset);
+						memcpy(&bufferInt, (frame->contenido) + (auxiliar->start), auxiliar->offset);
 						sprintf(bufferAux, "%d", bufferInt);
 					}
 
@@ -911,14 +913,11 @@ t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
 	nuevoRegistroTLB->numFrame = tlbRegistro->numFrame;
 	nuevoRegistroTLB->numPag = tlbRegistro->numPag;
 	nuevoRegistroTLB->pid = tlbRegistro->pid;
-	nuevoRegistroTLB->contenido = malloc(marcosSize);
-	memcpy(nuevoRegistroTLB->contenido, tlbRegistro->contenido, marcosSize);
 
 	list_remove(TLB, entradaTLB);
 	list_add(TLB, nuevoRegistroTLB);
 	pthread_mutex_unlock(&accesoATLB);
 
-	free(tlbRegistro->contenido);
 	free(tlbRegistro);
 
 	return nuevoRegistroTLB;
@@ -945,12 +944,11 @@ void iniciarTLB() {
 		TLB = list_create();
 
 		for (i = 0; i <= (entradasTLB-1); i++) {
-			t_tlb * registro = malloc((sizeof(int) * 4) + marcosSize);
+			t_tlb * registro = malloc((sizeof(int) * 4));
 			registro->pid = -1;
 			registro->indice = i;
 			registro->numPag = -1;
 			registro->numFrame = -1;
-			registro->contenido = malloc(marcosSize);
 
 			list_add(TLB, registro);
 		}
@@ -986,8 +984,6 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 		aInsertar->numPag=pagina;
 		aInsertar->numFrame=frame;
 		aInsertar->pid=pid;
-		aInsertar->contenido = malloc(marcosSize);
-		memcpy(aInsertar->contenido, contenidoFrame, marcosSize);
 
 		if(indiceLibre > -1) {
 			aInsertar->indice = indiceLibre;
@@ -1022,19 +1018,11 @@ void tlbFlush() {
 	if ((entradasTLB) != 0) {
 		pthread_mutex_lock(&accesoATLB);
 		for (i = 0; i < list_size(TLB); i++) {
-
 			t_tlb * registro = list_get(TLB, i);
-			pthread_mutex_lock(&accesoAFrames);
-			t_frame * frameSwap = list_get(frames, registro->numFrame);
-			frameSwap->contenido = malloc(marcosSize);
-			memcpy(frameSwap->contenido, registro->contenido, marcosSize);
-			pthread_mutex_unlock(&accesoAFrames);
-
 			registro->pid = -1;
 			registro->indice = i;
 			registro->numPag = 0;
 			registro->numFrame = -1;
-			registro->contenido = NULL;
 		}
 	}
 	pthread_mutex_unlock(&accesoATLB);
@@ -1048,18 +1036,10 @@ void tlbFlushDeUnPID(int PID) {
 		for (i = 0; i < list_size(TLB); i++) {
 			t_tlb * registro = list_get(TLB, i);
 			if (registro->pid == PID) {
-				pthread_mutex_lock(&accesoAFrames);
-				t_frame * frameSwap = list_get(frames, registro->numFrame);
-				frameSwap->contenido = malloc(marcosSize);
-				memcpy(frameSwap->contenido, registro->contenido, marcosSize);
-				pthread_mutex_unlock(&accesoAFrames);
-				//log_info(ptrLog, "Actualize la tlb en umc porque hubo un flush");
 				registro->pid = -1;
 				registro->indice = i;
 				registro->numPag = 0;
 				registro->numFrame = -1;
-				free(registro->contenido);
-				registro->contenido = malloc(marcosSize);
 			}
 		}
 		pthread_mutex_unlock(&accesoATLB);
@@ -1164,12 +1144,9 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
 				t_tlb * aEliminar =	list_get(TLB, posEnTlb);
-				frame->contenido = malloc(marcosSize);
-				memcpy(frame->contenido, aEliminar->contenido, marcosSize);
 				aEliminar->pid = -1;
 				aEliminar->numPag = 0;
 				aEliminar->numFrame = -1;
-				aEliminar->contenido = NULL;
 				pthread_mutex_unlock(&accesoATLB);
 			}
 			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
