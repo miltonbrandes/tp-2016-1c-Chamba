@@ -309,11 +309,10 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	uint32_t op = WAIT;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(identificador_semaforo)+1;
-
 	log_debug(ptrLog, "Enviado al kernel funcion WAIT para el semaforo '%s'",
 			identificador_semaforo);
 	enviarDatos(socketNucleo, identificador_semaforo, lon, op, id);
-	log_debug(ptrLog, "Esperando respuesta del kernel");
+	log_debug(ptrLog, "Esperando respuesta del nucleo");
 	buffer = recibirDatos(socketNucleo, &op, &id);
 	if(operacion != NOTHING){
 		operacion = op;
@@ -323,7 +322,6 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 			identificador_semaforo);
 	}
 	free(buffer);
-
 }
 
 void ansisop_signal(t_nombre_semaforo identificador_semaforo) {

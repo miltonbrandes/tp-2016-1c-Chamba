@@ -786,6 +786,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 				pthread_mutex_unlock(&mutex);
 			}
 		}
+		log_info(ptrLog, "Se sumo 1 al semaforo: %s", semaforo->nombre);
 		semaforo->valor++;
 		pthread_mutex_unlock(&mutexSemaforos);
 		free(buffer);
