@@ -52,6 +52,8 @@ void finalizarEjecucionPorQuantum();
 void notificarAUMCElCambioDeProceso(uint32_t pid);
 void freePCB();
 
+void finalizarProcesoPorErrorEnUMC();
+
 t_list * crearRequestsParaUMC();
 
 int recibirMensaje(int socket);

@@ -743,7 +743,7 @@ t_buffer_tamanio * serializar_opVarCompartida(t_op_varCompartida* varCompartida)
 	tmp_size = sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, &(varCompartida->longNombre), tmp_size);
 	offset += tmp_size;
-	tmp_size = varCompartida->longNombre;
+	tmp_size = strlen(varCompartida->longNombre);
 	memcpy(paqueteSerializado + offset, varCompartida->nombre, tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(uint32_t);
@@ -758,19 +758,27 @@ t_buffer_tamanio * serializar_opVarCompartida(t_op_varCompartida* varCompartida)
 
 t_op_varCompartida* deserializar_opVarCompartida(char* package) {
 	int offset = 0;
+
 	int tmp_size = sizeof(uint32_t);
 	uint32_t longNombre;
 	memcpy(&longNombre, package + offset, tmp_size);
 	offset += tmp_size;
+
+	tmp_size = longNombre;
+	char *nombre = malloc(tmp_size);
+	memcpy(nombre, package + offset, tmp_size);
+	offset += tmp_size;
+
+	tmp_size = sizeof(uint32_t);
+	uint32_t valor;
+	memcpy(valor, package + offset, tmp_size);
+
 	uint32_t tamanioPaquete = (sizeof(uint32_t) * 2) + longNombre;
 	t_op_varCompartida* varCompartida = malloc(tamanioPaquete);
 	varCompartida->longNombre = longNombre;
-	tmp_size = longNombre;
-	varCompartida->nombre = malloc(tmp_size);
-	memcpy(varCompartida->nombre, package + offset, tmp_size);
-	offset += tmp_size;
-	tmp_size = sizeof(uint32_t);
-	memcpy(&(varCompartida->valor), package + offset, tmp_size);
+	varCompartida->valor = valor;
+	strcpy(varCompartida->nombre, nombre);
+
 	return varCompartida;
 }
 

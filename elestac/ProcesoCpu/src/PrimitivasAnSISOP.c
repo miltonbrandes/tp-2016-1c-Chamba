@@ -7,6 +7,7 @@
 #include "PrimitivasAnSISOP.h"
 #include <sockets/EscrituraLectura.h>
 #include <sockets/OpsUtiles.h>
+#include "ProcesoCpu.h"
 
 #define TAMANIO_VARIABLE 4
 extern t_log* ptrLog;
@@ -130,7 +131,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
-
 	//uint32_t operacion;
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 	t_posicion_stack posicionRet;
@@ -147,10 +147,16 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	char* buffer = enviarOperacion(LEER_VALOR_VARIABLE, solicitar, socketUMC);
 	if(buffer != NULL) {
 		t_instruccion * instruccion = deserializarInstruccion(buffer);
-		int valueAsInt = atoi(instruccion->instruccion);
-		memcpy(&valor, &valueAsInt, sizeof(t_valor_variable));
-		log_debug(ptrLog, "El valor es %d", valor);
-		free(buffer);
+		if(strcmp(instruccion, "FINALIZAR") == 0) {
+			log_error(ptrLog, "Variable no pudo leerse. Hay que finalizar el Proceso.");
+			finalizarProcesoPorErrorEnUMC();
+			return 0;
+		}else{
+			int valueAsInt = atoi(instruccion->instruccion);
+			memcpy(&valor, &valueAsInt, sizeof(t_valor_variable));
+			log_debug(ptrLog, "El valor es %d", valor);
+			free(buffer);
+		}
 	}
 	free(solicitar);
 	return valor;
@@ -179,8 +185,9 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 		uint32_t result = deserializarUint32(resp);
 		if(result == SUCCESS) {
 			log_info(ptrLog, "Variable asignada");
-		}else{
-			log_error(ptrLog, "Variable no asignada");
+		}else if(result == ERROR){
+			log_error(ptrLog, "Variable no asignada. Hay que finalizar el Proceso.");
+			finalizarProcesoPorErrorEnUMC();
 		}
 	}
 	free(resp);

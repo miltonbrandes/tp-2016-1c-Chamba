@@ -709,7 +709,31 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 			cpuAcerrar = unCliente->socket;
 			free(buffer);
 			break;
+		case FINALIZO_POR_ERROR_UMC:
+			finalizarProgramaPorErrorEnUMC(unCliente, buffer);
+			break;
 	}
+}
+
+void finalizarProgramaPorErrorEnUMC(t_clienteCpu* unCliente, char* buffer) {
+	log_debug(ptrLog, "Se finaliza un Proceso porque no habia espacio en UMC.");
+	t_pcb * unPCB = deserializar_pcb(buffer);
+
+	char* texto = "Se ha finalizado el proceso erroneamente";
+
+	mensajesPrograma(unPCB->pcb_id, EXIT, texto);
+
+	pthread_mutex_lock(&mutexListaPCBEjecutando);
+	borrarPCBDeColaExecuteYMeterEnColaExit(unPCB->pcb_id);
+	pthread_mutex_unlock(&mutexListaPCBEjecutando);
+
+	if (cpuAcerrar != unCliente->socket) {
+		unCliente->fueAsignado = false;
+		sem_post(&semCpuOciosa);
+	}else{
+		cerrarConexionCliente(unCliente);
+	}
+	free(buffer);
 }
 
 void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unCliente) {

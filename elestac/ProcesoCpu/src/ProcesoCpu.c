@@ -350,6 +350,18 @@ void revisarFinalizarCPU(){
 		}
 }
 
+
+void finalizarProcesoPorErrorEnUMC() {
+	operacion = NOTHING;
+	t_buffer_tamanio * message = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, message->buffer, message->tamanioBuffer, FINALIZO_POR_ERROR_UMC, CPU);
+	if (bytesEnviados <= 0) {
+		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
+	}
+	free(message->buffer);
+	free(message);
+}
+
 void comenzarEjecucionDePrograma() {
 	log_info(ptrLog, "Recibo PCB id: %i", pcb->pcb_id);
 	int contador = 1;
@@ -362,26 +374,32 @@ void comenzarEjecucionDePrograma() {
 		}else{
 			char* proximaInstruccion = solicitarProximaInstruccionAUMC();
 			if(proximaInstruccion != NULL) {
-				limpiarInstruccion(proximaInstruccion);
-				log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
-				analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
-				contador++;
-				pcb->PC = (pcb->PC) + 1;
-				switch(operacion){
-					case IO:
-						log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
-						finalizarEjecucionPorIO();
-						revisarFinalizarCPU();
-						return;
-					case WAIT:
-						log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
-						finalizarEjecucionPorWait();
-						revisarFinalizarCPU();
-						return;
-					default:
-						break;
+				if(strcmp(proximaInstruccion, "FINALIZAR") == 0) {
+					log_error(ptrLog, "Instruccion no pudo leerse. Hay que finalizar el Proceso.");
+					finalizarProcesoPorErrorEnUMC();
+					return;
+				}else{
+					limpiarInstruccion(proximaInstruccion);
+					log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
+					analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+					contador++;
+					pcb->PC = (pcb->PC) + 1;
+					switch(operacion){
+						case IO:
+							log_debug(ptrLog, "Finalizo ejecucion por operacion IO");
+							finalizarEjecucionPorIO();
+							revisarFinalizarCPU();
+							return;
+						case WAIT:
+							log_debug(ptrLog, "Finalizo ejecucion por un wait ansisop");
+							finalizarEjecucionPorWait();
+							revisarFinalizarCPU();
+							return;
+						default:
+							break;
+					}
+					sleep(pcb->quantumSleep);
 				}
-				sleep(pcb->quantumSleep);
 			}else{
 				log_info(ptrLog, "No se pudo recibir la instruccion de UMC. Cierro la conexion");
 				finalizarConexion(socketUMC);

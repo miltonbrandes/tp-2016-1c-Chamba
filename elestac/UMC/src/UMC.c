@@ -504,6 +504,10 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 	}
 }
 
+void enviarACPUQueDebeFinalizarProceso(t_cpu * cpu, t_buffer_tamanio * bufferTamanio) {
+	enviarDatos(cpu->socket, bufferTamanio->buffer, bufferTamanio->tamanioBuffer, NOTHING, UMC);
+}
+
 void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer) {
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
 	if(tablaDeProceso != NULL) {
@@ -542,17 +546,24 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
-					int bufferAsInt = atoi(buffer);
-					memcpy(frameSolicitado->contenido + offset, &bufferAsInt, tamanio);
+					if(frameSolicitado != NULL) {
+						int bufferAsInt = atoi(buffer);
+						memcpy(frameSolicitado->contenido + offset, &bufferAsInt, tamanio);
 
-					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
+						log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
 
-					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
 
-					registro->estaEnUMC = 1;
-					registro->frame = frameSolicitado->numeroFrame;
-					registro->modificado = 1;
-					registro->bitDeReferencia = 1;
+						registro->estaEnUMC = 1;
+						registro->frame = frameSolicitado->numeroFrame;
+						registro->modificado = 1;
+						registro->bitDeReferencia = 1;
+					}else{
+						uint32_t successInt = ERROR;
+						t_buffer_tamanio * buffer_tamanio = serializarUint32(successInt);
+						enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
+						return;
+					}
 				}
 			}
 
@@ -632,20 +643,30 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					} else {
 						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
-						char * bufferAux = calloc(1, auxiliar->offset);
-						if(operacion == LEER) {
-							memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+
+						if(frameSolicitado != NULL) {
+							char * bufferAux = calloc(1, auxiliar->offset);
+							if(operacion == LEER) {
+								memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+							}else{
+								int bufferInt;
+								memcpy(&bufferInt, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+								sprintf(bufferAux, "%d", bufferInt);
+							}
+							list_add(datosParaCPU, bufferAux);
+							offsetMemcpy += auxiliar->offset;
+							agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+							registro->estaEnUMC = 1;
+							registro->frame = frameSolicitado->numeroFrame;
+							registro->bitDeReferencia = 1;
 						}else{
-							int bufferInt;
-							memcpy(&bufferInt, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
-							sprintf(bufferAux, "%d", bufferInt);
+							char * instrFinalizar = "FINALIZAR";
+							t_instruccion * instruccion = malloc(strlen(instrFinalizar) + 1);
+							instruccion->instruccion = instrFinalizar;
+							t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, strlen(instrFinalizar) + 1);
+							enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
+							return;
 						}
-						list_add(datosParaCPU, bufferAux);
-						offsetMemcpy += auxiliar->offset;
-						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
-						registro->estaEnUMC = 1;
-						registro->frame = frameSolicitado->numeroFrame;
-						registro->bitDeReferencia = 1;
 					}
 				}
 			}
@@ -688,9 +709,15 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 		free(mensajeDeSwap);
 		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
 		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo, pagina);
-		log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
-		free(paginaSwap);
-		return frame;
+
+		if(frame != NULL) {
+			log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
+			free(paginaSwap);
+			return frame;
+		}else{
+			log_info(ptrLog, "No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.", cpu->procesoActivo);
+			return NULL;
+		}
 	}
 	return NULL;
 }
@@ -1070,6 +1097,18 @@ int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 	}
 }
 
+int procesoTieneAlgunaPaginaEnUMC(uint32_t pid) {
+	int framesOcupados = 0, i;
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+	for(i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tablaDeProceso->tablaDePaginas, i);
+		if(registro->estaEnUMC == 1) {
+			framesOcupados++;
+		}
+	}
+	return framesOcupados > 0;
+}
+
 t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
 	if(procesoPuedeGuardarFrameSinDesalojar(pid)) {
 		int indiceFrameLibre = buscarFrameLibre();
@@ -1090,8 +1129,12 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, 
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
 		}else{
-			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-			return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+			if(procesoTieneAlgunaPaginaEnUMC(pid)) {
+				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
+				return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+			}else{
+				return NULL;
+			}
 		}
 	}else{
 		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
