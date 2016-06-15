@@ -59,7 +59,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
 	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	if((pcb->paginaStackActual - tamanioStack) == 1 && pcb->stackPointer + 4 >= tamanioPagina){
+	if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
 		log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
 		return -1;
 	}else{
@@ -247,12 +247,27 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
+	//TODO: terminar esta primitiva
 	log_debug(ptrLog, "Llamada a llamarFuncion");
+	u_int32_t offset = 0;
+	log_debug(ptrLog,"Reservando espacio y cambiando al nuevo contexto de ejecucion");
+	t_stack* nuevaLineaStackEjecucionActual = malloc(sizeof(t_stack));
+	nuevaLineaStackEjecucionActual->argumentos = list_create();
+	nuevaLineaStackEjecucionActual->variables = list_create();
+	nuevaLineaStackEjecucionActual->direcretorno = pcb->PC;
+	t_argumento* varRetorno = malloc(sizeof(t_argumento));
+	varRetorno.pagina = (donde_retornar/tamanioPagina);
+	varRetorno.offset = donde_retornar%tamanioPagina;
+	varRetorno.size = TAMANIO_VARIABLE;
+	nuevaLineaStackEjecucionActual->retVar = varRetorno;
+	pcb->numeroContextoEjecucionActualStack++;
+	irAlLabel(etiqueta);
 	return;
 }
 
 void retornar(t_valor_variable retorno) {
 	log_debug(ptrLog, "Llamada a retornar");
+	return;
 }
 
 void imprimir(t_valor_variable valor_mostrar) {
