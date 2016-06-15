@@ -100,6 +100,7 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_
 t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
 t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso);
 t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina);
+t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso);
 void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina);
 void chequearSiHayQueEscribirEnSwapLaPagina(uint32_t pid, t_registro_tabla_de_paginas * registro);
 int buscarFrameLibre();
