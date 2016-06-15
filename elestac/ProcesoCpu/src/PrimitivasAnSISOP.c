@@ -258,7 +258,7 @@ void retornar(t_valor_variable retorno) {
 	t_stack* contextoEjecucionActual = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	t_stack* contextoEjecucionAnterior = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack -1);
 	//Limpio el contexto actual
-	contextoEjecucionActual->variables = list_Create();
+	contextoEjecucionActual->variables = list_create();
 	contextoEjecucionActual->argumentos = list_create();
 	//elimino el contexto actual del indice del stack
 	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
