@@ -78,7 +78,7 @@ int main() {
 	/*
 	 * Manejo de la interrupcion SIGUSR1
 	 */
-	signal(SIGUSR1, revisarFinalizarCPU);
+	signal(SIGUSR1, revisarSigusR1);
 	if (socketUMC > 0) {
 		if (manejarPrimeraConexionConUMC()) {
 			char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");

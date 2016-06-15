@@ -993,19 +993,23 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
 }
 
 void tlbFlush() {
-	int i = 0;
-	if ((entradasTLB) != 0) {
-		pthread_mutex_lock(&accesoATLB);
-		for (i = 0; i < list_size(TLB); i++) {
-			t_tlb * registro = list_get(TLB, i);
-			registro->pid = -1;
-			registro->indice = i;
-			registro->numPag = 0;
-			registro->numFrame = -1;
+	if (entradasTLB == 0) {
+		log_info(ptrLog, "TLB deshabilitada, no se realiza flush");
+	} else {
+		int i = 0;
+		if ((entradasTLB) != 0) {
+			//pthread_mutex_lock(&accesoATLB);
+			for (i = 0; i < list_size(TLB); i++) {
+				t_tlb * registro = list_get(TLB, i);
+				registro->pid = -1;
+				registro->indice = i;
+				registro->numPag = 0;
+				registro->numFrame = -1;
+			}
 		}
+		//pthread_mutex_unlock(&accesoATLB);
+		log_info(ptrLog, "Flush en TLB");
 	}
-	pthread_mutex_unlock(&accesoATLB);
-	log_info(ptrLog, "Flush en TLB\n");
 }
 
 void tlbFlushDeUnPID(int PID) {
@@ -1290,7 +1294,8 @@ void crearConsola() {
 		} else if (strcmp("flush_memory", comando) == 0) {
 			flushMemory(atoi(parametro));
 			printf("\n");
-		} else if (strcmp("flush_tlb", strcat(comando, parametro)) == 0) {
+			//} else if (strcmp("flush tlb", strcat(comando, parametro)) == 0) {
+		} else if (strcmp("flush_tlb", comando) == 0) {
 			tlbFlush();
 			printf("\n");
 		} else {
