@@ -241,6 +241,8 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	if(numeroInstr > -1){
 		pcb->PC = numeroInstr;
+	}else {
+		log_debug(ptrLog, "Se produjo un error al devolver el numero de instruccion ejecutable");
 	}
 	log_debug(ptrLog, "Llamada a irAlLabel");
 	return;
@@ -256,9 +258,9 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	nuevaLineaStackEjecucionActual->variables = list_create();
 	nuevaLineaStackEjecucionActual->direcretorno = pcb->PC;
 	t_argumento* varRetorno = malloc(sizeof(t_argumento));
-	varRetorno.pagina = (donde_retornar/tamanioPagina);
-	varRetorno.offset = donde_retornar%tamanioPagina;
-	varRetorno.size = TAMANIO_VARIABLE;
+	varRetorno->pagina = (donde_retornar/tamanioPagina);
+	varRetorno->offset = donde_retornar%tamanioPagina;
+	varRetorno->size = TAMANIO_VARIABLE;
 	nuevaLineaStackEjecucionActual->retVar = varRetorno;
 	pcb->numeroContextoEjecucionActualStack++;
 	irAlLabel(etiqueta);
@@ -266,6 +268,30 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 }
 
 void retornar(t_valor_variable retorno) {
+	//agarro contexto actual y anterior
+	t_stack* contextoEjecucionActual = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	t_stack* contextoEjecucionAnterior = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack -1);
+	//Limpio el contexto actual
+	int i = 0;
+	for(i = 0; i < list_size(contextoEjecucionActual->argumentos); i++){
+		t_argumento* arg = list_get(contextoEjecucionActual->argumentos, i);
+		free(arg);
+	}
+	for(i = 0; i <list_size(contextoEjecucionActual->variables); i++){
+		t_variable* var = list_get(contextoEjecucionActual->variables, i);
+		free(var);
+	}
+	t_argumento* retVar = contextoEjecucionActual->retVar;
+	t_puntero direcVariable = (retVar->pagina * tamanioPagina) + retVar->offset;
+	//calculo la direccion a la que tengo que retornar mediante la direccion de pagina start y offset que esta en el campo retvar
+	asignar(direcVariable, retorno);
+	//free(retVar);
+	//elimino el contexto actual del indice del stack
+	//Seteo el contexto de ejecucion actual en el anterior
+	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
+	//aca me genera dudas donde tengo que guardar la direccion de retorno actual, si en el anterior o en el pc
+	pcb->PC =  contextoEjecucionActual->direcretorno;
+	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	log_debug(ptrLog, "Llamada a retornar");
 	return;
 }
