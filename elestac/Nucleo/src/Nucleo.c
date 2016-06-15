@@ -315,11 +315,12 @@ void imprimirProcesoNew(t_pcb* pcb) {
 
 void cerrarConexionCliente(t_clienteCpu *unCliente) {
 	log_debug(ptrLog, "CPU %d ha cerrado la conexión", unCliente->id);
+	t_socket_pid *aux = buscarConsolaPorProceso(unCliente->pcbId);
 	_Bool _sacarCliente(t_clienteCpu * elCliente) {
 		return unCliente->socket == elCliente->socket;
 	}
 	// Si tenia un pcb asignado, lo mando a la cola d exit para liberar recursos..
-	if (unCliente->fueAsignado == true && cpuAcerrar == unCliente->socket) {
+	if (unCliente->fueAsignado == true && cpuAcerrar == unCliente->socket && aux->terminado == true) {
 		log_debug(ptrLog, "Agregado a la colaExit el PCB del pid: %d", unCliente->pcbId);
 
 		pthread_mutex_lock(&mutexListaPCBEjecutando);
@@ -707,6 +708,7 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 			break;
 		case SIGUSR:
 			cpuAcerrar = unCliente->socket;
+			log_trace(ptrLog, "Se recibio una señal SIGUSR1 de la cpu: %i", unCliente->socket);
 			free(buffer);
 			break;
 		case FINALIZO_POR_ERROR_UMC:

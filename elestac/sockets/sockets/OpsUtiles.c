@@ -566,7 +566,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	tamanioPCB += stackSerializado->tamanioBuffer;
 	tamanioPCB += indcod->tamanioBuffer;
 	tamanioPCB += sizeof(uint32_t); //Tamanio Etiquetas
-	if (pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
+	if (pcb->ind_etiq != NULL && pcb->tamanioEtiquetas > 0) {
 		tamanioPCB += strlen(pcb->ind_etiq);
 	}
 	tamanioPCB += (sizeof(uint32_t) * 11); //Cantidad de uint32_t que tiene PCB
@@ -614,7 +614,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	offset += stackSerializado->tamanioBuffer;
 
 	//Serializo Indice de Etiquetas
-	if(pcb->ind_etiq != NULL && strlen(pcb->ind_etiq) > 0) {
+	if(pcb->ind_etiq != NULL && pcb->tamanioEtiquetas > 0) {
 		uint32_t longitudIndiceEtiquetas = pcb->tamanioEtiquetas;
 		memcpy(paqueteSerializado + offset, &longitudIndiceEtiquetas, tmp_size);
 		offset += tmp_size;
@@ -743,7 +743,7 @@ t_buffer_tamanio * serializar_opVarCompartida(t_op_varCompartida* varCompartida)
 	tmp_size = sizeof(uint32_t);
 	memcpy(paqueteSerializado + offset, &(varCompartida->longNombre), tmp_size);
 	offset += tmp_size;
-	tmp_size = strlen(varCompartida->longNombre);
+	tmp_size = varCompartida->longNombre;
 	memcpy(paqueteSerializado + offset, varCompartida->nombre, tmp_size);
 	offset += tmp_size;
 	tmp_size = sizeof(uint32_t);
@@ -758,27 +758,19 @@ t_buffer_tamanio * serializar_opVarCompartida(t_op_varCompartida* varCompartida)
 
 t_op_varCompartida* deserializar_opVarCompartida(char* package) {
 	int offset = 0;
-
 	int tmp_size = sizeof(uint32_t);
 	uint32_t longNombre;
 	memcpy(&longNombre, package + offset, tmp_size);
 	offset += tmp_size;
-
-	tmp_size = longNombre;
-	char *nombre = malloc(tmp_size);
-	memcpy(nombre, package + offset, tmp_size);
-	offset += tmp_size;
-
-	tmp_size = sizeof(uint32_t);
-	uint32_t valor;
-	memcpy(valor, package + offset, tmp_size);
-
 	uint32_t tamanioPaquete = (sizeof(uint32_t) * 2) + longNombre;
 	t_op_varCompartida* varCompartida = malloc(tamanioPaquete);
 	varCompartida->longNombre = longNombre;
-	varCompartida->valor = valor;
-	strcpy(varCompartida->nombre, nombre);
-
+	tmp_size = longNombre;
+	varCompartida->nombre = malloc(tmp_size);
+	memcpy(varCompartida->nombre, package + offset, tmp_size);
+	offset += tmp_size;
+	tmp_size = sizeof(uint32_t);
+	memcpy(&(varCompartida->valor), package + offset, tmp_size);
 	return varCompartida;
 }
 
