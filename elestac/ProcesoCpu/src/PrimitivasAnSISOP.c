@@ -60,7 +60,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	t_variable* nuevaVar = malloc(sizeof(t_variable));
 	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	if((pcb->paginaStackActual - tamanioStack) == 1 && pcb->stackPointer + 4 >= tamanioPagina){
-		log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+		log_error(ptrLog, "Hay stack overflow, va a morir todo");
 		return -1;
 	}else{
 		if(lineaStack == NULL){
@@ -244,6 +244,8 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	if(numeroInstr > -1){
 		pcb->PC = numeroInstr;
+	}else {
+		log_debug(ptrLog, "Se produjo un error al devolver el numero de instruccion ejecutable");
 	}
 	log_debug(ptrLog, "Llamada a irAlLabel");
 	return;
@@ -255,6 +257,18 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 }
 
 void retornar(t_valor_variable retorno) {
+	//agarro contexto actual y anterior
+	t_stack* contextoEjecucionActual = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	t_stack* contextoEjecucionAnterior = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack -1);
+	//Limpio el contexto actual
+	contextoEjecucionActual->variables = list_Create();
+	contextoEjecucionActual->argumentos = list_create();
+	//elimino el contexto actual del indice del stack
+	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	//Seteo el contexto de ejecucion actual en el anterior
+	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
+	//aca me genera dudas donde tengo que guardar la direccion de retorno actual, si en el anterior o en el pc
+	pcb->PC =  contextoEjecucionActual->direcretorno;
 	log_debug(ptrLog, "Llamada a retornar");
 }
 
