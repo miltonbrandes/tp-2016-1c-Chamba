@@ -75,7 +75,7 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 	int i;
 	for (i = 0; sharedVars[i] != NULL; i++) {
 		t_variable_compartida* variableCompartida = malloc(sizeof(t_semaforo));
-		variableCompartida->nombre = sharedVars[i];
+		variableCompartida->nombre = sharedVars[i]+1;
 		variableCompartida->valor = 0;
 		list_add(listaVariablesCompartidas, variableCompartida);
 	}
@@ -234,38 +234,77 @@ int datosEnSocketUMC() {
 	return 0;
 }
 
+t_variable_compartida* obtenerVariable(t_op_varCompartida * varCompartida) {
+	int i = 0;
+	for(i = 0; i < list_size(listaVariablesCompartidas); i++){
+		t_variable_compartida* unaVariable = list_get(listaVariablesCompartidas, i);
+		if(strcmp(unaVariable->nombre, varCompartida->nombre) == 0){
+			return unaVariable;
+		}
+	}
+	return NULL;
+}
+
+t_variable_compartida* obtenerVariable2(char* buffer){
+	int i = 0;
+	for(i = 0; i < list_size(listaVariablesCompartidas); i++){
+		t_variable_compartida* unaVariable = list_get(listaVariablesCompartidas, i);
+		if(strcmp(unaVariable->nombre, buffer) == 0){
+			return unaVariable;
+		}
+	}
+	return NULL;
+}
+
 void operacionesConVariablesCompartidas(char operacion, char *buffer, uint32_t socketCliente) {
 	log_debug(ptrLog, "Se ingresa a operacionVariablesCompartidas");
 	t_op_varCompartida * varCompartida;
 	t_variable_compartida * varCompartidaEnLaLista;
 	char* valorEnBuffer, *bufferLeerVarCompartida;
-	_Bool _obtenerVariable(t_variable_compartida * unaVariable) {
-		return (strcmp(unaVariable->nombre, varCompartida->nombre) == 0);
-	}
-	_Bool _obtenerVariable2(t_variable_compartida * unaVariable) {
-		return (strcmp(unaVariable->nombre, bufferLeerVarCompartida) == 0);
-	}
-
 	// Dependiendo de la operacion..
 	switch (operacion) {
 	case ASIG_VAR_COMPARTIDA:
 		log_debug(ptrLog, "Cliente quiere asignar valor a variable compartida");
 		//Asigno el valor a la variable
 		varCompartida = deserializar_opVarCompartida(buffer);
-		varCompartidaEnLaLista = list_find(listaVariablesCompartidas, (void*) _obtenerVariable);
-		varCompartidaEnLaLista->valor = varCompartida->valor;
-		free(varCompartida);
+		pthread_mutex_lock(&mutexVariablesCompartidas);
+		varCompartidaEnLaLista = obtenerVariable(varCompartida);
+		if(varCompartidaEnLaLista != NULL){
+			varCompartidaEnLaLista->valor = varCompartida->valor;
+			pthread_mutex_unlock(&mutexVariablesCompartidas);
+			free(valorEnBuffer);
+			free(bufferLeerVarCompartida);
+			free(varCompartida);
+			free(buffer);
+		}
+		else{
+			log_error(ptrLog, "No existe esa variable compartida papa");
+			free(valorEnBuffer);
+			free(bufferLeerVarCompartida);
+			free(varCompartida);
+			free(buffer);
+		}
 		break;
 	case LEER_VAR_COMPARTIDA:
 		log_debug(ptrLog, "Cliente quiere leer variable compartida");
 		//Leo el valor de la variable y lo envio
 		valorEnBuffer = malloc(sizeof(uint32_t));
-		//	bufferLeerVarCompartida=malloc(strlen(buffer));
 		bufferLeerVarCompartida = buffer;
-		varCompartidaEnLaLista = list_find(listaVariablesCompartidas, (void*) _obtenerVariable2);
-		memcpy(valorEnBuffer, &(varCompartidaEnLaLista->valor), sizeof(uint32_t));
-		enviarDatos(socketCliente, valorEnBuffer, sizeof(uint32_t), NOTHING, NUCLEO);
-		free(valorEnBuffer);
+		pthread_mutex_lock(&mutexVariablesCompartidas);
+		varCompartidaEnLaLista = obtenerVariable2(bufferLeerVarCompartida);
+		if(varCompartidaEnLaLista != NULL){
+			pthread_mutex_unlock(&mutexVariablesCompartidas);
+			memcpy(valorEnBuffer, &(varCompartidaEnLaLista->valor), sizeof(uint32_t));
+			enviarDatos(socketCliente, valorEnBuffer, sizeof(uint32_t), NOTHING, NUCLEO);
+			free(valorEnBuffer);
+			free(varCompartida);
+			free(buffer);
+		}else{
+			log_error(ptrLog, "No se encontro la variable compartida papa");
+			free(valorEnBuffer);
+			free(varCompartida);
+			free(buffer);
+		}
 		break;
 	}
 }
@@ -530,6 +569,7 @@ void operacionQuantum(t_clienteCpu* unCliente, char* buffer){
 		cerrarConexionCliente(unCliente);
 		sem_post(&semNuevoPcbColaReady);
 	}
+	free(buffer);
 }
 
 t_IO* BuscarIO(t_dispositivo_io* element) {
@@ -620,6 +660,7 @@ void operacionEXIT(t_clienteCpu* unCliente, char* buffer){
 	else{
 		cerrarConexionCliente(unCliente);
 	}
+	free(buffer);
 }
 
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer) {
@@ -639,14 +680,12 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 	switch (operacion) {
 		case QUANTUM:
 			operacionQuantum(unCliente, buffer);
-			free(buffer);
 			break;
 		case IO:
 			operacionIO(unCliente, buffer);
 			break;
 		case EXIT:
 			operacionEXIT(unCliente, buffer);
-			free(buffer);
 			break;
 		case IMPRIMIR_VALOR:
 			mensajesPrograma(unCliente->pcbId, IMPRIMIR_VALOR, buffer);
@@ -656,11 +695,9 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 			break;
 		case LEER_VAR_COMPARTIDA:
 			operacionesConVariablesCompartidas(LEER_VAR_COMPARTIDA, buffer, unCliente->socket);
-			free(buffer);
 			break;
 		case ASIG_VAR_COMPARTIDA:
 			operacionesConVariablesCompartidas(ASIG_VAR_COMPARTIDA, buffer, unCliente->socket);
-			free(buffer);
 			break;
 		case WAIT:
 			operacionesConSemaforos(WAIT, buffer, unCliente);
@@ -686,7 +723,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 	t_semaforo * semaforo;
 	t_pcbBlockedSemaforo * unPcbBlocked;
 	char* bufferPCB;
-
+	pthread_mutex_lock(&mutexSemaforos);
 	semaforo = list_find(listaSemaforos, (void*) _obtenerSemaforo);
 	switch (operacion) {
 	case WAIT:
@@ -722,6 +759,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 			}
 		}
 		semaforo->valor--;
+		pthread_mutex_unlock(&mutexSemaforos);
 		free(buffer);
 		break;
 	case SIGNAL:
@@ -748,7 +786,10 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 				pthread_mutex_unlock(&mutex);
 			}
 		}
+		log_info(ptrLog, "Se sumo 1 al semaforo: %s", semaforo->nombre);
 		semaforo->valor++;
+		pthread_mutex_unlock(&mutexSemaforos);
+		free(buffer);
 		break;
 	}
 }
@@ -845,7 +886,7 @@ void *hiloClienteOcioso() {
 		pthread_mutex_lock(&mutex);
 		t_pcb *unPCB = queue_pop(colaReady);
 		pthread_mutex_unlock(&mutex);
-		log_debug(ptrLog, "Obtengo PCB_ID %d de la colaReady", unPCB->pcb_id);
+		log_debug(ptrLog, "Obtengo PCB_ID %i de la colaReady", unPCB->pcb_id);
 		log_debug(ptrLog, "Pase semaforo semNuevoPcbColaReady");
 		sem_wait(&semCpuOciosa);
 		log_debug(ptrLog, "Pase semaforo semClienteOcioso");

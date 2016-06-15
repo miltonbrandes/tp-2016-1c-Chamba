@@ -67,7 +67,6 @@ void revisarSigusR1(int signo) {
 		cerrarCPU = true;
 		enviarDatos(socketNucleo, buffer, tam, SIGUSR, CPU);
 		log_debug(ptrLog, "Se termina de ejecutar la rafaga actual y luego se cierra esta CPU");
-		free(buffer);
 	}
 }
 int main() {
@@ -79,7 +78,7 @@ int main() {
 	/*
 	 * Manejo de la interrupcion SIGUSR1
 	 */
-	signal(SIGUSR1, revisarFinalizarCPU());
+	signal(SIGUSR1, revisarFinalizarCPU);
 	if (socketUMC > 0) {
 		if (manejarPrimeraConexionConUMC()) {
 			char *direccionNucleo = config_get_string_value(config, "IP_NUCLEO");
