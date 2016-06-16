@@ -1,0 +1,22 @@
+#!/usr/bin/ansisop
+begin
+	variables a,g
+	a = 1
+	g <- doble a
+	print g
+end
+
+function doble
+	variables f
+	f = $0 + $0
+	return f
+end
+
+function doblemil
+	variables f
+	f = $0 + $0
+	return f
+end
+
+
+

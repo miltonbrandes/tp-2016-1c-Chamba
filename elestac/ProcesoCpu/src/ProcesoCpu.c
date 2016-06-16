@@ -53,6 +53,7 @@ int crearLog() {
 		return 0;
 	}
 }
+
 void revisarSigusR1(int signo) {
 	if (signo == SIGUSR1)
 	{
@@ -69,6 +70,7 @@ void revisarSigusR1(int signo) {
 		log_debug(ptrLog, "Se termina de ejecutar la rafaga actual y luego se cierra esta CPU");
 	}
 }
+
 int main() {
 	crearLog();
 	config = config_create(getenv("CPU_CONFIG"));
@@ -129,7 +131,6 @@ int crearSocketCliente(char* direccion, int puerto) {
 	log_info(ptrLog, "Socket creado y conectado");
 	return socketConexion;
 }
-
 
 int recibirMensaje(int socket) {
 	uint32_t id;
@@ -337,6 +338,7 @@ void limpiarInstruccion(char * instruccion) {
      }
      *p2 = '\0';
  }
+
 void revisarFinalizarCPU(){
 	if(cerrarCPU){
 			log_debug(ptrLog, "Cerrando CPU");

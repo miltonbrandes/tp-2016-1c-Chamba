@@ -567,7 +567,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	tamanioPCB += indcod->tamanioBuffer;
 	tamanioPCB += sizeof(uint32_t); //Tamanio Etiquetas
 	if (pcb->ind_etiq != NULL && pcb->tamanioEtiquetas > 0) {
-		tamanioPCB += strlen(pcb->ind_etiq);
+		tamanioPCB += pcb->tamanioEtiquetas;
 	}
 	tamanioPCB += (sizeof(uint32_t) * 11); //Cantidad de uint32_t que tiene PCB
 	tamanioPCB += sizeof(uint32_t); //Para indicar tamanio de PCBs
@@ -615,8 +615,8 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 
 	//Serializo Indice de Etiquetas
 	if(pcb->ind_etiq != NULL && pcb->tamanioEtiquetas > 0) {
-		uint32_t longitudIndiceEtiquetas = pcb->tamanioEtiquetas;
-		memcpy(paqueteSerializado + offset, &longitudIndiceEtiquetas, tmp_size);
+		//uint32_t longitudIndiceEtiquetas = strlen(pcb->ind_etiq);
+		memcpy(paqueteSerializado + offset, &pcb->tamanioEtiquetas, tmp_size);
 		offset += tmp_size;
 		memcpy(paqueteSerializado + offset, pcb->ind_etiq, pcb->tamanioEtiquetas);
 	}else{
@@ -649,7 +649,7 @@ t_pcb* deserializar_pcb(char* package) {
   	offset += tmp_size;
   	printf("");
 
-  	//Tomo los 9 uint32_t del PCB
+  	//Tomo los 11 uint32_t del PCB
  	memcpy(&(pcb->pcb_id), package + offset, tmp_size);
  	offset += tmp_size;
  	memcpy(&(pcb->codigo), package + offset, tmp_size);
@@ -699,10 +699,12 @@ t_pcb* deserializar_pcb(char* package) {
  	//Tomo Indice de Etiquetas
  	uint32_t longitudIndiceEtiquetas;
  	memcpy(&longitudIndiceEtiquetas, package + offset, tmp_size);
+ 	offset+= tmp_size;
  	if(longitudIndiceEtiquetas>0) {
- 		char * indiceEtiquetas = malloc(longitudIndiceEtiquetas);
+ 		char * indiceEtiquetas = malloc(pcb->tamanioEtiquetas);
  		memcpy(indiceEtiquetas, package + offset, longitudIndiceEtiquetas);
  		strcpy(pcb->ind_etiq, indiceEtiquetas);
+ 		//memcpy(pcb->ind_etiq, package + offset, longitudIndiceEtiquetas);
  	}else{
  		pcb->ind_etiq = NULL;
  	}

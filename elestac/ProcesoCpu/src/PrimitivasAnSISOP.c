@@ -1,5 +1,6 @@
 /*
  * PrimitivasAnSISOP.c
+
  *
  *  Created on: 17/5/2016
  *      Author: utnso
@@ -8,7 +9,7 @@
 #include <sockets/EscrituraLectura.h>
 #include <sockets/OpsUtiles.h>
 #include "ProcesoCpu.h"
-
+//TODO: ver en definir variable como fijarse si es un argumento de una funcion
 #define TAMANIO_VARIABLE 4
 extern t_log* ptrLog;
 t_pcb* pcb;
@@ -57,46 +58,50 @@ void freePCBDePrimitivas() {
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
-	t_variable* nuevaVar = malloc(sizeof(t_variable));
-	t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
-		log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
-		return -1;
-	}else{
-		if(lineaStack == NULL){
-			//el tamaño de la linea del stack seria delos 4 ints mas
-			uint32_t tamLineaStack = 7*sizeof(uint32_t)+1;
-			lineaStack = malloc(tamLineaStack);
-			lineaStack->retVar = NULL;
-			lineaStack->direcretorno = 0;
-			lineaStack->argumentos = list_create();
-			lineaStack->variables = list_create();
-			//lineaStack->variables = malloc((sizeof(uint32_t)*3)+1);
-			//pcb->ind_stack = malloc(tamLineaStack);
-			list_add(pcb->ind_stack, lineaStack);
-		}
-		//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
-		if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
-			nuevaVar->idVariable = identificador_variable;
-			pcb->paginaStackActual++;
-			nuevaVar->pagina = pcb->paginaStackActual;
-			nuevaVar->size = TAMANIO_VARIABLE;
-			nuevaVar->offset = 0;
-			pcb->stackPointer += TAMANIO_VARIABLE;
-			list_add(lineaStack->variables, nuevaVar);
+	if(identificador_variable[0] != '0'){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
+		log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
+		t_variable* nuevaVar = malloc(sizeof(t_variable));
+		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
+			log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+			return -1;
 		}else{
-			nuevaVar->idVariable = identificador_variable;
-			nuevaVar->pagina = pcb->paginaStackActual;
-			nuevaVar->size = TAMANIO_VARIABLE;
-			nuevaVar->offset = pcb->stackPointer;
-			pcb->stackPointer+= TAMANIO_VARIABLE;
-			list_add(lineaStack->variables, nuevaVar);
+			if(lineaStack == NULL){
+				//el tamaño de la linea del stack seria delos 4 ints mas
+				uint32_t tamLineaStack = 7*sizeof(uint32_t)+1;
+				lineaStack = malloc(tamLineaStack);
+				lineaStack->retVar = NULL;
+				lineaStack->direcretorno = 0;
+				lineaStack->argumentos = list_create();
+				lineaStack->variables = list_create();
+				//lineaStack->variables = malloc((sizeof(uint32_t)*3)+1);
+				//pcb->ind_stack = malloc(tamLineaStack);
+				list_add(pcb->ind_stack, lineaStack);
+			}
+			//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
+			if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
+				nuevaVar->idVariable = identificador_variable;
+				pcb->paginaStackActual++;
+				nuevaVar->pagina = pcb->paginaStackActual;
+				nuevaVar->size = TAMANIO_VARIABLE;
+				nuevaVar->offset = 0;
+				pcb->stackPointer += TAMANIO_VARIABLE;
+				list_add(lineaStack->variables, nuevaVar);
+			}else{
+				nuevaVar->idVariable = identificador_variable;
+				nuevaVar->pagina = pcb->paginaStackActual;
+				nuevaVar->size = TAMANIO_VARIABLE;
+				nuevaVar->offset = pcb->stackPointer;
+				pcb->stackPointer+= TAMANIO_VARIABLE;
+				list_add(lineaStack->variables, nuevaVar);
+			}
+			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
+			uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset;
+			log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
+			return posicionRet;
 		}
-		//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
-		uint32_t posicionRet = (nuevaVar->pagina * tamanioPagina) + nuevaVar->offset;
-		log_debug(ptrLog, "%c %i %i %i", nuevaVar->idVariable, nuevaVar->pagina, nuevaVar->offset, nuevaVar->size);
-		return posicionRet;
+	}else{
+		//en este caso es un argumento, realizar toda la logica aca y tambien en obtener posicion variable, asignar imprimir y retornar
 	}
 }
 
@@ -163,7 +168,6 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 }
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	//corroborar que esto este bien
 	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 
@@ -245,31 +249,36 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	//devuelvo la primer instruccion ejecutable de etiqueta o -1 en caso de error
 	//necesito el tamanio de etiquetas, lo tendria que agregar al pcb
 	//en vez de devolverla me conviene agregarla al program counter
-	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
-	if(numeroInstr > -1){
-		pcb->PC = numeroInstr;
-	}else {
-		log_debug(ptrLog, "Se produjo un error al devolver el numero de instruccion ejecutable");
-	}
 	log_debug(ptrLog, "Llamada a irAlLabel");
+	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
+	log_error(ptrLog, "el nro de instruccion a mostrar es: %i", numeroInstr);
+	pcb->PC = numeroInstr - 1;
+	log_debug(ptrLog, "El valor del pc ahora es: %i", pcb->PC);
+
 	return;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
-	//TODO: terminar esta primitiva
 	log_debug(ptrLog, "Llamada a llamarFuncion");
-	u_int32_t offset = 0;
 	log_debug(ptrLog,"Reservando espacio y cambiando al nuevo contexto de ejecucion");
-	t_stack* nuevaLineaStackEjecucionActual = malloc(sizeof(t_stack));
-	nuevaLineaStackEjecucionActual->argumentos = list_create();
-	nuevaLineaStackEjecucionActual->variables = list_create();
-	nuevaLineaStackEjecucionActual->direcretorno = pcb->PC;
+	uint32_t tamLineaStack = 4*sizeof(uint32_t)+2*sizeof(t_list);
+	t_stack * nuevaLineaStackEjecucionActual;
 	t_argumento* varRetorno = malloc(sizeof(t_argumento));
 	varRetorno->pagina = (donde_retornar/tamanioPagina);
 	varRetorno->offset = donde_retornar%tamanioPagina;
 	varRetorno->size = TAMANIO_VARIABLE;
-	nuevaLineaStackEjecucionActual->retVar = varRetorno;
-	pcb->numeroContextoEjecucionActualStack++;
+	if(nuevaLineaStackEjecucionActual == NULL){
+		//el tamaño de la linea del stack seria delos 4 ints mas
+		nuevaLineaStackEjecucionActual = malloc(tamLineaStack);
+		nuevaLineaStackEjecucionActual->argumentos = list_create();
+		nuevaLineaStackEjecucionActual->variables = list_create();
+		nuevaLineaStackEjecucionActual->retVar = varRetorno;
+		nuevaLineaStackEjecucionActual->direcretorno = pcb->PC;
+		list_add(pcb->ind_stack, nuevaLineaStackEjecucionActual);
+
+		pcb->numeroContextoEjecucionActualStack++;
+	}
+
 	irAlLabel(etiqueta);
 	return;
 }
