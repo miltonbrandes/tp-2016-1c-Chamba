@@ -58,7 +58,7 @@ void freePCBDePrimitivas() {
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	if(identificador_variable[0] != '0'){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
+	if(identificador_variable != '0'){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
 		log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
@@ -301,7 +301,7 @@ void retornar(t_valor_variable retorno) {
 	t_puntero direcVariable = (retVar->pagina * tamanioPagina) + retVar->offset;
 	//calculo la direccion a la que tengo que retornar mediante la direccion de pagina start y offset que esta en el campo retvar
 	asignar(direcVariable, retorno);
-	//free(retVar);
+	free(retVar);
 	//elimino el contexto actual del indice del stack
 	//Seteo el contexto de ejecucion actual en el anterior
 	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
