@@ -1025,7 +1025,7 @@ void tlbFlush() {
 	} else {
 		int i = 0;
 		if ((entradasTLB) != 0) {
-			//pthread_mutex_lock(&accesoATLB);
+			pthread_mutex_lock(&accesoATLB);
 			for (i = 0; i < list_size(TLB); i++) {
 				t_tlb * registro = list_get(TLB, i);
 				registro->pid = -1;
@@ -1033,8 +1033,8 @@ void tlbFlush() {
 				registro->numPag = 0;
 				registro->numFrame = -1;
 			}
+			pthread_mutex_unlock(&accesoATLB);
 		}
-		//pthread_mutex_unlock(&accesoATLB);
 		log_info(ptrLog, "Flush en TLB");
 	}
 }
@@ -1344,43 +1344,39 @@ int buscarFrameLibre() {
 	return j;
 }
 
-void retardar(uint32_t retardoNuevo) {
-	if (retardoNuevo != NULL) {
+void retardar(int retardoNuevo) {
+	if (retardoNuevo >= 0) {
 		retardo = retardoNuevo;
 		printf("Se modifico el retardo a: %d", retardoNuevo);
 	} else {
-		printf("No se modifico el retardo, sigue siendo: %d", retardo);
+		printf("El nuevo valor de retardo debe ser un numero >= 0!");
 	}
 }
 
 void flushMemory(uint32_t pid) {
 	t_tabla_de_paginas * tablaAModificar = buscarTablaDelProceso(pid);
-	int i;
-
-	for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
+	if (tablaAModificar != NULL) {
+		int i;
 		//pthread_mutex_lock(&accesoAFrames);
-		t_registro_tabla_de_paginas * registro = list_get(
-				tablaAModificar->tablaDePaginas, i);
-
-		registro->modificado = 1;
-
+		for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
+			t_registro_tabla_de_paginas * registro = list_get(
+					tablaAModificar->tablaDePaginas, i);
+			registro->modificado = 1;
+		}
 		//pthread_mutex_unlock(&accesoAFrames);
-		free(registro);
-
 		printf("Se realizo flush a las TP del PID: %d", pid);
+	} else {
+		printf("No existe TP del PID: %d", pid);
 	}
-
 }
 
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
 	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
 	int i;
-
 	if (tablaAMostrar != NULL) {
 		//pthread_mutex_lock(&accesoAFrames);
 		int noHayAlgo = 1;
-
 		for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
 			t_registro_tabla_de_paginas * registro = list_get(
 					tablaAMostrar->tablaDePaginas, i);
@@ -1388,7 +1384,6 @@ void dumpDeUnPID(uint32_t pid) {
 				noHayAlgo = 0;
 			}
 		}
-
 		if (noHayAlgo) {
 			log_info(ptrLog, "No hay nada en memoria");
 		} else {
@@ -1396,9 +1391,7 @@ void dumpDeUnPID(uint32_t pid) {
 				//Traigo cada tabla de paginas
 				t_registro_tabla_de_paginas * registro = list_get(
 						tablaAMostrar->tablaDePaginas, i);
-
 				if (registro->estaEnUMC == 1) {
-
 					t_frame * frame = list_get(frames, registro->frame);
 					log_info(ptrLog,
 							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
@@ -1435,23 +1428,36 @@ void dump(uint32_t pid) {
 	}
 }
 
+int punteroCharEsInt(char* cadena){
+	int i;
+	int len =strlen(cadena);
+
+	for(i=0; i < len; i++){
+		if(!isdigit(cadena[i])) break;
+	}
+	return len==i?atoi(cadena):-1;
+}
+
 void crearConsola() {
 	char* comando = malloc(30);
-	uint32_t parametro = malloc(sizeof(uint32_t));
+	char* parametro = malloc(30);
 	while (1) {
 		printf("Ingrese un comando: ");
 		scanf("%s %s", comando, parametro);
 		if (strcmp("retardo", comando) == 0) {
-			retardar(atoi(parametro));
+			retardar(punteroCharEsInt(parametro));
 			printf("\n");
 		} else if (strcmp("dump", comando) == 0) {
-			dump(atoi(parametro));
+			if(strcmp("all",parametro)==0){
+				dump(NULL);
+			}else{
+				dump(atoi(parametro));
+			}
 			printf("\n");
 		} else if (strcmp("flush_memory", comando) == 0) {
 			flushMemory(atoi(parametro));
 			printf("\n");
-			//} else if (strcmp("flush tlb", strcat(comando, parametro)) == 0) {
-		} else if (strcmp("flush_tlb", comando) == 0) {
+		} else if (strcmp("flushtlb", strcat(comando, parametro)) == 0) {
 			tlbFlush();
 			printf("\n");
 		} else {

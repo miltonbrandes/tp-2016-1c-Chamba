@@ -116,12 +116,13 @@ void tlbFlushDeUnPID(int PID);
 
 
 //funciones consola
-void retardar(uint32_t retardoNuevo);
+void retardar(int retardoNuevo);
 void tlbFlush();
 void flushMemory(uint32_t pid);
 void dumpDeUnPID(uint32_t pid);
 void dump(uint32_t pid);
 void crearConsola();
 void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,char* contenido);
+int punteroCharEsInt(char* cadena);
 
 #endif /* UMC_H_ */
