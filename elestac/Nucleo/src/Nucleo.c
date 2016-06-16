@@ -667,13 +667,23 @@ void operacionEXIT(t_clienteCpu* unCliente, char* buffer){
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer) {
 	unCliente->socket = socketFor;
 
-	if (unCliente->programaCerrado && (operacion == QUANTUM || operacion == EXIT || operacion == IO)) {
+	if (unCliente->programaCerrado && (operacion == QUANTUM || operacion == EXIT)) {
 		unCliente->fueAsignado = false;
 		unCliente->programaCerrado = false;
-		sem_post(&semCpuOciosa);
+		free(buffer);
+		sem_post(&semProgramaEstabaEjecutando);
 		return;
 	}
-
+	if(unCliente->programaCerrado && (operacion == IO)){
+		unCliente->fueAsignado = false;
+		unCliente->programaCerrado = false;
+		free(buffer);
+		uint32_t id;
+		buffer = recibirDatos(unCliente->socket, &operacion, &id);
+		free(buffer);
+		sem_post(&semProgramaEstabaEjecutando);
+		return;
+	}
 	if (unCliente->programaCerrado &&
 			(operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO || operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
 		return;
@@ -909,13 +919,14 @@ void *hiloClienteOcioso() {
 	while (1) {
 		// Tengo la colaReady con algun PCB, compruebo si tengo un cliente ocioso..
 		sem_wait(&semNuevoPcbColaReady);
+		log_debug(ptrLog, "Pase semaforo semNuevoPcbColaReady");
+		sem_wait(&semCpuOciosa);
+		log_debug(ptrLog, "Pase semaforo semClienteOcioso");
 		pthread_mutex_lock(&mutex);
 		t_pcb *unPCB = queue_pop(colaReady);
 		pthread_mutex_unlock(&mutex);
 		log_debug(ptrLog, "Obtengo PCB_ID %i de la colaReady", unPCB->pcb_id);
-		log_debug(ptrLog, "Pase semaforo semNuevoPcbColaReady");
-		sem_wait(&semCpuOciosa);
-		log_debug(ptrLog, "Pase semaforo semClienteOcioso");
+
 		bool _sinPCB(t_clienteCpu * unCliente) {
 			return unCliente->fueAsignado == false;
 		}
@@ -1126,16 +1137,15 @@ void* hiloPCBaFinalizar() {
 			t_clienteCpu* cliente = list_find(listaSocketsCPUs, (void*) obtenerDeClientes);
 			if (cliente != NULL ) {
 				cliente->programaCerrado = true;
+				sem_wait(&semProgramaEstabaEjecutando);
 				cliente->fueAsignado=false;
-
 				pthread_mutex_lock(&mutexListaPCBEjecutando);
 				borrarPCBDeColaExecuteYMeterEnColaExit(cliente->pcbId);
 				pthread_mutex_unlock(&mutexListaPCBEjecutando);
-
+				sem_post(&semCpuOciosa);
 				log_debug(ptrLog, "El programa se encontraba en ejecucion");
 				break;
 			}
-
 			usleep(2);
 		}
 	}

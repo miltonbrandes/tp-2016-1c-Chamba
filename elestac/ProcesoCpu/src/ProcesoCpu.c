@@ -6,7 +6,7 @@
  */
 
 #include "ProcesoCpu.h"
-//TODO: probar el sigusr1 en cpu y probar instrucciones de semaforo entrada salida y variables compartidas
+//TODO: fijarse en una funcion el pc cuando deberia terminar!!!
 #include <commons/collections/list.h>
 #include <commons/config.h>
 #include <commons/log.h>

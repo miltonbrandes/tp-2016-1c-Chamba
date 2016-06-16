@@ -11,7 +11,7 @@
 
 uint32_t nroProg = 1;
 int cpuAcerrar = 0;
-
+int cpuConProgramaACerrar = 0;
 char *ipUMC;
 int *listaCpus;
 int puertoConexionUMC;
@@ -37,12 +37,13 @@ pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexListaPCBEjecutando = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexVariablesCompartidas = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexSemaforos = PTHREAD_MUTEX_INITIALIZER;
+
 pthread_t hiloCpuOciosa;
 pthread_t threadSocket;
 pthread_t hiloIO;
 pthread_t threadExit;
 pthread_t hiloPcbFinalizarError;
-
+sem_t semProgramaEstabaEjecutando;
 sem_t semLiberoPrograma;
 sem_t semCpuOciosa;
 sem_t semNuevoPcbColaReady;
