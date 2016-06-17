@@ -18,7 +18,13 @@
 #include <semaphore.h>
 #include <commons/collections/queue.h>
 #include <parser/metadata_program.h>
+#include <linux/inotify.h>
+#include <sys/types.h>
+#define EVENT_SIZE   ( sizeof( struct inotify_event ) )
+#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ))
 #include "Nucleo.h"
+
+t_config * config;
 
 t_log* ptrLog;
 char** semIds;
@@ -27,6 +33,11 @@ char** ioSleepValues;
 char** sharedVarsIds;
 char** ioIds;
 
+
+//variables para inotify
+int fd;
+int wd;
+int length_inotify,i_inotify=0;
 //Metodos para iniciar valores de Nucleo
 
 int crearLog() {
@@ -36,6 +47,13 @@ int crearLog() {
 	} else {
 		return 0;
 	}
+}
+
+int eventCheck(){
+	fd_set rfds;
+	FD_ZERO(&rfds);
+	FD_SET (fd,&rfds);
+	return select(FD_SETSIZE,&rfds,NULL,NULL,NULL);
 }
 
 void crearListaSemaforos(char **semIds, char **semInitValues) {
@@ -82,7 +100,7 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 }
 
 int iniciarNucleo() {
-	t_config * config = config_create(getenv("NUCLEO_CONFIG"));
+	config = config_create(getenv("NUCLEO_CONFIG"));
 	if (config) {
 		if (config_has_property(config, "PUERTO_SERVIDOR_UMC")) {
 			puertoConexionUMC = config_get_int_value(config,
@@ -961,8 +979,28 @@ void *hiloClienteOcioso() {
 }
 
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB) {
-	log_debug(ptrLog, "Obtengo un cliente ocioso que este esperando por un PCB... cliente:ALGUNO");
+	if(eventCheck()>0){
+		char buf[EVENT_BUF_LEN];
+		//int count=0;
+		length_inotify = read( fd, buf, EVENT_BUF_LEN );
+		if(length_inotify<0){
+			log_info(ptrLog,"error al leer el archivo de inotify");
+		}
+		else{
+			if(length_inotify!=0){
+				struct inotify_event *event=(struct inotify_event *) &buf[i_inotify];
+				quantum = config_get_int_value(config, "QUANTUM");
+				quantumSleep = config_get_int_value(config, "QUANTUM_SLEEP");
+				log_info(ptrLog,"Se modifico el quantum a: %d",quantum);
+				log_info(ptrLog,"Se modifico el quantumSleep a: %d",quantumSleep);
+				i_inotify+= EVENT_SIZE + event->len;
+			}
 
+		}
+	}
+	log_debug(ptrLog, "Obtengo un cliente ocioso que este esperando por un PCB... cliente:ALGUNO");
+	unPCB->quantum= quantum;
+	unPCB->quantumSleep= quantumSleep;
 	t_buffer_tamanio* pcbSer = serializar_pcb(unPCB);
 
 	log_debug(ptrLog, "Serializo el PCB");
