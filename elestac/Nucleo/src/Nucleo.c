@@ -20,11 +20,9 @@
 #include <parser/metadata_program.h>
 #include <linux/inotify.h>
 #include <sys/types.h>
+#include "Nucleo.h"
 #define EVENT_SIZE   ( sizeof( struct inotify_event ) )
 #define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ))
-#include "Nucleo.h"
-
-t_config * config;
 
 t_log* ptrLog;
 char** semIds;
@@ -32,7 +30,6 @@ char** semInitValues;
 char** ioSleepValues;
 char** sharedVarsIds;
 char** ioIds;
-
 
 //variables para inotify
 int fd;
@@ -47,13 +44,6 @@ int crearLog() {
 	} else {
 		return 0;
 	}
-}
-
-int eventCheck(){
-	fd_set rfds;
-	FD_ZERO(&rfds);
-	FD_SET (fd,&rfds);
-	return select(FD_SETSIZE,&rfds,NULL,NULL,NULL);
 }
 
 void crearListaSemaforos(char **semIds, char **semInitValues) {
@@ -100,7 +90,7 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 }
 
 int iniciarNucleo() {
-	config = config_create(getenv("NUCLEO_CONFIG"));
+	t_config * config = config_create(getenv("NUCLEO_CONFIG"));
 	if (config) {
 		if (config_has_property(config, "PUERTO_SERVIDOR_UMC")) {
 			puertoConexionUMC = config_get_int_value(config,
@@ -209,10 +199,19 @@ int iniciarNucleo() {
 	return 1;
 }
 
+int initInotify() {
+	if(wd > 0 && fd >0) {
+		inotify_rm_watch(fd, wd);
+	}
+	fd = inotify_init();
+	if(fd > 0) {
+		wd = inotify_add_watch(fd, getenv("NUCLEO_CONFIG"), IN_MODIFY);
+	}
+	return fd > 0;
+}
+
 int init() {
-	fd=inotify_init();
-	if (crearLog() && fd>0) {
-		wd= inotify_add_watch(fd,"elestac/Nucleo/Nucleo.txt",IN_MODIFY);
+	if (crearLog() && initInotify()) {
 		return iniciarNucleo();
 	} else {
 		return 0;
@@ -232,6 +231,10 @@ int obtenerSocketMaximoInicial() {
 		socketMaximoInicial = socketReceptorConsola;
 	} else {
 		socketMaximoInicial = socketUMC;
+	}
+
+	if(socketMaximoInicial < fd) {
+		socketMaximoInicial = fd;
 	}
 
 	return socketMaximoInicial;
@@ -456,6 +459,7 @@ void escucharPuertos() {
 	FD_SET(socketReceptorCPU, &sockets);
 	FD_SET(socketReceptorConsola, &sockets);
 	FD_SET(socketUMC, &sockets);
+	FD_SET(fd, &sockets);
 
 	while (1) {
 		FD_ZERO(&tempSockets);
@@ -499,7 +503,33 @@ void escucharPuertos() {
 					//Aca matamos Socket UMC
 					FD_CLR(socketUMC, &sockets);
 				}
-			} else {
+			}else if(FD_ISSET(fd, &tempSockets)) {
+				char buf[EVENT_BUF_LEN];
+				length_inotify = read( fd, buf, EVENT_BUF_LEN );
+				if(length_inotify<0){
+					log_info(ptrLog,"Error al leer el archivo de Configuracion");
+				} else if(length_inotify > 0){
+					struct inotify_event *event= (struct inotify_event *) &buf[i_inotify];
+//					if(event->mask == IN_MODIFY && event->wd == wd) {
+						t_config * config = config_create(getenv("NUCLEO_CONFIG"));
+						if(config && config_has_property(config, "QUANTUM") && config_has_property(config, "QUANTUM_SLEEP")) {
+							log_info(ptrLog, "Se modifico el archivo de Configuracion de Nucleo");
+							quantum = config_get_int_value(config, "QUANTUM");
+							quantumSleep = config_get_int_value(config, "QUANTUM_SLEEP");
+							log_info(ptrLog,"Se modifico el quantum a: %d", quantum);
+							log_info(ptrLog,"Se modifico el quantumSleep a: %d", quantumSleep);
+							i_inotify += EVENT_SIZE + event->len;
+							free(config);
+
+							FD_CLR(fd, &sockets);
+							initInotify();
+
+							socketMaximo = (socketMaximo < fd) ? fd : socketMaximo;
+							FD_SET(fd, &sockets);
+						}
+//					}
+				}
+			}else {
 				uint32_t id;
 				uint32_t operacion;
 				int socketFor;
@@ -981,25 +1011,6 @@ void *hiloClienteOcioso() {
 }
 
 void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB) {
-	if(eventCheck()>0){
-		char buf[EVENT_BUF_LEN];
-		//int count=0;
-		length_inotify = read( fd, buf, EVENT_BUF_LEN );
-		if(length_inotify<0){
-			log_info(ptrLog,"error al leer el archivo de inotify");
-		}
-		else{
-			if(length_inotify!=0){
-				struct inotify_event *event=(struct inotify_event *) &buf[i_inotify];
-				quantum = config_get_int_value(config, "QUANTUM");
-				quantumSleep = config_get_int_value(config, "QUANTUM_SLEEP");
-				log_info(ptrLog,"Se modifico el quantum a: %d",quantum);
-				log_info(ptrLog,"Se modifico el quantumSleep a: %d",quantumSleep);
-				i_inotify+= EVENT_SIZE + event->len;
-			}
-
-		}
-	}
 	log_debug(ptrLog, "Obtengo un cliente ocioso que este esperando por un PCB... cliente:ALGUNO");
 	unPCB->quantum= quantum;
 	unPCB->quantumSleep= quantumSleep;
