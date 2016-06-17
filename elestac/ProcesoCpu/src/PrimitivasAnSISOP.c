@@ -57,13 +57,23 @@ void freePCBDePrimitivas() {
 	free(pcb);
 }
 
+bool esArgumento(t_nombre_variable identificador_variable){
+	if(isdigit(identificador_variable)){
+		return true;
+	}else{
+		return false;
+	}
+}
+
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	if(identificador_variable != '0'){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
+	if(!esArgumento(identificador_variable)){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
 		log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
 			log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+			log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+			finalizarProcesoPorStackOverflow();
 			return -1;
 		}else{
 			if(lineaStack == NULL){
@@ -102,37 +112,91 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		}
 	}else{
 		//en este caso es un argumento, realizar toda la logica aca y tambien en obtener posicion variable, asignar imprimir y retornar
+		log_debug(ptrLog, "Llamada a definirVariable del argumento, %c", identificador_variable);
+		t_argumento* nuevoArg = malloc(sizeof(t_argumento));
+		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
+			log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+			log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+			finalizarProcesoPorStackOverflow();
+			return -1;
+		}else{
+			//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva
+			if(pcb->stackPointer + TAMANIO_VARIABLE > tamanioPagina){
+				pcb->paginaStackActual++;
+				nuevoArg->pagina = pcb->paginaStackActual;
+				nuevoArg->size = TAMANIO_VARIABLE;
+				nuevoArg->offset = 0;
+				pcb->stackPointer += TAMANIO_VARIABLE;
+				list_add(lineaStack->argumentos, nuevoArg);
+			}else{
+				nuevoArg->pagina = pcb->paginaStackActual;
+				nuevoArg->size = TAMANIO_VARIABLE;
+				nuevoArg->offset = pcb->stackPointer;
+				pcb->stackPointer+= TAMANIO_VARIABLE;
+				list_add(lineaStack->argumentos, nuevoArg);
+			}
+			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
+			uint32_t posicionRet = (nuevoArg->pagina * tamanioPagina) + nuevoArg->offset;
+			log_debug(ptrLog, "%c %i %i %i", identificador_variable, nuevoArg->pagina, nuevoArg->offset, nuevoArg->size);
+			return posicionRet;
+		}
 	}
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	//ver bien que deberia devolver aca, como calcular el stack pointer...
-	t_variable* variable = malloc(sizeof(t_variable));
-	int i = 0;
-	char* nom = calloc(1, 2);
-	nom[0] = identificador_variable;
-	log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
-	//obtengo la linea del stack del contexto de ejecucion actual...
-	t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	//me posiciono al inicio de esta linea del stack
-	//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
-	if(list_size((t_list*)lineaActualStack->variables) > 0){
-		for(i = 0; i<list_size(lineaActualStack->variables); i++){
+	if(!esArgumento(identificador_variable)){
+		t_variable* variable = malloc(sizeof(t_variable));
+		int i = 0;
+		char* nom = calloc(1, 2);
+		nom[0] = identificador_variable;
+		log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
+		//obtengo la linea del stack del contexto de ejecucion actual...
+		t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+		//me posiciono al inicio de esta linea del stack
+		//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
+		if(list_size((t_list*)lineaActualStack->variables) > 0){
+			for(i = 0; i<list_size(lineaActualStack->variables); i++){
 
-			variable = list_get(lineaActualStack->variables, i);
-			if(variable->idVariable == identificador_variable ){
-				log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
-				free(nom);
-				uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset;
-				return posicionRet;
+				variable = list_get(lineaActualStack->variables, i);
+				if(variable->idVariable == identificador_variable ){
+					log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
+					free(nom);
+					uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset;
+					return posicionRet;
+				}
 			}
 		}
+		//devuelvo -1
+		uint32_t posicionRetError = -1;
+		free(variable);
+		free(nom);
+		return posicionRetError;
+	}else{
+		t_argumento* arg = malloc(sizeof(t_argumento));
+		int i = 0;
+		char* nom = calloc(1, 2);
+		nom[0] = identificador_variable;
+		log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
+		//obtengo la linea del stack del contexto de ejecucion actual...
+		t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+		//me posiciono al inicio de esta linea del stack
+		//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
+		if(list_size((t_list*)lineaActualStack->variables) > 0){
+			int lineaArg = identificador_variable - '0';
+			arg = list_get(lineaActualStack->argumentos, lineaArg);
+			log_debug(ptrLog, "La posicion de '%c' es %u", identificador_variable, arg->offset);
+			free(nom);
+			uint32_t posicionRet = (arg->pagina * tamanioPagina) + arg->offset;
+			return posicionRet;
+		}
+		//devuelvo -1
+		uint32_t posicionRetError = -1;
+		free(arg);
+		free(nom);
+		return posicionRetError;
 	}
-	//devuelvo -1
-	uint32_t posicionRetError = -1;
-	free(variable);
-	free(nom);
-	return posicionRetError;
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
@@ -285,29 +349,35 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 void retornar(t_valor_variable retorno) {
 	//agarro contexto actual y anterior
-	t_stack* contextoEjecucionActual = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	t_stack* contextoEjecucionAnterior = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack -1);
+	int a = pcb->numeroContextoEjecucionActualStack;
+	t_stack* contextoEjecucionActual = list_get(pcb->ind_stack, a);
+
 	//Limpio el contexto actual
 	int i = 0;
 	for(i = 0; i < list_size(contextoEjecucionActual->argumentos); i++){
 		t_argumento* arg = list_get(contextoEjecucionActual->argumentos, i);
+		pcb->stackPointer=pcb->stackPointer-4;
 		free(arg);
 	}
 	for(i = 0; i <list_size(contextoEjecucionActual->variables); i++){
 		t_variable* var = list_get(contextoEjecucionActual->variables, i);
+		pcb->stackPointer=pcb->stackPointer-4;
 		free(var);
 	}
 	t_argumento* retVar = contextoEjecucionActual->retVar;
 	t_puntero direcVariable = (retVar->pagina * tamanioPagina) + retVar->offset;
 	//calculo la direccion a la que tengo que retornar mediante la direccion de pagina start y offset que esta en el campo retvar
 	asignar(direcVariable, retorno);
-	free(retVar);
+	//free(retVar);
 	//elimino el contexto actual del indice del stack
 	//Seteo el contexto de ejecucion actual en el anterior
+	pcb->PC =  contextoEjecucionActual->direcretorno;
+	free(contextoEjecucionActual);
+	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
 	//aca me genera dudas donde tengo que guardar la direccion de retorno actual, si en el anterior o en el pc
-	pcb->PC =  contextoEjecucionActual->direcretorno;
-	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	t_stack* contextoEjecNuevo = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
+	log_debug(ptrLog, "En el contexto anterior tenia %i variables", list_size(contextoEjecNuevo->variables));
 	log_debug(ptrLog, "Llamada a retornar");
 	return;
 }

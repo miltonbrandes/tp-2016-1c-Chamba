@@ -581,7 +581,7 @@ t_buffer_tamanio* serializar_pcb(t_pcb* pcb) {
 	memcpy(paqueteSerializado + offset, &tamanioPCB, tmp_size);
 	offset += tmp_size;
 
-	//Serializo los 9 uint32_t del PCB
+	//Serializo los 11 uint32_t del PCB
 	memcpy(paqueteSerializado + offset, &(pcb->pcb_id), tmp_size);
 	offset += tmp_size;
 	memcpy(paqueteSerializado + offset, &(pcb->codigo), tmp_size);
@@ -703,7 +703,7 @@ t_pcb* deserializar_pcb(char* package) {
  	if(longitudIndiceEtiquetas>0) {
  		char * indiceEtiquetas = malloc(pcb->tamanioEtiquetas);
  		memcpy(indiceEtiquetas, package + offset, longitudIndiceEtiquetas);
- 		strcpy(pcb->ind_etiq, indiceEtiquetas);
+ 		pcb->ind_etiq = indiceEtiquetas;
  		//memcpy(pcb->ind_etiq, package + offset, longitudIndiceEtiquetas);
  	}else{
  		pcb->ind_etiq = NULL;
@@ -840,8 +840,8 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		tamanioTotalBuffer += sizeof(uint32_t); //tamanio de variable direcretorno
 		tamanioStackParticular += sizeof(uint32_t);
 
-//		tamanioTotalBuffer += sizeof(t_argumento); //tamanio de retVar
-//		tamanioStackParticular += sizeof(t_argumento);
+		tamanioTotalBuffer += sizeof(t_argumento); //tamanio de retVar
+		tamanioStackParticular += sizeof(t_argumento);
 
 		tamanioTotalBuffer += sizeof(uint32_t) * 3; //agrego 3 ints para indicar la cantidad de elemento de las 2 listas y los bytes de t_stack
 
@@ -883,6 +883,7 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 			offset += tamanioUint32;
 			memcpy(buffer + offset, &(argumento->size), tamanioUint32);
 			offset += tamanioUint32;
+			free(argumento);
 		}
 
 		uint32_t cantidadVariables = list_size(stack->variables);
@@ -899,34 +900,37 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 			offset += tamanioUint32;
 			memcpy(buffer + offset, &(variable->size), tamanioUint32);
 			offset += tamanioUint32;
+			free(variable);
 		}
 
 		memcpy(buffer + offset, &(stack->direcretorno), tamanioUint32);
 		offset += tamanioUint32;
 
-//		t_argumento * retVarStack = stack->retVar;
-//		uint32_t pagina = 0, offset = 0, size = 0;
-//		if(retVarStack == NULL) {
-//			memcpy(buffer + offset, &pagina, tamanioUint32);
-//			offset += tamanioUint32;
-//			memcpy(buffer + offset, &offset, tamanioUint32);
-//			offset += tamanioUint32;
-//			memcpy(buffer + offset, &size, tamanioUint32);
-//			offset += tamanioUint32;
-//		}else{
-//			memcpy(buffer + offset, &(retVarStack->pagina), tamanioUint32);
-//			offset += tamanioUint32;
-//			memcpy(buffer + offset, &(retVarStack->offset), tamanioUint32);
-//			offset += tamanioUint32;
-//			memcpy(buffer + offset, &(retVarStack->size), tamanioUint32);
-//			offset += tamanioUint32;
-//		}
+		t_argumento * retVarStack = stack->retVar;
+		uint32_t pagina = 0, offset = 0, size = 0;
+		if(retVarStack == NULL) {
+			memcpy(buffer + offset, &pagina, tamanioUint32);
+			offset += tamanioUint32;
+			memcpy(buffer + offset, &offset, tamanioUint32);
+			offset += tamanioUint32;
+			memcpy(buffer + offset, &size, tamanioUint32);
+			offset += tamanioUint32;
+		}else{
+			memcpy(buffer + offset, &(retVarStack->pagina), tamanioUint32);
+			offset += tamanioUint32;
+			memcpy(buffer + offset, &(retVarStack->offset), tamanioUint32);
+			offset += tamanioUint32;
+			memcpy(buffer + offset, &(retVarStack->size), tamanioUint32);
+			offset += tamanioUint32;
+			free(retVarStack);
+		}
 	}
 
 	for(a = 0; a < list_size(tamanioStackStack); a++) {
 		t_tamanio_stack_stack * tamanioStack = list_get(tamanioStackStack, a);
 		t_stack * stack = tamanioStack->stack;
 		list_remove(tamanioStackStack, a);
+		a--;
 		free(stack);
 		free(tamanioStack);
 	}
@@ -995,14 +999,14 @@ t_list* deserializarIndiceStack(char* buffer) {
 		stack_item->direcretorno = direcRetorno;
 		offset += tamanioUint32;
 
-//		t_argumento * retVarStack = malloc(sizeof(t_argumento));
-//		memcpy(&(retVarStack->pagina), buffer + offset, tamanioUint32);
-//		offset += tamanioUint32;
-//		memcpy(&(retVarStack->offset), buffer + offset, tamanioUint32);
-//		offset += tamanioUint32;
-//		memcpy(&(retVarStack->size), buffer + offset, tamanioUint32);
-//		offset += tamanioUint32;
-//		stack_item->retVar = retVarStack;
+		t_argumento * retVarStack = malloc(sizeof(t_argumento));
+		memcpy(&(retVarStack->pagina), buffer + offset, tamanioUint32);
+		offset += tamanioUint32;
+		memcpy(&(retVarStack->offset), buffer + offset, tamanioUint32);
+		offset += tamanioUint32;
+		memcpy(&(retVarStack->size), buffer + offset, tamanioUint32);
+		offset += tamanioUint32;
+		stack_item->retVar = retVarStack;
 
 		list_add(stack, stack_item);
 	}

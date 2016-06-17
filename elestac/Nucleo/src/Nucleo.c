@@ -724,6 +724,9 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		case FINALIZO_POR_ERROR_UMC:
 			finalizarProgramaPorErrorEnUMC(unCliente, buffer);
 			break;
+		case STACKOVERFLOW:
+			finalizarProgramaPorStackOverflow(unCliente, buffer);
+			break;
 	}
 }
 
@@ -746,6 +749,25 @@ void finalizarProgramaPorErrorEnUMC(t_clienteCpu* unCliente, char* buffer) {
 		cerrarConexionCliente(unCliente);
 	}
 	free(buffer);
+	return;
+}
+
+void finalizarProgramaPorStackOverflow(t_clienteCpu* unCliente, char* buffer){
+	log_debug(ptrLog, "Se finaliza un Proceso porque hubo stack overflow papa");
+	t_pcb * unPCB = deserializar_pcb(buffer);
+	char* texto = "Se ha finalizado el proceso erroneamente por stack overflow";
+	mensajesPrograma(unPCB->pcb_id, EXIT, texto);
+	pthread_mutex_lock(&mutexListaPCBEjecutando);
+	borrarPCBDeColaExecuteYMeterEnColaExit(unPCB->pcb_id);
+	pthread_mutex_unlock(&mutexListaPCBEjecutando);
+	if (cpuAcerrar != unCliente->socket) {
+		unCliente->fueAsignado = false;
+		sem_post(&semCpuOciosa);
+	}else{
+		cerrarConexionCliente(unCliente);
+	}
+	free(buffer);
+	return;
 }
 
 void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unCliente) {

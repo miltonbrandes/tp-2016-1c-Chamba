@@ -363,6 +363,16 @@ void finalizarProcesoPorErrorEnUMC() {
 	free(message->buffer);
 	free(message);
 }
+void finalizarProcesoPorStackOverflow() {
+	operacion = NOTHING;
+	t_buffer_tamanio * message = serializar_pcb(pcb);
+	int bytesEnviados = enviarDatos(socketNucleo, message->buffer, message->tamanioBuffer, STACKOVERFLOW, CPU);
+	if (bytesEnviados <= 0) {
+		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
+	}
+	free(message->buffer);
+	free(message);
+}
 
 void comenzarEjecucionDePrograma() {
 	log_info(ptrLog, "Recibo PCB id: %i", pcb->pcb_id);
@@ -383,6 +393,12 @@ void comenzarEjecucionDePrograma() {
 				}else{
 					limpiarInstruccion(proximaInstruccion);
 					log_debug(ptrLog, "Instruccion a ejecutar: %s", proximaInstruccion);
+					if(strcmp(proximaInstruccion, "end") == 0){
+						log_debug(ptrLog, "Finalizo la ejecucion del programa");
+						finalizarEjecucionPorExit();
+						revisarFinalizarCPU();
+						return;
+					}
 					analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
 					contador++;
 					pcb->PC = (pcb->PC) + 1;
@@ -435,29 +451,31 @@ void freePCB() {
 
 	for(a = 0; a < list_size(pcb->ind_stack); a ++) {
 		t_stack* linea = list_get(pcb->ind_stack, a);
-		/*uint32_t cantidadArgumentos = list_size(linea->argumentos);
+		if(linea->argumentos != NULL){
+			uint32_t cantidadArgumentos = list_size(linea->argumentos);
 
-		for(b = 0; b < cantidadArgumentos; b++) {
-			if(linea->argumentos != NULL){
-				t_argumento *argumento = list_get(linea->argumentos, b);
-				list_remove(linea->argumentos, b);
-				free(argumento);
+			for(b = 0; b < cantidadArgumentos; b++) {
+				if(linea->argumentos != NULL){
+					t_argumento *argumento = list_get(linea->argumentos, b);
+					list_remove(linea->argumentos, b);
+					free(argumento);
+				}
 			}
-		}*/
-		free(linea->argumentos);
+			free(linea->argumentos);
+		}
+		if(linea->variables != NULL){
+			uint32_t cant = list_size(linea->variables);
 
-		/*int32_t cantidadVariables = list_size(linea->variables);
-
-		for(b = 0; b < cantidadVariables; b++) {
-			t_variable *variable = list_get(linea->variables, b);
-			list_remove(linea->variables, b);
-			free(variable->idVariable);
-			free(variable);
-		}*/
-		free(linea->variables);
+			for(b = 0; b < cant; b++) {
+				t_variable *variable = list_get(linea->variables, b);
+				list_remove(linea->variables, b);
+				free(variable->idVariable);
+				free(variable);
+			}
+			free(linea->variables);
+		}
 	}
 	free(pcb->ind_stack);
-
 	free(pcb);
 }
 

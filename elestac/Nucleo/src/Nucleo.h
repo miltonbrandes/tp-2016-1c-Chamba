@@ -69,7 +69,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer);
 t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
 int indiceConsolaEnLista(uint32_t pid);
-
+void finalizarProgramaPorErrorEnUMC(t_clienteCpu* unCliente, char* buffer);
 void mensajesPrograma(uint32_t pcbId, uint32_t tipoDeValor, char * mensaje);
 void borrarPCBDeColaExecute(uint32_t pcbId);
 void borrarPCBDeColaExecuteYMeterEnColaExit(uint32_t pcbId);

@@ -27,6 +27,7 @@ typedef enum {
 	SIGUSR,
 	IO,
 	FINALIZO_POR_ERROR_UMC,
+	STACKOVERFLOW,
 } cpu_ops;
 typedef enum {
 	ENVIAR_TAMANIO_PAGINA_A_CPU,
