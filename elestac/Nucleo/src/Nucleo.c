@@ -210,7 +210,9 @@ int iniciarNucleo() {
 }
 
 int init() {
-	if (crearLog()) {
+	fd=inotify_init();
+	if (crearLog() && fd>0) {
+		wd= inotify_add_watch(fd,"elestac/Nucleo/Nucleo.txt",IN_MODIFY);
 		return iniciarNucleo();
 	} else {
 		return 0;
