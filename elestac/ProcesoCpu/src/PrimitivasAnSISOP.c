@@ -71,9 +71,11 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
-			log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
-			log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
-			finalizarProcesoPorStackOverflow();
+			if(!huboStackOver){
+				log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+				log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+				huboStackOver = true;
+			}
 			return -1;
 		}else{
 			if(lineaStack == NULL){
@@ -116,9 +118,11 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		t_argumento* nuevoArg = malloc(sizeof(t_argumento));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
-			log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
-			log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
-			finalizarProcesoPorStackOverflow();
+			if(!huboStackOver){
+				log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
+				log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+				huboStackOver = true;
+			}
 			return -1;
 		}else{
 			//me fijo si el offset de la ultima + el tamaño superan o son iguales el tamaño de la pagina, si esto sucede, tengo que pasar a una pagina nueva

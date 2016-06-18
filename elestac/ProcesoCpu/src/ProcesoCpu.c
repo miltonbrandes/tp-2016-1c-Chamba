@@ -26,7 +26,7 @@
 t_pcb *pcb;
 t_config* config;
 bool cerrarCPU = false;
-
+bool huboStackOver = false;
 AnSISOP_funciones functions = {
 		.AnSISOP_asignar = asignar,
 		.AnSISOP_asignarValorCompartida = asignarValorCompartida,
@@ -366,6 +366,7 @@ void finalizarProcesoPorErrorEnUMC() {
 void finalizarProcesoPorStackOverflow() {
 	operacion = NOTHING;
 	t_buffer_tamanio * message = serializar_pcb(pcb);
+	huboStackOver = false;
 	int bytesEnviados = enviarDatos(socketNucleo, message->buffer, message->tamanioBuffer, STACKOVERFLOW, CPU);
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
@@ -400,6 +401,11 @@ void comenzarEjecucionDePrograma() {
 						return;
 					}
 					analizadorLinea(proximaInstruccion, &functions, &kernel_functions);
+					if(huboStackOver){
+						finalizarProcesoPorStackOverflow();
+						revisarFinalizarCPU();
+						return;
+					}
 					contador++;
 					pcb->PC = (pcb->PC) + 1;
 					switch(operacion){

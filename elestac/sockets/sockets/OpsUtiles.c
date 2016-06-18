@@ -907,14 +907,18 @@ t_buffer_tamanio* serializarIndiceStack(t_list* indiceStack) {
 		offset += tamanioUint32;
 
 		t_argumento * retVarStack = stack->retVar;
-		uint32_t pagina = 0, offset = 0, size = 0;
 		if(retVarStack == NULL) {
-			memcpy(buffer + offset, &pagina, tamanioUint32);
+			retVarStack = malloc(sizeof(t_argumento));
+			retVarStack->offset = 0;
+			retVarStack->pagina = 0;
+			retVarStack->size = 0;
+			memcpy(buffer + offset, &(retVarStack->pagina), tamanioUint32);
 			offset += tamanioUint32;
-			memcpy(buffer + offset, &offset, tamanioUint32);
+			memcpy(buffer + offset, &(retVarStack->offset), tamanioUint32);
 			offset += tamanioUint32;
-			memcpy(buffer + offset, &size, tamanioUint32);
+			memcpy(buffer + offset, &(retVarStack->size), tamanioUint32);
 			offset += tamanioUint32;
+			free(retVarStack);
 		}else{
 			memcpy(buffer + offset, &(retVarStack->pagina), tamanioUint32);
 			offset += tamanioUint32;
@@ -1006,6 +1010,9 @@ t_list* deserializarIndiceStack(char* buffer) {
 		offset += tamanioUint32;
 		memcpy(&(retVarStack->size), buffer + offset, tamanioUint32);
 		offset += tamanioUint32;
+		if(retVarStack->pagina == 0 && retVarStack->offset == 0 && retVarStack->size == 0){
+			retVarStack = NULL;
+		}
 		stack_item->retVar = retVarStack;
 
 		list_add(stack, stack_item);

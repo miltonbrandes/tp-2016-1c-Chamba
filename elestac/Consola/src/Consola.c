@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 			log_debug(ptrLog, "Abriendo el script..");
 			if ((programa =
 					fopen(
-							"/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/facil.ansisop",
+							"/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/funcion.ansisop",
 							"r")) == NULL) {
 				log_error(ptrLog,
 						"No se ha podido abrir el script. Favor, verificar si existe.");

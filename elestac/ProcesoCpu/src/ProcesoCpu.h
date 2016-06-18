@@ -16,6 +16,7 @@
 #include <commons/collections/list.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <commons/log.h>
@@ -26,7 +27,6 @@ uint32_t tamanioPagina;
 t_log* ptrLog;
 t_config* config;
 uint32_t operacion;
-
 int socketNucleo, socketUMC;
 int crearSocketCliente(char* direccion, int puerto);
 int controlarConexiones();

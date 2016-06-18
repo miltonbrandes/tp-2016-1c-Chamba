@@ -50,7 +50,7 @@ extern int socketNucleo;
 extern int socketNucleo;
 extern int socketUMC;
 extern uint32_t operacion;
-
+extern bool huboStackOver;
 void setPCB(t_pcb * pcbDeCPU);
 void freePCBDePrimitivas();
 

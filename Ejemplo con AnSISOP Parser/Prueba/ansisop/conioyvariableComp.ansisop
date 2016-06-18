@@ -1,0 +1,12 @@
+#!/usr/bin/ansisop
+begin
+	variables a, b
+	io Impresora 20
+	!Global = a + 1
+	a = 3
+	b = 5
+	a = b + 12
+	print a
+end
+
+
