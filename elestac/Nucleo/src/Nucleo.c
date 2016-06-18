@@ -389,11 +389,15 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 		unPcb = crearPCB(buffer, socketUMC);
 		if(unPcb == NULL){
 			//Que carajos hace este codigo
-			int bytesEnviados = enviarDatos(socketConexion, buffer,(uint32_t) strlen(buffer), ERROR, id);
+			char* mensajeError = "No habia lugar en swap para guardarlo";
+			int bytesEnviados = enviarDatos(socketConexion, mensajeError,strlen(mensajeError), ERROR, id);
+			FD_CLR(socketConexion, &tempSockets);
+			FD_CLR(socketConexion, &sockets);
+			finalizarConexionDeUnSocketEnParticular(socketConexion);
 			if (bytesEnviados < 0) {
 				log_error(ptrLog, "Error al enviar los datos");
 			}
-			free(buffer);
+			//free(buffer);
 			return;
 		}
 
@@ -735,8 +739,11 @@ void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_
 		return;
 	}
 	if (unCliente->programaCerrado &&
-			(operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO || operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL))
+			(operacion == IMPRIMIR_VALOR || operacion == IMPRIMIR_TEXTO || operacion == ASIG_VAR_COMPARTIDA || operacion == SIGNAL)){
+		free(buffer);
 		return;
+	}
+
 
 	switch (operacion) {
 		case QUANTUM:
@@ -940,15 +947,15 @@ t_pcb* crearPCB(char* programa, int socket) {
 	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
 	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 
-	if ((nuevoProgEnUMC->primerPaginaDeProc) > -1) {
+	if ((nuevoProgEnUMC->primerPaginaDeProc) == -1) {
 		log_error(ptrLog, "Error al tratar de escribir sobre las paginas de codigo");
 		free(datos);
 		free(programa);
 		free(iniciarProg);
 		free(nuevoProgEnUMC);
-		queue_push(colaExit, pcb);
-		sem_post(&semProgExit);
-		sem_wait(&semLiberoPrograma);
+//		queue_push(colaExit, pcb);
+//		sem_post(&semProgExit);
+//		sem_wait(&semLiberoPrograma);
 		return NULL;
 	} else {
 		log_debug(ptrLog, "Se escribieron las paginas del Proceso AnSISOP %i en UMC y Swap", pcb->pcb_id);

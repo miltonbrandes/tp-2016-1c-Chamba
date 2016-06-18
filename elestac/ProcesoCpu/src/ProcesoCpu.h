@@ -51,7 +51,7 @@ void finalizarEjecucionPorExit();
 void finalizarEjecucionPorQuantum();
 void notificarAUMCElCambioDeProceso(uint32_t pid);
 void freePCB();
-
+char* filtrarInstruccion(char* instr, int request);
 void finalizarProcesoPorErrorEnUMC();
 
 t_list * crearRequestsParaUMC();

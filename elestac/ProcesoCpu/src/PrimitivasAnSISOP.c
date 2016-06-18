@@ -409,7 +409,7 @@ void imprimirTexto(char* texto) {
 	uint32_t op = IMPRIMIR_TEXTO;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(texto)+1;
-	log_trace(ptrLog, "La cadena es:\n%s", texto);
+	log_trace(ptrLog, "La cadena es: %s", texto);
 	int bytesEnviados = enviarDatos(socketNucleo, texto, lon, op, id);
 	log_debug(ptrLog, "Cadena enviada");
 }

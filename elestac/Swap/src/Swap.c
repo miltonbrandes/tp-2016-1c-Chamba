@@ -161,9 +161,9 @@ void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* li
 			return;
 		} else {
 			int interpretado=interpretarMensajeRecibido(buffer, operacion, socketUMC, listaDeLibres, listaDeOcupados);
-			if(!interpretado){
-				return;
-			}
+			//if(!interpretado){
+			//	return;
+			//}
 		}
 
 	} while (1);
