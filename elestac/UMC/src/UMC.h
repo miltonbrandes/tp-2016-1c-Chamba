@@ -27,6 +27,7 @@ typedef struct{
 typedef struct {
 	uint32_t pID;
 	uint32_t posibleProximaVictima;
+	t_list * paginasEnUMC;
 	t_list * tablaDePaginas;
 } t_tabla_de_paginas;
 
