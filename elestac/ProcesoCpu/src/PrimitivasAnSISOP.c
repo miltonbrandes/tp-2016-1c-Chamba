@@ -449,6 +449,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 		operacion = op;
 	}
 	if (op == WAIT){
+		operacion = op;
 		log_debug(ptrLog,"El proceso queda bloqueado hasta que se haga un SIGNAL a '%s'",
 			identificador_semaforo);
 	}
