@@ -8,6 +8,7 @@
 #include "ProcesoCpu.h"
 //TODO: fijarse en una funcion el pc cuando deberia terminar!!!
 #include <commons/collections/list.h>
+#include <ctype.h>
 #include <commons/config.h>
 #include <commons/log.h>
 #include <parser/parser.h>
@@ -324,7 +325,7 @@ void limpiarInstruccion(char * instruccion) {
      char *p2 = instruccion;
      int a = 0;
      while(*instruccion != '\0') {
-     	if(*instruccion != '\t' && *instruccion != '\n') {
+     	if(*instruccion != '\t' && *instruccion != '\n' && !iscntrl(*instruccion)) {
      		if(a == 0 && isdigit((int)*instruccion)){
      			++instruccion;
      		}else{
