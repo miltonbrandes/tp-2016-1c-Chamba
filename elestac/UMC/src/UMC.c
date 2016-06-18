@@ -1048,7 +1048,7 @@ void tlbFlushDeUnPID(int PID) {
 			if (registro->pid == PID) {
 				registro->pid = -1;
 				registro->indice = i;
-				registro->numPag = 0;
+				registro->numPag = -1;
 				registro->numFrame = -1;
 			}
 		}
@@ -1158,7 +1158,7 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 		}else {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
-			int posEnTlb = pagEstaEnTLB(pid, pagina);
+			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
 			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
@@ -1233,7 +1233,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32
 		if(registroCandidato->estaEnUMC == 1 && registroCandidato->modificado == 0 && registroCandidato->bitDeReferencia == 0) {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
-			int posEnTlb = pagEstaEnTLB(pid, pagina);
+			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
 			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
@@ -1269,7 +1269,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32
 		if(registroCandidato->estaEnUMC == 1 && registroCandidato->modificado == 1 && registroCandidato->bitDeReferencia == 0) {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
-			int posEnTlb = pagEstaEnTLB(pid, pagina);
+			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
 			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
