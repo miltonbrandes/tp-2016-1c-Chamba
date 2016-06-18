@@ -867,8 +867,8 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 			log_debug(ptrLog, "Agregado a la colaBlockeadoPorSemaforo el PCB del pid: %d", unPcbBlocked->pcb->pcb_id);
 
 			if(cpuAcerrar != unCliente->socket){
-				sem_post(&semCpuOciosa);
 				unCliente->fueAsignado = false;
+				sem_post(&semCpuOciosa);
 			}else{
 				cerrarConexionCliente(unCliente);
 			}

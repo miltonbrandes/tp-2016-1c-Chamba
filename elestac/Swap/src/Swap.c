@@ -519,7 +519,7 @@ void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres) { //movemos l
 		close(fd);
 		}
 
-	sleep(retardoCompactacion);
+	//sleep(retardoCompactacion);
 
 	log_info(ptrLog, "La compactación finalizó.");
 }
