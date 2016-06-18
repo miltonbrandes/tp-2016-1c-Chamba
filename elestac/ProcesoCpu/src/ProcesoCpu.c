@@ -352,7 +352,6 @@ void revisarFinalizarCPU(){
 		}
 }
 
-
 void finalizarProcesoPorErrorEnUMC() {
 	operacion = NOTHING;
 	t_buffer_tamanio * message = serializar_pcb(pcb);
@@ -363,6 +362,7 @@ void finalizarProcesoPorErrorEnUMC() {
 	free(message->buffer);
 	free(message);
 }
+
 void finalizarProcesoPorStackOverflow() {
 	operacion = NOTHING;
 	t_buffer_tamanio * message = serializar_pcb(pcb);

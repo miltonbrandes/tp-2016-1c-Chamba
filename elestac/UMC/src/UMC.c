@@ -1357,13 +1357,13 @@ void flushMemory(uint32_t pid) {
 	t_tabla_de_paginas * tablaAModificar = buscarTablaDelProceso(pid);
 	if (tablaAModificar != NULL) {
 		int i;
-		//pthread_mutex_lock(&accesoAFrames);
+		pthread_mutex_lock(&accesoAFrames);
 		for (i = 0; i < list_size(tablaAModificar->tablaDePaginas); i++) {
 			t_registro_tabla_de_paginas * registro = list_get(
 					tablaAModificar->tablaDePaginas, i);
 			registro->modificado = 1;
 		}
-		//pthread_mutex_unlock(&accesoAFrames);
+		pthread_mutex_unlock(&accesoAFrames);
 		printf("Se realizo flush a las TP del PID: %d", pid);
 	} else {
 		printf("No existe TP del PID: %d", pid);
