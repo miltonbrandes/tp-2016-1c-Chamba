@@ -74,6 +74,5 @@ void mensajesPrograma(uint32_t pcbId, uint32_t tipoDeValor, char * mensaje);
 void borrarPCBDeColaExecute(uint32_t pcbId);
 void borrarPCBDeColaExecuteYMeterEnColaExit(uint32_t pcbId);
 
-
 #endif /* SRC_NUCLEO_H_ */
 
