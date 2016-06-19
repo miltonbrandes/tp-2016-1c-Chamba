@@ -89,13 +89,15 @@ int main() {
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
 		pthread_create(&hiloConexiones, NULL,
 				(void *) manejarConexionesRecibidas, NULL);
+
 		crearConsola();
+
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
 		return -1;
 	}
 	log_info(ptrLog, "Proceso UMC finalizado");
-//	pthread_join(hiloConexiones, NULL);
+
 	free(config);
 	finalizarTLB();
 	finalizarConexion(socketSwap);
@@ -103,6 +105,9 @@ int main() {
 	finalizarConexion(socketReceptorCPU);
 	return EXIT_SUCCESS;
 }
+
+
+////FUNCIONES UMC////
 
 char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio,
 		uint32_t operacion) {
@@ -1586,14 +1591,25 @@ void dumpDeUnPID(uint32_t pid) {
 						tablaAMostrar->tablaDePaginas, i);
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
+
+					//TODO: pasar de bytes a hexadecimal el contenido
+
+					char * contenido;
+					contenido = malloc((marcosSize * sizeof(char)) + 1);
+
+					memcpy(contenido, frame->contenido,marcosSize);
+					contenido[marcosSize] = '\0';
+
 					log_info(ptrLog,
 							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
-							pid, registro->paginaProceso, registro->frame,
-							frame->contenido);
+							pid, registro->paginaProceso, registro->frame, contenido);
 					log_info(ptrLog,
 							"__________________________________________________________________\n");
 					escribirEnArchivo(pid, registro->paginaProceso,
-							registro->frame, frame->contenido);
+							registro->frame, contenido);
+
+					free(contenido);
+
 				} else {
 					log_info(ptrLog,
 							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \n",
@@ -1679,6 +1695,7 @@ void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,
 		fprintf(archivoDump,
 				"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\" \n",
 				pid, paginaProceso, frame, contenido);
+
 		fprintf(archivoDump,
 				"__________________________________________________________________\n");
 	} else {
