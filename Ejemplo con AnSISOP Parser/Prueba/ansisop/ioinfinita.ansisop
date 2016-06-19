@@ -1,6 +1,0 @@
-#!/usr/bin/ansisop
-begin
-	io Impresora 200000000
-end
-
-
