@@ -55,7 +55,6 @@ pthread_t hiloNucleo;
 pthread_t hiloConsola;
 //variables semaforos
 
-
 int main() {
 	if (init()) {
 		tablaProcesosPaginas = list_create();
@@ -63,7 +62,7 @@ int main() {
 
 		iniciarTLB();
 
-		reservarMemoria(marcos,marcosSize);
+		reservarMemoria(marcos, marcosSize);
 
 		socketSwap = AbrirConexion(ipSwap, puertoReceptorSwap);
 		if (socketSwap < 0) {
@@ -72,20 +71,24 @@ int main() {
 		}
 		log_info(ptrLog, "Se conecto con Swap");
 
-		socketReceptorNucleo = AbrirSocketServidor(puertoTCPRecibirConexionesNucleo);
+		socketReceptorNucleo = AbrirSocketServidor(
+				puertoTCPRecibirConexionesNucleo);
 		if (socketReceptorNucleo < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de UMC");
+			log_info(ptrLog,
+					"No se pudo abrir el Socket Servidor Nucleo de UMC");
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de UMC");
 
 		socketReceptorCPU = AbrirSocketServidor(puertoTCPRecibirConexionesCPU);
 		if (socketReceptorCPU < 0) {
-			log_info(ptrLog, "No se pudo abrir el Socket Servidor Nucleo de CPU");
+			log_info(ptrLog,
+					"No se pudo abrir el Socket Servidor Nucleo de CPU");
 			return -1;
 		}
 		log_info(ptrLog, "Se abrio el socket Servidor Nucleo de CPU");
-		pthread_create(&hiloConexiones, NULL, (void *) manejarConexionesRecibidas, NULL);
+		pthread_create(&hiloConexiones, NULL,
+				(void *) manejarConexionesRecibidas, NULL);
 		crearConsola();
 	} else {
 		log_info(ptrLog, "La UMC no pudo inicializarse correctamente");
@@ -101,12 +104,14 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
-char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion) {
+char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio,
+		uint32_t operacion) {
 	pthread_mutex_lock(&comunicacionConSwap);
 	char * mensajeDeSwap;
 
-	int bytesEnviados = enviarDatos(socketSwap, bufferTamanio->buffer, bufferTamanio->tamanioBuffer, operacion, UMC);
-	if(bytesEnviados <= 0) {
+	int bytesEnviados = enviarDatos(socketSwap, bufferTamanio->buffer,
+			bufferTamanio->tamanioBuffer, operacion, UMC);
+	if (bytesEnviados <= 0) {
 		log_error(ptrLog, "Ocurrio un error al enviarle un mensaje a Swap.");
 		mensajeDeSwap = NULL;
 	} else {
@@ -117,9 +122,9 @@ char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t oper
 	return mensajeDeSwap;
 }
 
-void reservarMemoria(int cantidadMarcos, int tamanioMarco){
+void reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 	int i;
-	for(i = 0; i < cantidadMarcos; i++) {
+	for (i = 0; i < cantidadMarcos; i++) {
 		t_frame * frame = malloc((sizeof(uint32_t) * 3) + tamanioMarco);
 		frame->disponible = 1;
 		frame->numeroFrame = i;
@@ -130,8 +135,8 @@ void reservarMemoria(int cantidadMarcos, int tamanioMarco){
 }
 
 void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion) {
- 	enviarDatos(socketSwap,mensajeSwap, tamanioMensaje, operacion, UMC);
- }
+	enviarDatos(socketSwap, mensajeSwap, tamanioMensaje, operacion, UMC);
+}
 
 //Metodos para Iniciar valores de la UMC
 int crearLog() {
@@ -148,42 +153,48 @@ int iniciarUMC(t_config* config) {
 	if (config_has_property(config, "MARCOS")) {
 		marcos = config_get_int_value(config, "MARCOS");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave MARCOS");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave MARCOS");
 		return 0;
 	}
 
 	if (config_has_property(config, "MARCOS_SIZE")) {
 		marcosSize = config_get_int_value(config, "MARCOS_SIZE");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave MARCOS_SIZE");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave MARCOS_SIZE");
 		return 0;
 	}
 
 	if (config_has_property(config, "MARCO_X_PROC")) {
 		marcoXProc = config_get_int_value(config, "MARCO_X_PROC");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave MARCO_X_PROC");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave MARCO_X_PROC");
 		return 0;
 	}
 
 	if (config_has_property(config, "ENTRADAS_TLB")) { // =0 -> deshabilitada
 		entradasTLB = config_get_int_value(config, "ENTRADAS_TLB");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave ENTRADAS_TLB");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave ENTRADAS_TLB");
 		return 0;
 	}
 
 	if (config_has_property(config, "RETARDO")) {
 		retardo = config_get_int_value(config, "RETARDO");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave RETARDO");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave RETARDO");
 		return 0;
 	}
 
 	if (config_has_property(config, "ALGORITMO")) {
 		algoritmoReemplazo = config_get_string_value(config, "ALGORITMO");
 	} else {
-		log_info(ptrLog, "El archivo de configuracion no contiene la clave ALGORITMO");
+		log_info(ptrLog,
+				"El archivo de configuracion no contiene la clave ALGORITMO");
 		return 0;
 	}
 
@@ -195,30 +206,36 @@ int cargarValoresDeConfig() {
 
 	if (config) {
 		if (config_has_property(config, "PUERTO_CPU")) {
-			puertoTCPRecibirConexionesCPU = config_get_int_value(config, "PUERTO_CPU");
+			puertoTCPRecibirConexionesCPU = config_get_int_value(config,
+					"PUERTO_CPU");
 		} else {
-			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_CPU");
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave PUERTO_CPU");
 			return 0;
 		}
 
 		if (config_has_property(config, "PUERTO_NUCLE0")) {
-			puertoTCPRecibirConexionesNucleo = config_get_int_value(config, "PUERTO_NUCLE0");
+			puertoTCPRecibirConexionesNucleo = config_get_int_value(config,
+					"PUERTO_NUCLE0");
 		} else {
-			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_NUCLE0");
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave PUERTO_NUCLE0");
 			return 0;
 		}
 
 		if (config_has_property(config, "IP_SWAP")) {
 			ipSwap = config_get_string_value(config, "IP_SWAP");
 		} else {
-			log_info(ptrLog, "El archivo de configuracion no contiene la clave IP_SWAP");
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave IP_SWAP");
 			return 0;
 		}
 
 		if (config_has_property(config, "PUERTO_SWAP")) {
 			puertoReceptorSwap = config_get_int_value(config, "PUERTO_SWAP");
 		} else {
-			log_info(ptrLog, "El archivo de configuracion no contiene la clave PUERTO_SWAP");
+			log_info(ptrLog,
+					"El archivo de configuracion no contiene la clave PUERTO_SWAP");
 			return 0;
 		}
 
@@ -237,7 +254,7 @@ int init() {
 }
 //Fin Metodos para Iniciar valores de la UMC
 
-void manejarConexionesRecibidas(){
+void manejarConexionesRecibidas() {
 	listaCpus = list_create();
 	socketClienteNucleo = AceptarConexionCliente(socketReceptorNucleo);
 	if (socketClienteNucleo < 0) {
@@ -250,51 +267,62 @@ void manejarConexionesRecibidas(){
 	pthread_create(&hiloNucleo, NULL, (void *) recibirPeticionesNucleo, NULL);
 	//recibirPeticionesNucleo();
 	log_info(ptrLog, "Esperando conexiones CPU");
-	pthread_create(&hiloCpu, NULL,(void *) aceptarConexionCpu, NULL);
+	pthread_create(&hiloCpu, NULL, (void *) aceptarConexionCpu, NULL);
 	//aceptarConexionCpu();
 
 	pthread_join(hiloNucleo, NULL);
 	pthread_join(hiloCpu, NULL);
 }
 
-void recibirPeticionesNucleo(){
+void recibirPeticionesNucleo() {
 	uint32_t operacion;
 	uint32_t id;
 
 	while (1) {
 
 		log_info(ptrLog, "Esperando Peticion de Nucleo");
-		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion, &id);
+		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion,
+				&id);
 
-		if(strcmp(mensajeRecibido, "ERROR") == 0) {
-			log_error(ptrLog, "No se recibio nada de Nucleo, se cierra la conexion");
+		if (strcmp(mensajeRecibido, "ERROR") == 0) {
+			log_error(ptrLog,
+					"No se recibio nada de Nucleo, se cierra la conexion");
 			finalizarConexion(socketClienteNucleo);
 			return;
-		}else{
+		} else {
 			if (operacion == NUEVOPROGRAMA) {
-				t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(mensajeRecibido);
+				t_iniciar_programa *iniciarProg = deserializarIniciarPrograma(
+						mensajeRecibido);
 
-				log_info(ptrLog, "Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.", iniciarProg->programID);
+				log_info(ptrLog,
+						"Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.",
+						iniciarProg->programID);
 
 				uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
 
 				if (pudoSwap == SUCCESS) {
-					log_info(ptrLog, "Proceso %d almacenado.", iniciarProg->programID);
-					log_info(ptrLog, "Cantidad de Procesos Actuales: %d", list_size(tablaProcesosPaginas) + 1);
-					t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(iniciarProg);
+					log_info(ptrLog, "Proceso %d almacenado.",
+							iniciarProg->programID);
+					log_info(ptrLog, "Cantidad de Procesos Actuales: %d",
+							list_size(tablaProcesosPaginas) + 1);
+					t_nuevo_prog_en_umc * iniciarPrograma = inicializarProceso(
+							iniciarProg);
 					notificarProcesoIniciadoANucleo(iniciarPrograma);
 				} else {
 					operacion = ERROR;
-					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d", iniciarProg->programID);
+					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d",
+							iniciarProg->programID);
 					notificarProcesoNoIniciadoANucleo();
 				}
 
 				free(iniciarProg->codigoAnsisop);
 				free(iniciarProg);
-			}else if (operacion == FINALIZARPROGRAMA) {
-				t_finalizar_programa *finalizar = deserializarFinalizarPrograma( mensajeRecibido); //deserializar finalizar
+			} else if (operacion == FINALIZARPROGRAMA) {
+				t_finalizar_programa *finalizar = deserializarFinalizarPrograma(
+						mensajeRecibido); //deserializar finalizar
 				uint32_t PID = finalizar->programID;
-				log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i", PID);
+				log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i",
+						PID);
 				finalizarPrograma(PID);
 
 			} else {
@@ -308,11 +336,12 @@ void recibirPeticionesNucleo(){
 
 void notificarProcesoIniciadoANucleo(t_nuevo_prog_en_umc * nuevoPrograma) {
 	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
-	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer,
+			mensaje->tamanioBuffer, NOTHING, UMC);
 	free(mensaje->buffer);
 	free(mensaje);
 	free(nuevoPrograma);
-	if(enviarRespuesta <= 0) {
+	if (enviarRespuesta <= 0) {
 		log_error(ptrLog, "Error al notificar a Nucleo de Proceso Iniciado");
 	}
 }
@@ -323,29 +352,33 @@ void notificarProcesoNoIniciadoANucleo() {
 	nuevoPrograma->primerPaginaStack = -1;
 
 	t_buffer_tamanio * mensaje = serializarNuevoProgEnUMC(nuevoPrograma);
-	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer, mensaje->tamanioBuffer, NOTHING, UMC);
+	int enviarRespuesta = enviarDatos(socketClienteNucleo, mensaje->buffer,
+			mensaje->tamanioBuffer, NOTHING, UMC);
 	free(mensaje->buffer);
 	free(mensaje);
-	if(enviarRespuesta <= 0) {
+	if (enviarRespuesta <= 0) {
 		log_error(ptrLog, "Error al notificar a Nucleo de Proceso No Iniciado");
 	}
 }
 
-t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg){
+t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg) {
 	t_list * tablaDePaginas = list_create();
 
 	int i;
-	for(i = 0; i < iniciarProg->tamanio; i++) {
+	for (i = 0; i < iniciarProg->tamanio; i++) {
 		t_registro_tabla_de_paginas * registro = crearRegistroPag(i, -1, 0, 0);
 		list_add(tablaDePaginas, registro);
 	}
 
-	t_tabla_de_paginas * tablaDeUnProceso = malloc((sizeof(uint32_t) * marcoXProc) + (sizeof(uint32_t) * 2) + (sizeof(t_registro_tabla_de_paginas) * list_size(tablaDePaginas)));
+	t_tabla_de_paginas * tablaDeUnProceso = malloc(
+			(sizeof(uint32_t) * marcoXProc) + (sizeof(uint32_t) * 2)
+					+ (sizeof(t_registro_tabla_de_paginas)
+							* list_size(tablaDePaginas)));
 	tablaDeUnProceso->pID = iniciarProg->programID;
 	tablaDeUnProceso->posibleProximaVictima = 0;
 	tablaDeUnProceso->tablaDePaginas = tablaDePaginas;
 	tablaDeUnProceso->paginasEnUMC = list_create();
-	for(i = 0; i < marcoXProc; i++) {
+	for (i = 0; i < marcoXProc; i++) {
 		list_add(tablaDeUnProceso->paginasEnUMC, -1);
 	}
 
@@ -363,24 +396,29 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg){
 void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 	int i, offset = 0;
 	uint32_t longitudCodigo = strlen(iniciarProg->codigoAnsisop);
-	for(i = 0; i < iniciarProg->tamanio; i++) {
-		t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
+	for (i = 0; i < iniciarProg->tamanio; i++) {
+		t_escribir_en_swap * escribirEnSwap = malloc(
+				(sizeof(uint32_t) * 2) + marcosSize);
 		escribirEnSwap->paginaProceso = i;
 		escribirEnSwap->pid = iniciarProg->programID;
 
-		if(offset + marcosSize < longitudCodigo) {
+		if (offset + marcosSize < longitudCodigo) {
 			escribirEnSwap->contenido = malloc(marcosSize);
-			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, marcosSize);
+			memcpy(escribirEnSwap->contenido,
+					(iniciarProg->codigoAnsisop) + offset, marcosSize);
 			offset += marcosSize;
-		}else{
+		} else {
 			uint32_t longitudACopiar = longitudCodigo - offset;
 			escribirEnSwap->contenido = malloc(longitudACopiar);
-			memcpy(escribirEnSwap->contenido, (iniciarProg->codigoAnsisop) + offset, longitudACopiar);
+			memcpy(escribirEnSwap->contenido,
+					(iniciarProg->codigoAnsisop) + offset, longitudACopiar);
 			i = iniciarProg->tamanio;
 		}
 
-		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
-		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
+		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(
+				escribirEnSwap, marcosSize);
+		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio,
+				ESCRIBIR);
 
 		free(resultadoSwap);
 		free(escribirEnSwap->contenido);
@@ -390,8 +428,10 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 	}
 }
 
-t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presencia, int modificado) {
-	t_registro_tabla_de_paginas * regPagina = malloc(sizeof(t_registro_tabla_de_paginas));
+t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,
+		int presencia, int modificado) {
+	t_registro_tabla_de_paginas * regPagina = malloc(
+			sizeof(t_registro_tabla_de_paginas));
 
 	regPagina->paginaProceso = pagina;
 	regPagina->frame = marco;
@@ -402,7 +442,7 @@ t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco, int presen
 	return regPagina;
 }
 
-void aceptarConexionCpu(){
+void aceptarConexionCpu() {
 	while (1) {
 		pthread_t hiloEscuchaCpu;
 
@@ -427,13 +467,13 @@ void aceptarConexionCpu(){
 	}
 }
 
-void borrarCpuMuerta(t_cpu* cpu){
+void borrarCpuMuerta(t_cpu* cpu) {
 	int i, indiceDeCpu;
 
-	for(i=0; i < list_size(listaCpus);i++){
+	for (i = 0; i < list_size(listaCpus); i++) {
 		t_cpu* cpuDeLista = list_get(listaCpus, i);
 
-		if(cpu->numCpu == cpuDeLista->numCpu){
+		if (cpu->numCpu == cpuDeLista->numCpu) {
 			indiceDeCpu = i;
 		}
 	}
@@ -446,51 +486,63 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 	uint32_t id;
 	uint32_t socketCpu = cpuEnAccion->socket;
 
-	while(1){
-		log_debug(ptrLog, "A la espera de alguna solicitud de la CPU %d", cpuEnAccion->numCpu);
+	while (1) {
+		log_debug(ptrLog, "A la espera de alguna solicitud de la CPU %d",
+				cpuEnAccion->numCpu);
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
-		if(strcmp(mensajeRecibido, "ERROR") == 0) {
-			log_error(ptrLog, "No se recibio ningun dato de CPU %d. Cierro conexion", cpuEnAccion->numCpu);
+		if (strcmp(mensajeRecibido, "ERROR") == 0) {
+			log_error(ptrLog,
+					"No se recibio ningun dato de CPU %d. Cierro conexion",
+					cpuEnAccion->numCpu);
 			finalizarConexion(socketCpu);
 			pthread_join(cpuEnAccion->hiloCpu, NULL);
 			borrarCpuMuerta(cpuEnAccion);
 			break;
-		}else{
+		} else {
 			if (operacion == LEER || operacion == LEER_VALOR_VARIABLE) {
-				t_solicitarBytes *leer  = deserializarSolicitarBytes(mensajeRecibido);
+				t_solicitarBytes *leer = deserializarSolicitarBytes(
+						mensajeRecibido);
 
 				uint32_t pagina = leer->pagina;
 				uint32_t start = leer->start;
 				uint32_t offset = leer->offset;
-				log_debug(ptrLog, "Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d", cpuEnAccion->numCpu, pagina, start, offset);
+				log_debug(ptrLog,
+						"Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d",
+						cpuEnAccion->numCpu, pagina, start, offset);
 
 				enviarDatoACPU(cpuEnAccion, pagina, start, offset, operacion);
 
 				free(leer);
-			}else if (operacion == ESCRIBIR) {
-				t_enviarBytes *escribir = deserializarEnviarBytes(mensajeRecibido);
+			} else if (operacion == ESCRIBIR) {
+				t_enviarBytes *escribir = deserializarEnviarBytes(
+						mensajeRecibido);
 
 				uint32_t pagina = escribir->pagina;
 				uint32_t tamanio = escribir->tamanio;
 				uint32_t offset = escribir->offset;
 				char* buffer = escribir->buffer;
-				log_debug(ptrLog, "Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s", cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
+				log_debug(ptrLog,
+						"Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s",
+						cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
 
 				escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 
 				free(escribir->buffer);
 				free(escribir);
-			}else if (operacion == CAMBIOPROCESOACTIVO){
+			} else if (operacion == CAMBIOPROCESOACTIVO) {
 
-				if(cpuEnAccion->procesoActivo != -1){
+				if (cpuEnAccion->procesoActivo != -1) {
 					tlbFlushDeUnPID(cpuEnAccion->procesoActivo);
 				}
 
-				t_cambio_proc_activo *procesoActivo = deserializarCambioProcesoActivo(mensajeRecibido);
+				t_cambio_proc_activo *procesoActivo =
+						deserializarCambioProcesoActivo(mensajeRecibido);
 
 				uint32_t PID_Activo = procesoActivo->programID;
-				log_info(ptrLog, "CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion", cpuEnAccion->numCpu, PID_Activo);
+				log_info(ptrLog,
+						"CPU %d notifica Cambio de Proceso Activo. Proceso %d en ejecucion",
+						cpuEnAccion->numCpu, PID_Activo);
 				cpuEnAccion->procesoActivo = PID_Activo;
 
 				free(procesoActivo);
@@ -508,18 +560,25 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 	}
 }
 
-void enviarACPUQueDebeFinalizarProceso(t_cpu * cpu, t_buffer_tamanio * bufferTamanio) {
-	enviarDatos(cpu->socket, bufferTamanio->buffer, bufferTamanio->tamanioBuffer, NOTHING, UMC);
+void enviarACPUQueDebeFinalizarProceso(t_cpu * cpu,
+		t_buffer_tamanio * bufferTamanio) {
+	enviarDatos(cpu->socket, bufferTamanio->buffer,
+			bufferTamanio->tamanioBuffer, NOTHING, UMC);
 }
 
-void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer) {
-	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
-	if(tablaDeProceso != NULL) {
-		t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
-		if(registro != NULL) {
-			int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
+void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
+		uint32_t tamanio, char * buffer) {
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
+			cpu->procesoActivo);
+	if (tablaDeProceso != NULL) {
+		t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(
+				tablaDeProceso, pagina);
+		if (registro != NULL) {
+			int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
+					registro->paginaProceso);
 			if (entradasTLB > 0 && entradaTLB != -1) {
-				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB", pagina, cpu->procesoActivo);
+				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB",
+						pagina, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 				t_frame * frame = list_get(frames, registroTLB->numFrame);
@@ -527,7 +586,9 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 				int bufferAsInt = atoi(buffer);
 				memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-				log_debug(ptrLog, "Estado del Registro TLB luego de escritura: %s", frame->contenido);
+				log_debug(ptrLog,
+						"Estado del Registro TLB luego de escritura: %s",
+						frame->contenido);
 
 				registro->modificado = 1;
 			} else {
@@ -538,33 +599,44 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					int bufferAsInt = atoi(buffer);
 					memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-					log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frame->contenido);
+					log_debug(ptrLog, "Estado del Frame luego de escritura: %s",
+							frame->contenido);
 
-					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+					agregarATLB(cpu->procesoActivo, registro->paginaProceso,
+							frame->numeroFrame, frame->contenido);
 
 					registro->estaEnUMC = 1;
 					registro->frame = frame->numeroFrame;
 					registro->modificado = 1;
 					registro->bitDeReferencia = 1;
 				} else {
-					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
-					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+					log_info(ptrLog,
+							"La pagina %d, no estaba en UMC, se la pido a swap",
+							pagina);
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
+							pagina);
 
-					if(frameSolicitado != NULL) {
+					if (frameSolicitado != NULL) {
 						int bufferAsInt = atoi(buffer);
-						memcpy(frameSolicitado->contenido + offset, &bufferAsInt, tamanio);
+						memcpy(frameSolicitado->contenido + offset,
+								&bufferAsInt, tamanio);
 
-						log_debug(ptrLog, "Estado del Frame luego de escritura: %s", frameSolicitado->contenido);
+						log_debug(ptrLog,
+								"Estado del Frame luego de escritura: %s",
+								frameSolicitado->contenido);
 
-						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+						agregarATLB(cpu->procesoActivo, registro->paginaProceso,
+								frameSolicitado->numeroFrame,
+								frameSolicitado->contenido);
 
 						registro->estaEnUMC = 1;
 						registro->frame = frameSolicitado->numeroFrame;
 						registro->modificado = 1;
 						registro->bitDeReferencia = 1;
-					}else{
+					} else {
 						uint32_t successInt = ERROR;
-						t_buffer_tamanio * buffer_tamanio = serializarUint32(successInt);
+						t_buffer_tamanio * buffer_tamanio = serializarUint32(
+								successInt);
 						enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
 						return;
 					}
@@ -574,53 +646,66 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			uint32_t successInt = SUCCESS;
 			t_buffer_tamanio * buffer_tamanio = serializarUint32(successInt);
 
-			int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
+			int enviarBytes = enviarDatos(cpu->socket, buffer_tamanio->buffer,
+					buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 
 			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
-		}else{
-			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
+		} else {
+			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d",
+					cpu->procesoActivo, pagina);
 		}
-	}else{
-		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas", cpu->procesoActivo);
+	} else {
+		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas",
+				cpu->procesoActivo);
 	}
 }
 
 void limpiarInstruccion(char * instruccion) {
-     char *p2 = instruccion;
-     while(*instruccion != '\0') {
-     	if(*instruccion != '~') {
+	char *p2 = instruccion;
+	while (*instruccion != '\0') {
+		if (*instruccion != '~') {
 			*p2++ = *instruccion++;
-     	}
-     	else {
-     		++instruccion;
-     	}
-     }
-     *p2 = '\0';
- }
+		} else {
+			++instruccion;
+		}
+	}
+	*p2 = '\0';
+}
 
-void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset, uint32_t operacion) {
+void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
+		uint32_t offset, uint32_t operacion) {
 	uint32_t offsetMemcpy = 0;
 	t_list * datosParaCPU = list_create();
-	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
+			cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
-		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso, pagina, start, offset);
+		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso,
+				pagina, start, offset);
 		if (listaRegistros != NULL) {
 			int i;
 			for (i = 0; i < list_size(listaRegistros); i++) {
-				t_auxiliar_registro * auxiliar = list_get(listaRegistros,i);
+				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
 				t_registro_tabla_de_paginas * registro = auxiliar->registro;
-				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo, registro->paginaProceso);
+				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
+						registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
-					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB en la entrada: %i", pagina, cpu->procesoActivo, entradaTLB);
-					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
+					log_info(ptrLog,
+							"La Pagina %d del Proceso %d esta en la TLB en la entrada: %i",
+							pagina, cpu->procesoActivo, entradaTLB);
+					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(
+							entradaTLB);
 					t_frame * frame = list_get(frames, registroTLB->numFrame);
 					char * bufferAux = calloc(1, auxiliar->offset);
-					if(operacion == LEER) {
-						memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
-					}else{
+					if (operacion == LEER) {
+						memcpy(bufferAux,
+								(frame->contenido) + (auxiliar->start),
+								auxiliar->offset);
+					} else {
 						int bufferInt;
-						memcpy(&bufferInt, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+						memcpy(&bufferInt,
+								(frame->contenido) + (auxiliar->start),
+								auxiliar->offset);
 						sprintf(bufferAux, "%d", bufferInt);
 					}
 					list_add(datosParaCPU, bufferAux);
@@ -631,50 +716,71 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset);
-						if(operacion == LEER) {
-							memcpy(bufferAux, (frame->contenido) + (auxiliar->start), auxiliar->offset);
-						}else{
+						if (operacion == LEER) {
+							memcpy(bufferAux,
+									(frame->contenido) + (auxiliar->start),
+									auxiliar->offset);
+						} else {
 							int bufferInt;
-							memcpy(&bufferInt, (frame->contenido) + (auxiliar->start), auxiliar->offset);
+							memcpy(&bufferInt,
+									(frame->contenido) + (auxiliar->start),
+									auxiliar->offset);
 							sprintf(bufferAux, "%d", bufferInt);
 						}
 						list_add(datosParaCPU, bufferAux);
 						offsetMemcpy += auxiliar->offset;
-						agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+						agregarATLB(cpu->procesoActivo, registro->paginaProceso,
+								frame->numeroFrame, frame->contenido);
 						registro->estaEnUMC = 1;
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
-						log_info(ptrLog, "UMC no tiene la Pagina %d del Proceso %d. Pido a Swap", registro->paginaProceso, cpu->procesoActivo);
-						t_frame * frameSolicitado = solicitarPaginaASwap( cpu, registro->paginaProceso);
+						log_info(ptrLog,
+								"UMC no tiene la Pagina %d del Proceso %d. Pido a Swap",
+								registro->paginaProceso, cpu->procesoActivo);
+						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
+								registro->paginaProceso);
 
-						if(frameSolicitado != NULL) {
+						if (frameSolicitado != NULL) {
 							char * bufferAux = calloc(1, auxiliar->offset);
-							if(operacion == LEER) {
-								memcpy(bufferAux, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
-							}else{
+							if (operacion == LEER) {
+								memcpy(bufferAux,
+										(frameSolicitado->contenido)
+												+ (auxiliar->start),
+										auxiliar->offset);
+							} else {
 								int bufferInt;
-								memcpy(&bufferInt, (frameSolicitado->contenido) + (auxiliar->start), auxiliar->offset);
+								memcpy(&bufferInt,
+										(frameSolicitado->contenido)
+												+ (auxiliar->start),
+										auxiliar->offset);
 								sprintf(bufferAux, "%d", bufferInt);
 							}
 							list_add(datosParaCPU, bufferAux);
 							offsetMemcpy += auxiliar->offset;
-							agregarATLB(cpu->procesoActivo, registro->paginaProceso, frameSolicitado->numeroFrame, frameSolicitado->contenido);
+							agregarATLB(cpu->procesoActivo,
+									registro->paginaProceso,
+									frameSolicitado->numeroFrame,
+									frameSolicitado->contenido);
 							registro->estaEnUMC = 1;
 							registro->frame = frameSolicitado->numeroFrame;
 							registro->bitDeReferencia = 1;
-						}else{
+						} else {
 							char * instrFinalizar = "FINALIZAR";
-							t_instruccion * instruccion = malloc(strlen(instrFinalizar) + 1);
+							t_instruccion * instruccion = malloc(
+									strlen(instrFinalizar) + 1);
 							instruccion->instruccion = instrFinalizar;
-							t_buffer_tamanio * buffer_tamanio = serializarInstruccion(instruccion, strlen(instrFinalizar) + 1);
-							enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
+							t_buffer_tamanio * buffer_tamanio =
+									serializarInstruccion(instruccion,
+											strlen(instrFinalizar) + 1);
+							enviarACPUQueDebeFinalizarProceso(cpu,
+									buffer_tamanio);
 							return;
 						}
 					}
 				}
 			}
-			for(i = 0; i < list_size(listaRegistros); i++) {
+			for (i = 0; i < list_size(listaRegistros); i++) {
 				t_auxiliar_registro * auxiliar = list_get(listaRegistros, i);
 				free(auxiliar);
 			}
@@ -682,7 +788,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 		}
 	}
 	char *instruccionPosta = calloc(list_size(datosParaCPU), 50);
-	for(i = 0; i < list_size(datosParaCPU); i++) {
+	for (i = 0; i < list_size(datosParaCPU); i++) {
 		char * aux = list_get(datosParaCPU, i);
 		strcat(instruccionPosta, aux);
 		free(aux);
@@ -691,8 +797,10 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,uint32_t offset
 	t_instruccion * instruccion = malloc(strlen(instruccionPosta) + 1);
 	instruccion->instruccion = instruccionPosta;
 	t_buffer_tamanio * buffer_tamanio;
-	buffer_tamanio = serializarInstruccion(instruccion, strlen(instruccionPosta) + 1);
-	enviarDatos(cpu->socket, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, NOTHING, UMC);
+	buffer_tamanio = serializarInstruccion(instruccion,
+			strlen(instruccionPosta) + 1);
+	enviarDatos(cpu->socket, buffer_tamanio->buffer,
+			buffer_tamanio->tamanioBuffer, NOTHING, UMC);
 	free(instruccion);
 }
 
@@ -700,38 +808,46 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 	t_solicitud_pagina * solicitudPagina = malloc(sizeof(t_solicitud_pagina));
 	solicitudPagina->pid = cpu->procesoActivo;
 	solicitudPagina->paginaProceso = pagina;
-	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(solicitudPagina);
+	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(
+			solicitudPagina);
 	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, LEER);
 	free(solicitudPagina);
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
-	if(strcmp(mensajeDeSwap, "ERROR") == 0) {
+	if (strcmp(mensajeDeSwap, "ERROR") == 0) {
 		log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
 		return NULL;
-	}else{
+	} else {
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
 		free(mensajeDeSwap);
-		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina, cpu->procesoActivo, paginaSwap->paginaSolicitada);
-		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo, pagina);
+		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina,
+				cpu->procesoActivo, paginaSwap->paginaSolicitada);
+		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo,
+				pagina);
 
-		if(frame != NULL) {
+		if (frame != NULL) {
 			log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
 			free(paginaSwap);
 			return frame;
-		}else{
-			log_info(ptrLog, "No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.", cpu->procesoActivo);
+		} else {
+			log_info(ptrLog,
+					"No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.",
+					cpu->procesoActivo);
 			return NULL;
 		}
 	}
 	return NULL;
 }
 
-t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint32_t pagina, uint32_t start, uint32_t offset) {
+t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso,
+		uint32_t pagina, uint32_t start, uint32_t offset) {
 	t_list * registros = list_create();
 
 	//Armo el primer request
-	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
-	t_auxiliar_registro * auxiliar = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso,
+			pagina);
+	t_auxiliar_registro * auxiliar = malloc(
+			sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t) * 2));
 	auxiliar->registro = registro;
 
 	if ((start + offset) <= marcosSize) {
@@ -750,8 +866,11 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 
 		while ((start + offset) > marcosSize) {
 			pagina++;
-			t_registro_tabla_de_paginas * registroAdicional = buscarPaginaEnTabla(tablaDeProceso, pagina);
-			t_auxiliar_registro * auxiliarAdicional = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+			t_registro_tabla_de_paginas * registroAdicional =
+					buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_auxiliar_registro * auxiliarAdicional = malloc(
+					sizeof(t_registro_tabla_de_paginas)
+							+ (sizeof(uint32_t) * 2));
 			auxiliarAdicional->registro = registroAdicional;
 			auxiliarAdicional->start = start;
 			auxiliarAdicional->offset = marcosSize;
@@ -759,17 +878,20 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 			list_add(registros, auxiliarAdicional);
 		}
 
-		if(offset >= 0 && (start + offset) < marcosSize) {
+		if (offset >= 0 && (start + offset) < marcosSize) {
 			pagina++;
-			t_registro_tabla_de_paginas * registroAdicional2 = buscarPaginaEnTabla(tablaDeProceso, pagina);
-			t_auxiliar_registro * auxiliarAdicional2 = malloc(sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t)*2));
+			t_registro_tabla_de_paginas * registroAdicional2 =
+					buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_auxiliar_registro * auxiliarAdicional2 = malloc(
+					sizeof(t_registro_tabla_de_paginas)
+							+ (sizeof(uint32_t) * 2));
 			auxiliarAdicional2->registro = registroAdicional2;
 			auxiliarAdicional2->start = 0;
 			//if(offset == 0) {
-				auxiliarAdicional2->offset = offset;
+			auxiliarAdicional2->offset = offset;
 			/*}else{
-				auxiliarAdicional2->offset = offset;
-			}*/
+			 auxiliarAdicional2->offset = offset;
+			 }*/
 			list_add(registros, auxiliarAdicional2);
 		}
 	}
@@ -777,11 +899,13 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso, uint3
 	return registros;
 }
 
-t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla, uint32_t pagina) {
+t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla,
+		uint32_t pagina) {
 	int i;
-	for(i = 0; i < list_size(tabla->tablaDePaginas); i++) {
-		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas, i);
-		if(registro->paginaProceso == pagina) {
+	for (i = 0; i < list_size(tabla->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas,
+				i);
+		if (registro->paginaProceso == pagina) {
 			return registro;
 		}
 	}
@@ -790,9 +914,9 @@ t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla, ui
 
 t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId) {
 	int i;
-	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
+	for (i = 0; i < list_size(tablaProcesosPaginas); i++) {
 		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
-		if(tabla->pID == procesoId) {
+		if (tabla->pID == procesoId) {
 			return tabla;
 		}
 	}
@@ -801,9 +925,9 @@ t_tabla_de_paginas * buscarTablaDelProceso(uint32_t procesoId) {
 
 int indiceDeTablaDelProceso(uint32_t procesoId) {
 	int i;
-	for(i = 0; i < list_size(tablaProcesosPaginas); i++) {
+	for (i = 0; i < list_size(tablaProcesosPaginas); i++) {
 		t_tabla_de_paginas * tabla = list_get(tablaProcesosPaginas, i);
-		if(tabla->pID == procesoId) {
+		if (tabla->pID == procesoId) {
 			return i;
 		}
 	}
@@ -812,45 +936,53 @@ int indiceDeTablaDelProceso(uint32_t procesoId) {
 
 void enviarTamanioPaginaACPU(int socketCPU) {
 	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
-	int bytesEnviados = enviarDatos(socketCPU, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
+	int bytesEnviados = enviarDatos(socketCPU, buffer_tamanio->buffer,
+			buffer_tamanio->tamanioBuffer, ENVIAR_TAMANIO_PAGINA_A_CPU, UMC);
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
-	if(bytesEnviados<=0) {
+	if (bytesEnviados <= 0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
 }
 
-void enviarTamanioPaginaANUCLEO(){
+void enviarTamanioPaginaANUCLEO() {
 	t_buffer_tamanio * buffer_tamanio = serializarUint32(marcosSize);
-	int bytesEnviados = enviarDatos(socketClienteNucleo, buffer_tamanio->buffer, buffer_tamanio->tamanioBuffer, TAMANIO_PAGINAS_NUCLEO, UMC);
+	int bytesEnviados = enviarDatos(socketClienteNucleo, buffer_tamanio->buffer,
+			buffer_tamanio->tamanioBuffer, TAMANIO_PAGINAS_NUCLEO, UMC);
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
-	if(bytesEnviados<=0) {
+	if (bytesEnviados <= 0) {
 		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
 	}
 }
 
-void finalizarPrograma(uint32_t PID){
+void finalizarPrograma(uint32_t PID) {
 	t_finalizar_programa * finalizarProg = malloc(sizeof(t_finalizar_programa));
 	finalizarProg->programID = PID;
 
-	t_buffer_tamanio * buffer_tamanio = serializarFinalizarPrograma(finalizarProg);
+	t_buffer_tamanio * buffer_tamanio = serializarFinalizarPrograma(
+			finalizarProg);
 
-	char * respuestaSwap = enviarYRecibirMensajeSwap(buffer_tamanio, FINALIZARPROGRAMA);
+	char * respuestaSwap = enviarYRecibirMensajeSwap(buffer_tamanio,
+			FINALIZARPROGRAMA);
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 
-	if(strcmp(respuestaSwap, "ERROR") == 0) {
+	if (strcmp(respuestaSwap, "ERROR") == 0) {
 		log_error(ptrLog, "No se recibio nada de Swap");
 		return;
-	}else{
+	} else {
 		uint32_t respuesta = deserializarUint32(respuestaSwap);
 
-		if(respuesta == SUCCESS){
+		if (respuesta == SUCCESS) {
 			borrarEstructurasDeProceso(PID);
-			log_info(ptrLog, "Se borraron las estructuras relacionadas al Proceso %d", PID);
+			log_info(ptrLog,
+					"Se borraron las estructuras relacionadas al Proceso %d",
+					PID);
 		} else {
-			log_info(ptrLog, "Ocurrio un error al borrar las estructuras relacionadas al Proceso %d", PID);
+			log_info(ptrLog,
+					"Ocurrio un error al borrar las estructuras relacionadas al Proceso %d",
+					PID);
 		}
 
 		free(finalizarProg);
@@ -861,11 +993,12 @@ void finalizarPrograma(uint32_t PID){
 void borrarEstructurasDeProceso(uint32_t pid) {
 	tlbFlushDeUnPID(pid);
 	t_tabla_de_paginas * tablaAEliminar = buscarTablaDelProceso(pid);
-	if(tablaAEliminar != NULL) {
+	if (tablaAEliminar != NULL) {
 		int i;
-		for(i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
-			t_registro_tabla_de_paginas * registro = list_get(tablaAEliminar->tablaDePaginas, i);
-			if(registro != NULL && registro->estaEnUMC == 1) {
+		for (i = 0; i < list_size(tablaAEliminar->tablaDePaginas); i++) {
+			t_registro_tabla_de_paginas * registro = list_get(
+					tablaAEliminar->tablaDePaginas, i);
+			if (registro != NULL && registro->estaEnUMC == 1) {
 				pthread_mutex_lock(&accesoAFrames);
 				t_frame * frame = list_get(frames, registro->frame);
 				frame->disponible = 1;
@@ -881,7 +1014,7 @@ void borrarEstructurasDeProceso(uint32_t pid) {
 	}
 }
 
-uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
+uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg) {
 	t_check_espacio * check = malloc(sizeof(t_check_espacio));
 	check->pid = iniciarProg->programID;
 	check->cantidadDePaginas = iniciarProg->tamanio;
@@ -889,20 +1022,24 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg){
 	t_buffer_tamanio * iniciarProgSerializado = serializarCheckEspacio(check);
 	free(check);
 
-	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
-	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
+	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d",
+			iniciarProg->programID);
+	enviarMensajeASwap(iniciarProgSerializado->buffer,
+			iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
 	free(iniciarProgSerializado->buffer);
 	free(iniciarProgSerializado);
 	uint32_t operacion;
 	uint32_t id;
-	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
+	log_info(ptrLog,
+			"Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.",
+			iniciarProg->programID);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
 	free(hayEspacio);
 	return pudoSwap;
 }
 
-void liberarMemoria(char * memoriaALiberar){
+void liberarMemoria(char * memoriaALiberar) {
 	free(memoriaALiberar);
 	log_info(ptrLog, "Memoria Liberada");
 }
@@ -933,7 +1070,7 @@ t_tlb * obtenerYActualizarRegistroTLB(int entradaTLB) {
 	return nuevoRegistroTLB;
 }
 
-int pagEstaEnTLB(int pid, int numPag){
+int pagEstaEnTLB(int pid, int numPag) {
 	int i, j = -1;
 	pthread_mutex_lock(&accesoATLB);
 	if (entradasTLB > 0 && TLB != NULL && list_size(TLB) > 0) {
@@ -953,7 +1090,7 @@ void iniciarTLB() {
 	if (entradasTLB != 0) {
 		TLB = list_create();
 
-		for (i = 0; i <= (entradasTLB-1); i++) {
+		for (i = 0; i <= (entradasTLB - 1); i++) {
 			t_tlb * registro = malloc((sizeof(int) * 4));
 			registro->pid = -1;
 			registro->indice = i;
@@ -967,13 +1104,13 @@ void iniciarTLB() {
 	}
 }
 
-int entradaTLBAReemplazarPorLRU(){
+int entradaTLBAReemplazarPorLRU() {
 	//Retorna -1 si no hay libres. Sino, retorna indice de Libre.
 	int i = 0;
 	int indiceLibre = -1;
 	pthread_mutex_lock(&accesoATLB);
 	if (TLB != NULL) {
-		for (i = 0; i <= list_size(TLB)-1; i++) {
+		for (i = 0; i <= list_size(TLB) - 1; i++) {
 			t_tlb * registro = list_get(TLB, i);
 			if (registro->pid == -1) {
 				indiceLibre = registro->indice;
@@ -985,40 +1122,44 @@ int entradaTLBAReemplazarPorLRU(){
 	return indiceLibre;
 }
 
-void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame){
-	if(entradasTLB > 0) {
+void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame) {
+	if (entradasTLB > 0) {
 		int indiceLibre = entradaTLBAReemplazarPorLRU();
 
 		//t_tlb * aInsertar = malloc(sizeof(t_tlb));
-		t_tlb* aInsertar = malloc(4*sizeof(int));
-		aInsertar->numPag=pagina;
-		aInsertar->numFrame=frame;
-		aInsertar->pid=pid;
+		t_tlb* aInsertar = malloc(4 * sizeof(int));
+		aInsertar->numPag = pagina;
+		aInsertar->numFrame = frame;
+		aInsertar->pid = pid;
 
-		if(indiceLibre > -1) {
+		if (indiceLibre > -1) {
 			aInsertar->indice = indiceLibre;
 			pthread_mutex_lock(&accesoATLB);
 			list_remove(TLB, indiceLibre);
 			list_add_in_index(TLB, indiceLibre, aInsertar);
 			pthread_mutex_unlock(&accesoATLB);
-			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
-		}else{
+			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB",
+					pagina, pid);
+		} else {
 			aInsertar->indice = list_size(TLB) - 1;
 			//Actualizo el Frame en Swap antes de eliminar
 			t_tlb * tlbAEliminar = list_get(TLB, 0);
 			//Elimino la primera entrada => La mas vieja
-			log_info(ptrLog, "Se elimina la primer entrada de la TLB que es de la pagina %i, proceso %i", tlbAEliminar->numPag, tlbAEliminar->pid);
+			log_info(ptrLog,
+					"Se elimina la primer entrada de la TLB que es de la pagina %i, proceso %i",
+					tlbAEliminar->numPag, tlbAEliminar->pid);
 			pthread_mutex_lock(&accesoATLB);
 			list_remove(TLB, 0);
 			//aca falta que todos los anteriores cambien su indice hecho
 			int a = 0;
-			for(a = 0; a < (list_size(TLB)); a++){
+			for (a = 0; a < (list_size(TLB)); a++) {
 				t_tlb * tlbCambiar = list_get(TLB, a);
-				tlbCambiar->indice = tlbCambiar->indice-1;
+				tlbCambiar->indice = tlbCambiar->indice - 1;
 			}
 			list_add(TLB, aInsertar);
 			pthread_mutex_unlock(&accesoATLB);
-			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
+			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB",
+					pagina, pid);
 		}
 	}
 }
@@ -1061,7 +1202,7 @@ void tlbFlushDeUnPID(int PID) {
 	}
 }
 
-void finalizarTLB(){
+void finalizarTLB() {
 	if (TLB != NULL) {
 		pthread_mutex_lock(&accesoATLB);
 		for (i = 0; i < list_size(TLB); i++) {
@@ -1073,7 +1214,8 @@ void finalizarTLB(){
 	}
 }
 
-t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
+t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid,
+		uint32_t pagina) {
 	if (!strcmp(algoritmoReemplazo, "CLOCK")) {
 		return actualizarFramesConClock(paginaSwap, pid, pagina);
 	}
@@ -1088,15 +1230,15 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_
 int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	for(i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
+	for (i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
 		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, i);
-		if(pag > -1) {
+		if (pag > -1) {
 			framesOcupados++;
 		}
 	}
-	if(framesOcupados < marcoXProc) {
+	if (framesOcupados < marcoXProc) {
 		return 1;
-	}else{
+	} else {
 		return 0;
 	}
 }
@@ -1104,19 +1246,20 @@ int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 int procesoTieneAlgunaPaginaEnUMC(uint32_t pid) {
 	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	for(i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
+	for (i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
 		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, i);
-		if(pag > -1) {
+		if (pag > -1) {
 			framesOcupados++;
 		}
 	}
 	return framesOcupados > 0;
 }
 
-t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
-	if(procesoPuedeGuardarFrameSinDesalojar(pid)) {
+t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
+		uint32_t pagina) {
+	if (procesoPuedeGuardarFrameSinDesalojar(pid)) {
 		int indiceFrameLibre = buscarFrameLibre();
-		if(indiceFrameLibre > -1) {
+		if (indiceFrameLibre > -1) {
 			t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
 			frame->contenido = paginaSwap->paginaSolicitada;
 			frame->disponible = 0;
@@ -1126,60 +1269,71 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, 
 			list_add_in_index(frames, indiceFrameLibre, frame);
 			//Actualizo Tabla de Paginas del Proceso - Actualizar puntero
 			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
+					tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
+					tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
-		}else{
-			if(procesoTieneAlgunaPaginaEnUMC(pid)) {
-				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-				return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
-			}else{
+		} else {
+			if (procesoTieneAlgunaPaginaEnUMC(pid)) {
+				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
+						pid);
+				return desalojarFrameConClock(paginaSwap, pid, pagina,
+						tablaDeProceso);
+			} else {
 				return NULL;
 			}
 		}
-	}else{
+	} else {
 		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
 		return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
 	}
 }
 
-t_registro_tabla_de_paginas * obtenerPaginaDeProceso(uint32_t pag, t_tabla_de_paginas * tabla) {
+t_registro_tabla_de_paginas * obtenerPaginaDeProceso(uint32_t pag,
+		t_tabla_de_paginas * tabla) {
 	int i;
-	for(i = 0; i < list_size(tabla->tablaDePaginas); i++) {
-		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas, i);
-		if(registro->paginaProceso == pag) {
+	for (i = 0; i < list_size(tabla->tablaDePaginas); i++) {
+		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas,
+				i);
+		if (registro->paginaProceso == pag) {
 			return registro;
 		}
 	}
 	return NULL;
 }
 
-t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
-	if(tablaDeProceso->posibleProximaVictima >= list_size(tablaDeProceso->paginasEnUMC)) {
+t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
+		uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
+	if (tablaDeProceso->posibleProximaVictima
+			>= list_size(tablaDeProceso->paginasEnUMC)) {
 		tablaDeProceso->posibleProximaVictima = 0;
 	}
 	pthread_mutex_lock(&accesoAFrames);
-	uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-	t_registro_tabla_de_paginas * registroCandidato = obtenerPaginaDeProceso(pag, tablaDeProceso);
+	uint32_t pag = list_get(tablaDeProceso->paginasEnUMC,
+			tablaDeProceso->posibleProximaVictima);
+	t_registro_tabla_de_paginas * registroCandidato = obtenerPaginaDeProceso(
+			pag, tablaDeProceso);
 	pthread_mutex_unlock(&accesoAFrames);
-	if(registroCandidato->estaEnUMC == 1) {
-		if(registroCandidato->bitDeReferencia == 1) {
+	if (registroCandidato->estaEnUMC == 1) {
+		if (registroCandidato->bitDeReferencia == 1) {
 			registroCandidato->bitDeReferencia = 0;
 			tablaDeProceso->posibleProximaVictima++;
-			return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
-		}else {
+			return desalojarFrameConClock(paginaSwap, pid, pagina,
+					tablaDeProceso);
+		} else {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
 			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
-			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
+			if (posEnTlb > -1 && posEnTlb < list_size(TLB)) {
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
-				t_tlb * aEliminar =	list_get(TLB, posEnTlb);
+				t_tlb * aEliminar = list_get(TLB, posEnTlb);
 				aEliminar->pid = -1;
 				aEliminar->numPag = 0;
 				aEliminar->numFrame = -1;
@@ -1188,26 +1342,30 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid, ui
 			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
 			pthread_mutex_lock(&accesoAFrames);
 			frame->contenido = paginaSwap->paginaSolicitada;
-			list_remove(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_remove(tablaDeProceso->paginasEnUMC,
+					tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
+					tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
+					tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
 		}
-	}else{
+	} else {
 		tablaDeProceso->posibleProximaVictima++;
 		return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
 	}
 }
 
-t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina) {
-	if(procesoPuedeGuardarFrameSinDesalojar(pid)) {
+t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap,
+		uint32_t pid, uint32_t pagina) {
+	if (procesoPuedeGuardarFrameSinDesalojar(pid)) {
 		int indiceFrameLibre = buscarFrameLibre();
-		if(indiceFrameLibre > -1) {
+		if (indiceFrameLibre > -1) {
 			t_frame * frame = malloc((sizeof(uint32_t) * 3) + marcosSize);
 			frame->contenido = paginaSwap->paginaSolicitada;
 			frame->disponible = 0;
@@ -1217,48 +1375,59 @@ t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap, uint
 			list_add_in_index(frames, indiceFrameLibre, frame);
 			//Actualizo Tabla de Paginas del Proceso - Actualizar puntero
 			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
+					tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
+					tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
-		}else{
-			if(procesoTieneAlgunaPaginaEnUMC(pid)) {
-				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-				return desalojarFrameConClockModificado(paginaSwap, pid, pagina, tablaDeProceso);
-			}else{
+		} else {
+			if (procesoTieneAlgunaPaginaEnUMC(pid)) {
+				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
+						pid);
+				return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
+						tablaDeProceso);
+			} else {
 				return NULL;
 			}
 		}
-	}else{
+	} else {
 		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-		return desalojarFrameConClockModificado(paginaSwap, pid, pagina, tablaDeProceso);
+		return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
+				tablaDeProceso);
 	}
 }
 
-t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
-	if(tablaDeProceso->posibleProximaVictima >= list_size(tablaDeProceso->paginasEnUMC)) {
+t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
+		uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
+	if (tablaDeProceso->posibleProximaVictima
+			>= list_size(tablaDeProceso->paginasEnUMC)) {
 		tablaDeProceso->posibleProximaVictima = 0;
 	}
 
 	int i;
-	for(i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
+	for (i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
 		pthread_mutex_lock(&accesoAFrames);
-		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-		t_registro_tabla_de_paginas * registroCandidato = obtenerPaginaDeProceso(pag, tablaDeProceso);
+		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC,
+				tablaDeProceso->posibleProximaVictima);
+		t_registro_tabla_de_paginas * registroCandidato =
+				obtenerPaginaDeProceso(pag, tablaDeProceso);
 		pthread_mutex_unlock(&accesoAFrames);
 
-		if(registroCandidato->estaEnUMC == 1 && registroCandidato->modificado == 0 && registroCandidato->bitDeReferencia == 0) {
+		if (registroCandidato->estaEnUMC == 1
+				&& registroCandidato->modificado == 0
+				&& registroCandidato->bitDeReferencia == 0) {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
 			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
-			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
+			if (posEnTlb > -1 && posEnTlb < list_size(TLB)) {
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
-				t_tlb * aEliminar =	list_get(TLB, posEnTlb);
+				t_tlb * aEliminar = list_get(TLB, posEnTlb);
 				aEliminar->pid = -1;
 				aEliminar->numPag = 0;
 				aEliminar->numFrame = -1;
@@ -1267,37 +1436,45 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32
 			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
 			pthread_mutex_lock(&accesoAFrames);
 			frame->contenido = paginaSwap->paginaSolicitada;
-			list_remove(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_remove(tablaDeProceso->paginasEnUMC,
+					tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
+					tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
+					tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
-		}else{
+		} else {
 			tablaDeProceso->posibleProximaVictima++;
-			if(tablaDeProceso->posibleProximaVictima >= list_size(tablaDeProceso->paginasEnUMC)) {
+			if (tablaDeProceso->posibleProximaVictima
+					>= list_size(tablaDeProceso->paginasEnUMC)) {
 				tablaDeProceso->posibleProximaVictima = 0;
 			}
 		}
 	}
 
-	for(i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
+	for (i = 0; i < list_size(tablaDeProceso->tablaDePaginas); i++) {
 		pthread_mutex_lock(&accesoAFrames);
-		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-		t_registro_tabla_de_paginas * registroCandidato = obtenerPaginaDeProceso(pag, tablaDeProceso);
+		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC,
+				tablaDeProceso->posibleProximaVictima);
+		t_registro_tabla_de_paginas * registroCandidato =
+				obtenerPaginaDeProceso(pag, tablaDeProceso);
 		pthread_mutex_unlock(&accesoAFrames);
 
-		if(registroCandidato->estaEnUMC == 1 && registroCandidato->modificado == 1 && registroCandidato->bitDeReferencia == 0) {
+		if (registroCandidato->estaEnUMC == 1
+				&& registroCandidato->modificado == 1
+				&& registroCandidato->bitDeReferencia == 0) {
 			t_frame * frame = list_get(frames, registroCandidato->frame);
 			frame->disponible = 0;
 			int posEnTlb = pagEstaEnTLB(pid, registroCandidato->paginaProceso);
-			if(posEnTlb > -1 && posEnTlb < list_size(TLB)){
+			if (posEnTlb > -1 && posEnTlb < list_size(TLB)) {
 				//la tengo que eliminar
 				pthread_mutex_lock(&accesoATLB);
-				t_tlb * aEliminar =	list_get(TLB, posEnTlb);
+				t_tlb * aEliminar = list_get(TLB, posEnTlb);
 				aEliminar->pid = -1;
 				aEliminar->numPag = 0;
 				aEliminar->numFrame = -1;
@@ -1306,29 +1483,35 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap, uint32
 			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
 			pthread_mutex_lock(&accesoAFrames);
 			frame->contenido = paginaSwap->paginaSolicitada;
-			list_remove(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_remove(tablaDeProceso->paginasEnUMC,
+					tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
+					tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
+					tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
 			pthread_mutex_unlock(&accesoAFrames);
 			return frame;
-		}else{
+		} else {
 			registroCandidato->bitDeReferencia = 0;
 			tablaDeProceso->posibleProximaVictima++;
-			if(tablaDeProceso->posibleProximaVictima >= list_size(tablaDeProceso->paginasEnUMC)) {
+			if (tablaDeProceso->posibleProximaVictima
+					>= list_size(tablaDeProceso->paginasEnUMC)) {
 				tablaDeProceso->posibleProximaVictima = 0;
 			}
 		}
 	}
 
-	return desalojarFrameConClockModificado(paginaSwap, pid, pagina, tablaDeProceso);
+	return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
+			tablaDeProceso);
 }
 
-void chequearSiHayQueEscribirEnSwapLaPagina(uint32_t pid, t_registro_tabla_de_paginas * registro) {
-	if(registro->modificado == 1) {
+void chequearSiHayQueEscribirEnSwapLaPagina(uint32_t pid,
+		t_registro_tabla_de_paginas * registro) {
+	if (registro->modificado == 1) {
 		escribirFrameEnSwap(registro->frame, pid, registro->paginaProceso);
 	}
 	registro->estaEnUMC = 0;
@@ -1341,14 +1524,16 @@ void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
 	pthread_mutex_lock(&accesoAFrames);
 	t_frame * frame = list_get(frames, nroFrame);
 
-	t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
+	t_escribir_en_swap * escribirEnSwap = malloc(
+			(sizeof(uint32_t) * 2) + marcosSize);
 	escribirEnSwap->paginaProceso = pagina;
 	escribirEnSwap->pid = pid;
 	escribirEnSwap->contenido = malloc(marcosSize);
 	memcpy(escribirEnSwap->contenido, frame->contenido, marcosSize);
 	pthread_mutex_unlock(&accesoAFrames);
 
-	t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
+	t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap,
+			marcosSize);
 	enviarYRecibirMensajeSwap(buffer_tamanio, ESCRIBIR);
 
 	free(buffer_tamanio->buffer);
@@ -1359,9 +1544,9 @@ void escribirFrameEnSwap(int nroFrame, uint32_t pid, uint32_t pagina) {
 int buscarFrameLibre() {
 	pthread_mutex_lock(&accesoAFrames);
 	int i, j = -1;
-	for(i = 0; i <= (list_size(frames)-1); i++) {
-		t_frame * frame = list_get(frames, i) ;
-		if(frame->disponible == 1) {
+	for (i = 0; i <= (list_size(frames) - 1); i++) {
+		t_frame * frame = list_get(frames, i);
+		if (frame->disponible == 1) {
 			j = i;
 			break;
 		}
@@ -1427,6 +1612,14 @@ void dumpDeUnPID(uint32_t pid) {
 							"__________________________________________________________________\n");
 					escribirEnArchivo(pid, registro->paginaProceso,
 							registro->frame, frame->contenido);
+				} else {
+					log_info(ptrLog,
+							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \n",
+							pid, registro->paginaProceso, registro->frame);
+					log_info(ptrLog,
+							"__________________________________________________________________\n");
+					escribirEnArchivo(pid, registro->paginaProceso,
+							registro->frame, NULL);
 				}
 			}
 		}
@@ -1454,14 +1647,15 @@ void dump(uint32_t pid) {
 	}
 }
 
-int punteroCharEsInt(char* cadena){
+int punteroCharEsInt(char* cadena) {
 	int i;
-	int len =strlen(cadena);
+	int len = strlen(cadena);
 
-	for(i=0; i < len; i++){
-		if(!isdigit(cadena[i])) break;
+	for (i = 0; i < len; i++) {
+		if (!isdigit(cadena[i]))
+			break;
 	}
-	return len==i?atoi(cadena):-1;
+	return len == i ? atoi(cadena) : -1;
 }
 
 void crearConsola() {
@@ -1474,9 +1668,9 @@ void crearConsola() {
 			retardar(punteroCharEsInt(parametro));
 			printf("\n");
 		} else if (strcmp("dump", comando) == 0) {
-			if(strcmp("all",parametro)==0){
+			if (strcmp("all", parametro) == 0) {
 				dump(NULL);
-			}else{
+			} else {
 				dump(atoi(parametro));
 			}
 			printf("\n");
@@ -1499,9 +1693,18 @@ void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,
 
 	FILE*archivoDump = fopen("dump.txt", "a");
 
-	fprintf(archivoDump,
-			"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\" \n", pid,
-			paginaProceso, frame, contenido);
-	fprintf(archivoDump,"__________________________________________________________________\n");
+	if (contenido != NULL) {
+		fprintf(archivoDump,
+				"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\" \n",
+				pid, paginaProceso, frame, contenido);
+		fprintf(archivoDump,
+				"__________________________________________________________________\n");
+	} else {
+		fprintf(archivoDump,
+				"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \n", pid,
+				paginaProceso, frame);
+		fprintf(archivoDump,
+				"__________________________________________________________________\n");
+	}
 	fclose(archivoDump);
 }
