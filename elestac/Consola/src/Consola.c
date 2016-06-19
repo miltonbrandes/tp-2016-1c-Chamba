@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include "Consola.h"
 
 t_log* ptrLog;
 t_config* config;
@@ -22,6 +23,84 @@ char *direccion;
 int puerto;
 int bytesRecibidos = 0;
 int socketConexionNucleo;
+
+int main(int argc, char **argv) {
+	//creo la variable que me va a leer el script mediante el archivo que me llegue.
+	char* script;
+	FILE *programa;
+	//leo del archivo de configuracion el puerto y el ip
+	//creo el log
+	if (crearLog()) {
+		if (iniciarConsola() == 1) {
+			//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
+			log_info(ptrLog, "Inicio del Programa");
+			log_debug(ptrLog, "Abriendo el script..");
+			if ((programa =
+					fopen(
+							"/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/facil.ansisop",
+							"r")) == NULL) {
+				log_error(ptrLog,
+						"No se ha podido abrir el script. Favor, verificar si existe.");
+				return EXIT_FAILURE;
+			}
+			script = leerArchivo(programa);
+			fclose(programa);
+			log_debug(ptrLog, "Se abrio el script con exito");
+
+			enviarScriptAlNucleo(script);
+			char* server_reply;
+			uint32_t operacion;
+			uint32_t id;
+			int valor = 0;
+			bool salir = false;
+			while (1) {
+				server_reply = recibirDatos(socketConexionNucleo, &operacion,
+						&id);
+				if (strlen(server_reply) < 0) {
+					log_error(ptrLog, "Error al recibir datos del servior.");
+					free(server_reply);
+					return EXIT_FAILURE;
+				} else if (strcmp("ERROR", server_reply) == 0) {
+					log_error(ptrLog,
+							"No se recibio nada de Nucleo. Cierro la conexion");
+					break;
+				} else {
+					switch (operacion) {
+					case IMPRIMIR_TEXTO:
+						printf("%s\n", server_reply);
+						break;
+					case IMPRIMIR_VALOR:
+						valor = deserializar(server_reply);
+						//memcpy(&valor, server_reply, 4);
+						printf("%i\n", valor);
+						break;
+					default:
+						printf("%s\n", server_reply);
+						salir = true;
+						break;
+					}
+
+					free(server_reply);
+					if (salir)
+						break;
+				}
+			}
+		} else {
+			log_info(ptrLog,
+					"Hubo un error al abrir el archivo de configuracion de la consola.");
+		}
+	} else {
+		log_info(ptrLog, "La consola no pudo iniciarse");
+		return -1;
+	}
+
+	free(script);
+	log_destroy(ptrLog);
+	config_destroy(config);
+	return EXIT_SUCCESS;
+}
+
+////FUNCIONES CONSOLA////
 
 int crearLog() {
 	ptrLog = log_create(getenv("CONSOLA_LOG"), "Consola", 1, 0);
@@ -97,79 +176,4 @@ char* leerArchivo(FILE *archivo) {
 	log_info(ptrLog, script);
 	return script;
 
-}
-
-
-int main(int argc, char **argv) {
-	//creo la variable que me va a leer el script mediante el archivo que me llegue.
-	char* script;
-	FILE *programa;
-	//leo del archivo de configuracion el puerto y el ip
-	//creo el log
-	if (crearLog()) {
-		if (iniciarConsola() == 1) {
-			//cuando reciba por linea de comandos la ruta para abrir un programa lo tengo que abrir
-			log_info(ptrLog, "Inicio del Programa");
-			log_debug(ptrLog, "Abriendo el script..");
-			if ((programa =
-					fopen(
-							"/home/utnso/tp-2016-1c-Chamba/Ejemplo con AnSISOP Parser/Prueba/ansisop/facil.ansisop",
-							"r")) == NULL) {
-				log_error(ptrLog,
-						"No se ha podido abrir el script. Favor, verificar si existe.");
-				return EXIT_FAILURE;
-			}
-			script = leerArchivo(programa);
-			fclose(programa);
-			log_debug(ptrLog, "Se abrio el script con exito");
-
-			enviarScriptAlNucleo(script);
-			char* server_reply;
-			uint32_t operacion;
-			uint32_t id;
-			int valor = 0;
-			bool salir = false;
-			while (1) {
-				server_reply = recibirDatos(socketConexionNucleo, &operacion, &id);
-				if (strlen(server_reply) < 0) {
-					log_error(ptrLog, "Error al recibir datos del servior.");
-					free(server_reply);
-					return EXIT_FAILURE;
-				} else if (strcmp("ERROR", server_reply) == 0) {
-					log_error(ptrLog, "No se recibio nada de Nucleo. Cierro la conexion");
-					break;
-				} else {
-					switch (operacion) {
-					case IMPRIMIR_TEXTO:
-						printf("%s\n", server_reply);
-						break;
-					case IMPRIMIR_VALOR:
-						valor = deserializar(server_reply);
-						//memcpy(&valor, server_reply, 4);
-						printf("%i\n", valor);
-						break;
-					default:
-						printf("%s\n", server_reply);
-						salir = true;
-						break;
-					}
-
-					free(server_reply);
-					if (salir)
-						break;
-				}
-			}
-		} else {
-			log_info(ptrLog,
-					"Hubo un error al abrir el archivo de configuracion de la consola.");
-		}
-	} else {
-		log_info(ptrLog, "La consola no pudo iniciarse");
-		return -1;
-	}
-
-	free(script);
-	log_destroy(ptrLog);
-	config_destroy(config);
-	return EXIT_SUCCESS;
 }

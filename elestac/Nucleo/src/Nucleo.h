@@ -63,16 +63,51 @@ t_queue* colaReady;
 
 uint32_t pcbAFinalizar; // pcb q vamos a cerrar porque el programa cerro mal
 
-t_pcb* crearPCB(char* programa, int socket);
-void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB);
-void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unCliente);
-void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer);
-t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
+int abrirSocketsImportantes();
+int crearLog();
+int crearThreadsUtiles();
+int datosEnSocketUMC();
 int indiceConsolaEnLista(uint32_t pid);
-void finalizarProgramaPorErrorEnUMC(t_clienteCpu* unCliente, char* buffer);
-void mensajesPrograma(uint32_t pcbId, uint32_t tipoDeValor, char * mensaje);
+int iniciarNucleo();
+int init();
+int initInotify();
+int obtenerSocketMaximoInicial();
+
+t_IO* BuscarIO(t_dispositivo_io* element);
+t_pcb* crearPCB(char* programa, int socket);
+t_socket_pid * buscarConsolaPorProceso(uint32_t pid);
+t_variable_compartida* obtenerVariable(t_op_varCompartida * varCompartida);
+t_variable_compartida* obtenerVariable2(char* buffer);
+
+void *hiloClienteOcioso();
+void *hiloPorIO(void* es);
+void aceptarConexionEnSocketReceptorConsola(int socketConexion);
+void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion);
 void borrarPCBDeColaExecute(uint32_t pcbId);
 void borrarPCBDeColaExecuteYMeterEnColaExit(uint32_t pcbId);
+void cerrarConexionCliente(t_clienteCpu *unCliente);
+void comprobarMensajesDeClientes(t_clienteCpu *unCliente, int socketFor, uint32_t operacion, char * buffer);
+void crearListaDispositivosIO(char **ioIds, char **ioSleepValues);
+void crearListaSemaforos(char **semIds, char **semInitValues);
+void crearListaVariablesCompartidas(char **sharedVars);
+void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB);
+void escucharPuertos();
+void finalizarConexionDeUnSocketEnParticular(int socketFor);
+void finalizarProgramaPorErrorEnUMC(t_clienteCpu* unCliente, char* buffer);
+void finalizarProgramaPorStackOverflow(t_clienteCpu* unCliente, char* buffer);
+void finHilosIo(void* entradaSalida);
+void hilosIO(void* entradaSalida);
+void imprimirProcesoNew(t_pcb* pcb);
+void mensajesPrograma(uint32_t pcbId, uint32_t tipoDeValor, char * mensaje);
+void mostrarVariables(t_stack* unpcb);
+void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unCliente);
+void operacionesConVariablesCompartidas(char operacion, char *buffer, uint32_t socketCliente);
+void operacionEXIT(t_clienteCpu* unCliente, char* buffer);
+void operacionIO(t_clienteCpu* unCliente, char* buffer);
+void operacionQuantum(t_clienteCpu* unCliente, char* buffer);
+void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion);
+void* hiloPCBaFinalizar();
+void* vaciarColaExit();
+
 
 #endif /* SRC_NUCLEO_H_ */
-

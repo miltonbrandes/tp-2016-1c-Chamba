@@ -33,16 +33,32 @@ typedef struct frame_t{
 } frame;
 
 uint32_t paginaAEnviar;
-espacioLibre* encontrarHueco(t_list* listaDeLibres, int pagsRequeridas);
-uint32_t ocupar(espacioLibre* hueco, t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido,  int pagsRequeridas);
-void liberarMemoria(t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido);
-espacioOcupado* encontrarLugarAsignadoAProceso(t_list* listaDeOcupados, uint32_t pidRecibido);
-void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres);
-int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas, t_list* listaDeLibres, t_list* listaDeOcupados);
-void inicializarArchivo(void);
+
 char* leerProceso(uint32_t pagina, uint32_t pid, t_list* listaDeOcupados);
-void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, uint32_t pid);
-void cerrarSwap(void);
+
+espacioLibre* encontrarHueco(t_list* listaDeLibres, int pagsRequeridas);
+espacioOcupado* encontrarLugarAsignadoAProceso(t_list* listaDeOcupados, uint32_t pidRecibido);
+
+int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas, t_list* listaDeLibres, t_list* listaDeOcupados);
+int cargarValoresDeConfig();
+int crearArchivoControlMemoria();
+int crearLog();
+int espacioLibrePorHueco(espacioLibre* listaLibre);
+int hayEspacio(int cantidadPaginasRequeridas, t_list* listaDeLibres);
+int init();
 int interpretarMensajeRecibido(char* buffer,int op, int socket, t_list* listaDeLibres, t_list* listaDeOcupados);
+
+t_list* crearListaLibre(int cantPaginas);
+t_list* crearListaOcupados();
+
+uint32_t ocupar(espacioLibre* hueco, t_list* listaDeLibres, t_list* listaDeOcupados, uint32_t pidRecibido,  int pagsRequeridas);
+
+void cerrarSwap(void);
+void consolidarHueco(t_list* listaDeLibres);
+void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres);
+void eliminarListas(void);
+void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, uint32_t pid);
+void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* listaDeOcupados);
+
 
 #endif /* SRC_SWAP_H_ */

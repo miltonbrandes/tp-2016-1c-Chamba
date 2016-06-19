@@ -28,34 +28,40 @@ t_log* ptrLog;
 t_config* config;
 uint32_t operacion;
 int socketNucleo, socketUMC;
-int crearSocketCliente(char* direccion, int puerto);
-int controlarConexiones();
-int manejarPrimeraConexionConUMC();
 
-void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje);
-void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);
-void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje);
-void revisarFinalizarCPU();
-void recibirPCB(char *mensaje);
-void recibirTamanioStack(char *mensaje);
-void recibirTamanioPagina(char *mensaje);
-void recibirSignalSemaforo(char *mensaje);
-void recibirAsignacionVariableCompartida(char *mensaje);
-void recibirValorVariableCompartida(char *mensaje);
-void recibirInstruccion(char *mensaje);
-void limpiarInstruccion(char * instruccion);
-void comenzarEjecucionDePrograma();
-void limpiarInstruccion(char * instruccion);
-char* solicitarProximaInstruccionAUMC();
-void finalizarEjecucionPorExit();
-void finalizarEjecucionPorQuantum();
-void notificarAUMCElCambioDeProceso(uint32_t pid);
-void freePCB();
 char* filtrarInstruccion(char* instr, int request);
-void finalizarProcesoPorErrorEnUMC();
+char* solicitarProximaInstruccionAUMC();
+
+int controlarConexiones();
+int crearLog();
+int crearSocketCliente(char* direccion, int puerto);
+int manejarPrimeraConexionConUMC();
+int recibirMensaje(int socket);
 
 t_list * crearRequestsParaUMC();
 
-int recibirMensaje(int socket);
+void comenzarEjecucionDePrograma();
+void finalizarEjecucionPorExit();
+void finalizarEjecucionPorIO();
+void finalizarEjecucionPorQuantum();
+void finalizarEjecucionPorWait();
+void finalizarProcesoPorErrorEnUMC();
+void finalizarProcesoPorStackOverflow();
+void freePCB();
+void limpiarInstruccion(char * instruccion);
+void manejarMensajeRecibido(uint32_t id, uint32_t operacion, char *mensaje);
+void manejarMensajeRecibidoNucleo(uint32_t operacion, char *mensaje);
+void manejarMensajeRecibidoUMC(uint32_t operacion, char *mensaje);
+void notificarAUMCElCambioDeProceso(uint32_t pid);
+void recibirAsignacionVariableCompartida(char *mensaje);
+void recibirInstruccion(char *mensaje);
+void recibirPCB(char *mensaje);
+void recibirSignalSemaforo(char *mensaje);
+void recibirTamanioPagina(char *mensaje);
+void recibirTamanioStack(char *mensaje);
+void recibirValorVariableCompartida(char *mensaje);
+void revisarFinalizarCPU();
+void revisarSigusR1(int signo);
+
 
 #endif /* SRC_PROCESOCPU_H_ */
