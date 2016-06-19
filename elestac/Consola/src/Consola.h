@@ -12,6 +12,7 @@ int crearLog();
 int iniciarConsola();
 int enviarScriptAlNucleo(char *script);
 char* leerArchivo(FILE *archivo);
-
+int iniciarProcesoLeyendoArchivoPropio();
+int enviarScriptANucleoYEscuchar(char * script);
 
 #endif /* SRC_CONSOLA_H_ */

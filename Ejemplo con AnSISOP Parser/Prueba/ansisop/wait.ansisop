@@ -1,0 +1,7 @@
+begin
+	variables a, b
+	a = 5
+	b = a + 12
+	print b
+end
+
