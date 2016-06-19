@@ -1334,7 +1334,7 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
 			pthread_mutex_lock(&accesoAFrames);
 			frame->contenido = paginaSwap->paginaSolicitada;
 			list_remove(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima, pagina);
 			tablaDeProceso->posibleProximaVictima++;
 			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
@@ -1425,8 +1425,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
 			frame->contenido = paginaSwap->paginaSolicitada;
 			list_remove(tablaDeProceso->paginasEnUMC,
 					tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
-					tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima, pagina);
 			tablaDeProceso->posibleProximaVictima++;
 			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
 					tablaDeProceso, pagina);
@@ -1472,8 +1471,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
 			frame->contenido = paginaSwap->paginaSolicitada;
 			list_remove(tablaDeProceso->paginasEnUMC,
 					tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
-					tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima, pagina);
 			tablaDeProceso->posibleProximaVictima++;
 			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
 					tablaDeProceso, pagina);
@@ -1570,6 +1568,7 @@ void flushMemory(uint32_t pid) {
 
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
+	pthread_mutex_unlock(&accesoAFrames);
 	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
 	int i;
 	if (tablaAMostrar != NULL) {
@@ -1621,7 +1620,7 @@ void dumpDeUnPID(uint32_t pid) {
 				}
 			}
 		}
-		//pthread_mutex_unlock(&accesoAFrames);
+		pthread_mutex_unlock(&accesoAFrames);
 	} else {
 		log_info(ptrLog, "No se encontro Tabla de Paginas del PID: %d", pid);
 	}
