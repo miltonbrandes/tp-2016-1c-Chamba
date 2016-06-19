@@ -58,7 +58,12 @@ void consolidarHueco(t_list* listaDeLibres);
 void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres);
 void eliminarListas(void);
 void escribirProceso(int paginaProceso, char* info , t_list* listaDeOcupados, uint32_t pid);
+void iniciarProceso(int comienzo, int pags);
+void liberarMemoria(t_list* listaDeLibres, t_list* listaDeOcupados,	uint32_t pidRecibido);
 void manejarConexionesRecibidas(int socketUMC, t_list* listaDeLibres, t_list* listaDeOcupados);
+void moverInformacion(int inicioDe, int cantidad_paginass, int inicioA);
+void ordenarLista(t_list* listaDeLibres);
+void sacarDelArchivo(int comienzoProceso, int paginas);
 
 
 #endif /* SRC_SWAP_H_ */
