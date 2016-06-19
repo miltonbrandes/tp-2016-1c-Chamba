@@ -378,9 +378,9 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg) {
 	tablaDeUnProceso->posibleProximaVictima = 0;
 	tablaDeUnProceso->tablaDePaginas = tablaDePaginas;
 	tablaDeUnProceso->paginasEnUMC = list_create();
-	for (i = 0; i < marcoXProc; i++) {
-		list_add(tablaDeUnProceso->paginasEnUMC, -1);
-	}
+//	for (i = 0; i < marcoXProc; i++) {
+//		list_add(tablaDeUnProceso->paginasEnUMC, -1);
+//	}
 
 	list_add(tablaProcesosPaginas, tablaDeUnProceso);
 
@@ -1230,13 +1230,7 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid,
 int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	for (i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
-		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, i);
-		if (pag > -1) {
-			framesOcupados++;
-		}
-	}
-	if (framesOcupados < marcoXProc) {
+	if (list_size(tablaDeProceso->paginasEnUMC) < marcoXProc) {
 		return 1;
 	} else {
 		return 0;
@@ -1246,13 +1240,7 @@ int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
 int procesoTieneAlgunaPaginaEnUMC(uint32_t pid) {
 	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	for (i = 0; i < list_size(tablaDeProceso->paginasEnUMC); i++) {
-		uint32_t pag = list_get(tablaDeProceso->paginasEnUMC, i);
-		if (pag > -1) {
-			framesOcupados++;
-		}
-	}
-	return framesOcupados > 0;
+	return list_size(tablaDeProceso->paginasEnUMC) > 0;
 }
 
 t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
@@ -1269,11 +1257,9 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
 			list_add_in_index(frames, indiceFrameLibre, frame);
 			//Actualizo Tabla de Paginas del Proceso - Actualizar puntero
 			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
-					tablaDeProceso->posibleProximaVictima);
+			list_add(tablaDeProceso->paginasEnUMC, pagina);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
-					tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
@@ -1311,7 +1297,7 @@ t_registro_tabla_de_paginas * obtenerPaginaDeProceso(uint32_t pag,
 t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
 		uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
 	if (tablaDeProceso->posibleProximaVictima
-			>= list_size(tablaDeProceso->paginasEnUMC)) {
+			>= marcoXProc) {
 		tablaDeProceso->posibleProximaVictima = 0;
 	}
 	pthread_mutex_lock(&accesoAFrames);
@@ -1342,13 +1328,10 @@ t_frame * desalojarFrameConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
 			chequearSiHayQueEscribirEnSwapLaPagina(pid, registroCandidato);
 			pthread_mutex_lock(&accesoAFrames);
 			frame->contenido = paginaSwap->paginaSolicitada;
-			list_remove(tablaDeProceso->paginasEnUMC,
-					tablaDeProceso->posibleProximaVictima);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
-					tablaDeProceso->posibleProximaVictima);
+			list_remove(tablaDeProceso->paginasEnUMC, tablaDeProceso->posibleProximaVictima);
+			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina, tablaDeProceso->posibleProximaVictima);
 			tablaDeProceso->posibleProximaVictima++;
-			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
-					tablaDeProceso, pagina);
+			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(tablaDeProceso, pagina);
 			registroTabla->estaEnUMC = 1;
 			registroTabla->frame = frame->numeroFrame;
 			registroTabla->bitDeReferencia = 1;
@@ -1375,8 +1358,7 @@ t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap,
 			list_add_in_index(frames, indiceFrameLibre, frame);
 			//Actualizo Tabla de Paginas del Proceso - Actualizar puntero
 			t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-			list_add_in_index(tablaDeProceso->paginasEnUMC, pagina,
-					tablaDeProceso->posibleProximaVictima);
+			list_add(tablaDeProceso->paginasEnUMC, pagina);
 			tablaDeProceso->posibleProximaVictima++;
 			t_registro_tabla_de_paginas * registroTabla = buscarPaginaEnTabla(
 					tablaDeProceso, pagina);
@@ -1405,7 +1387,7 @@ t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap,
 t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
 		uint32_t pid, uint32_t pagina, t_tabla_de_paginas * tablaDeProceso) {
 	if (tablaDeProceso->posibleProximaVictima
-			>= list_size(tablaDeProceso->paginasEnUMC)) {
+			>= marcoXProc) {
 		tablaDeProceso->posibleProximaVictima = 0;
 	}
 
@@ -1451,7 +1433,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
 		} else {
 			tablaDeProceso->posibleProximaVictima++;
 			if (tablaDeProceso->posibleProximaVictima
-					>= list_size(tablaDeProceso->paginasEnUMC)) {
+					>= marcoXProc) {
 				tablaDeProceso->posibleProximaVictima = 0;
 			}
 		}
@@ -1499,7 +1481,7 @@ t_frame * desalojarFrameConClockModificado(t_pagina_de_swap * paginaSwap,
 			registroCandidato->bitDeReferencia = 0;
 			tablaDeProceso->posibleProximaVictima++;
 			if (tablaDeProceso->posibleProximaVictima
-					>= list_size(tablaDeProceso->paginasEnUMC)) {
+					>= marcoXProc) {
 				tablaDeProceso->posibleProximaVictima = 0;
 			}
 		}
