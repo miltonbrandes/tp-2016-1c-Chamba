@@ -1566,6 +1566,14 @@ void flushMemory(uint32_t pid) {
 	}
 }
 
+char imprimirContenido(char* contenido){
+	char buffer;
+	for(i = 0 ; i < strlen(contenido); i ++){
+		buffer += sprintf(buffer, "%02X", contenido[i]);
+		}
+	return buffer;
+}
+
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
 	pthread_mutex_unlock(&accesoAFrames);
@@ -1601,7 +1609,7 @@ void dumpDeUnPID(uint32_t pid) {
 
 					log_info(ptrLog,
 							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
-							pid, registro->paginaProceso, registro->frame, contenido);
+							pid, registro->paginaProceso, registro->frame, imprimirContenido(contenido));
 					log_info(ptrLog,
 							"__________________________________________________________________\n");
 					escribirEnArchivo(pid, registro->paginaProceso,
