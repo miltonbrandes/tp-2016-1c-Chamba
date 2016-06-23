@@ -9,7 +9,6 @@
 #include <sockets/EscrituraLectura.h>
 #include <sockets/OpsUtiles.h>
 #include "ProcesoCpu.h"
-//TODO: ver en definir variable como fijarse si es un argumento de una funcion
 #define TAMANIO_VARIABLE 4
 extern t_log* ptrLog;
 t_pcb* pcb;
@@ -66,6 +65,7 @@ bool esArgumento(t_nombre_variable identificador_variable){
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
+	//TODO: ver bien si es tamanioStack - 1 o tamanioStack!!!!!!!!!!
 	if(!esArgumento(identificador_variable)){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
 		log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
@@ -97,7 +97,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 				nuevaVar->pagina = pcb->paginaStackActual;
 				nuevaVar->size = TAMANIO_VARIABLE;
 				nuevaVar->offset = 0;
-				pcb->stackPointer += TAMANIO_VARIABLE;
+				pcb->stackPointer = TAMANIO_VARIABLE;
 				list_add(lineaStack->variables, nuevaVar);
 			}else{
 				nuevaVar->idVariable = identificador_variable;
@@ -131,13 +131,13 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 				nuevoArg->pagina = pcb->paginaStackActual;
 				nuevoArg->size = TAMANIO_VARIABLE;
 				nuevoArg->offset = 0;
-				pcb->stackPointer += TAMANIO_VARIABLE;
+				pcb->stackPointer = TAMANIO_VARIABLE;
 				list_add(lineaStack->argumentos, nuevoArg);
 			}else{
 				nuevoArg->pagina = pcb->paginaStackActual;
 				nuevoArg->size = TAMANIO_VARIABLE;
 				nuevoArg->offset = pcb->stackPointer;
-				pcb->stackPointer+= TAMANIO_VARIABLE;
+				pcb->stackPointer += TAMANIO_VARIABLE;
 				list_add(lineaStack->argumentos, nuevoArg);
 			}
 			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable

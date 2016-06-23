@@ -1,20 +1,22 @@
 #!/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/Consola
 begin
-	f
+	variables r
+	r <- f 0
 end
 
 function f
-	variables a
-	a=1
+	variables a, r
+	io HDD1 5
+	a=$0+1
 	print a
-	g
+	r <- g a
 end
 
 function g
-	variables a
-	a=0
+	variables a, r
+	io HDD1 1
+	a=$0+1
 	print a
-	f
+	r <- f a
 end
-
 
