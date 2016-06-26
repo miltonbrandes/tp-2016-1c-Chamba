@@ -124,11 +124,11 @@ int cargarValoresDeConfig() {
 			return 0;
 		}
 
-		if (config_has_property(config, "TAMANO_PAGINA")) {
-			tamanoPagina = config_get_int_value(config, "TAMANO_PAGINA");
+		if (config_has_property(config, "TAMANIO_PAGINA")) {
+			tamanoPagina = config_get_int_value(config, "TAMANIO_PAGINA");
 		} else {
 			log_info(ptrLog,
-					"El archivo de configuracion no contiene la clave TAMANO_PAGINA");
+					"El archivo de configuracion no contiene la clave TAMANIO_PAGINA");
 			return 0;
 		}
 

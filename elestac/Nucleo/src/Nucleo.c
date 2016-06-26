@@ -153,7 +153,7 @@ void crearListaVariablesCompartidas(char **sharedVars) {
 	int i;
 	for (i = 0; sharedVars[i] != NULL; i++) {
 		t_variable_compartida* variableCompartida = malloc(sizeof(t_semaforo));
-		variableCompartida->nombre = sharedVars[i] + 1;
+		variableCompartida->nombre = sharedVars[i];
 		variableCompartida->valor = 0;
 		list_add(listaVariablesCompartidas, variableCompartida);
 	}
@@ -251,12 +251,12 @@ int iniciarNucleo() {
 					"El archivo de configuracion no contiene la clave SHARED_VARS");
 			return 0;
 		}
-		if (config_has_property(config, "TAMANIO_STACK")) {
-			tamanioStack = config_get_int_value(config, "TAMANIO_STACK");
+		if (config_has_property(config, "STACK_SIZE")) {
+			tamanioStack = config_get_int_value(config, "STACK_SIZE");
 
 		} else {
 			log_info(ptrLog,
-					"el archivo de configuracion no tiene la clave stack");
+					"El archivo de configuracion no contiene la clave STACK_SIZE");
 			return 0;
 		}
 	} else {

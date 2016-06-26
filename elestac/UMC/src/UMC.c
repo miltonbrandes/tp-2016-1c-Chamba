@@ -163,8 +163,8 @@ int iniciarUMC(t_config* config) {
 		return 0;
 	}
 
-	if (config_has_property(config, "MARCOS_SIZE")) {
-		marcosSize = config_get_int_value(config, "MARCOS_SIZE");
+	if (config_has_property(config, "MARCO_SIZE")) {
+		marcosSize = config_get_int_value(config, "MARCO_SIZE");
 	} else {
 		log_info(ptrLog,
 				"El archivo de configuracion no contiene la clave MARCOS_SIZE");
