@@ -391,12 +391,13 @@ void comenzarEjecucionDePrograma() {
 	int contador = 1;
 
 	while (contador <= pcb->quantum) {
-		if (pcb->PC >= (pcb->codigo - 1)) {
+		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+		if (pcb->PC >= (pcb->codigo - 1) && (strcmp(proximaInstruccion, "end") == 0)) {
 			finalizarEjecucionPorExit();
 			revisarFinalizarCPU();
 			return;
 		} else {
-			char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+
 			if (proximaInstruccion != NULL) {
 				if (strcmp(proximaInstruccion, "FINALIZAR") == 0) {
 					log_error(ptrLog,
