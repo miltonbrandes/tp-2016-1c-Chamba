@@ -422,11 +422,28 @@ void cerrarConexionCliente(t_clienteCpu *unCliente) {
 		pthread_mutex_lock(&mutexListaPCBEjecutando);
 		borrarPCBDeColaExecuteYMeterEnColaExit(unCliente->pcbId);
 		pthread_mutex_unlock(&mutexListaPCBEjecutando);
+	}else if(unCliente->fueAsignado == true && aux->terminado == false && cpuAcerrar != unCliente->socket){
+		log_debug(ptrLog, "Se ha abortado una cpu, agrego el PCB id: %d a la cola de exit");
+
+		pthread_mutex_lock(&mutexListaPCBEjecutando);
+		borrarPCBDeColaExecuteYMeterEnColaExit(unCliente->pcbId);
+		pthread_mutex_unlock(&mutexListaPCBEjecutando);
+		aux->terminado = true;
+		if ((enviarDatos(aux->socket, "Se ha finalizado el programa por aborto de la cpu", strlen("Se ha finalizado el programa por aborto de la cpu") + 1, EXIT,NUCLEO)) < 0) {
+			log_error(ptrLog,"Error al enviar un mensaje a imprimir de tipo: EXIT por el Programa: %d",aux->pid);
+		} else {
+			log_debug(ptrLog,"Mensaje de tipo: EXIT del Programa %d enviado con éxito!",aux->pid);
+		}
+		FD_CLR(aux->socket, &tempSockets);
+		FD_CLR(aux->socket, &sockets);
+		finalizarConexion(aux->socket);
+		list_remove(listaSocketsConsola, indiceConsolaEnLista(aux->pid));
+		free(aux);
 	}
 	list_remove_by_condition(listaSocketsCPUs, (void*) _sacarCliente);
 	if (cpuAcerrar == unCliente->socket) {
 		cpuAcerrar = 0;
-	} else {
+	}else if(unCliente->fueAsignado == false){//que carajo es este else
 		sem_wait(&semCpuOciosa);
 	}
 }
@@ -1287,9 +1304,9 @@ void* vaciarColaExit() {
 				< 0) {
 			log_error(ptrLog, "Error al borrar las paginas del pcb con pid: %d",
 					aux->pcb_id);
-		}/*else{
+		}else{
 		 log_info(ptrLog,"Borrados las paginas del programa");
-		 }*/
+		 }
 
 		free(finalizarProg);
 		free(aux);

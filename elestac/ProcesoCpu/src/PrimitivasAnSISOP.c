@@ -187,7 +187,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		//me posiciono al inicio de esta linea del stack
 		//me fijo cual variable de la lista coincide con el nombre que me estan pidiendo
-		if(list_size((t_list*)lineaActualStack->variables) > 0){
+		if(list_size((t_list*)lineaActualStack->argumentos) > 0){
 			int lineaArg = identificador_variable - '0';
 			arg = list_get(lineaActualStack->argumentos, lineaArg);
 			log_debug(ptrLog, "La posicion de '%c' es %u", identificador_variable, arg->offset);

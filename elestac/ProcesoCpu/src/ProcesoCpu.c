@@ -392,6 +392,7 @@ void comenzarEjecucionDePrograma() {
 
 	while (contador <= pcb->quantum) {
 		char* proximaInstruccion = solicitarProximaInstruccionAUMC();
+		limpiarInstruccion(proximaInstruccion);
 		if (pcb->PC >= (pcb->codigo - 1) && (strcmp(proximaInstruccion, "end") == 0)) {
 			finalizarEjecucionPorExit();
 			revisarFinalizarCPU();
@@ -405,7 +406,6 @@ void comenzarEjecucionDePrograma() {
 					finalizarProcesoPorErrorEnUMC();
 					return;
 				} else {
-					limpiarInstruccion(proximaInstruccion);
 					log_debug(ptrLog, "Instruccion a ejecutar: %s",
 							proximaInstruccion);
 					if (strcmp(proximaInstruccion, "end") == 0) {
