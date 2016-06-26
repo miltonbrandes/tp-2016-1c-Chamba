@@ -37,6 +37,7 @@ typedef struct {
 	uint32_t modificado; //1 modificado, 0 no modificado. Para paginas de codigo es siempre 0
 	uint32_t estaEnUMC; //1 esta, 0 no esta. Para ver si hay que pedir o no la pagina a SWAP.
 	uint32_t bitDeReferencia; //Para Clock.
+	uint32_t esStack;
 } t_registro_tabla_de_paginas;
 
 typedef struct {

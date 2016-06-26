@@ -311,7 +311,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 		}
 		break;
 	case FINALIZARPROGRAMA:
-		sleep(retardoAcceso);
+		usleep(retardoAcceso * 1000);
 		finalizarPrograma = deserializarFinalizarPrograma(buffer);
 		log_info(ptrLog, "UMC Solicita la finalizacion del Proceso %i",
 				finalizarPrograma->programID);
@@ -333,7 +333,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 		free(buffer_tamanio);
 		break;
 	case LEER:
-		sleep(retardoAcceso);
+		usleep(retardoAcceso * 1000);
 		solicitudPagina = deserializarSolicitudPagina(buffer);
 		log_info(ptrLog,
 				"UMC Solicita la lectura de la Pagina %d del Proceso %d",
@@ -361,7 +361,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 		free(leido);
 		break;
 	case ESCRIBIR:
-		sleep(retardoAcceso);
+		usleep(retardoAcceso * 1000);
 		escritura = deserializarEscribirEnSwap(buffer);
 		log_info(ptrLog,
 				"UMC Solicita la escritura de la Pagina %d del Proceso %d",
@@ -467,7 +467,7 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas,
 				pid);
 		desfragmentar(listaDeOcupados, listaDeLibres);
 		hueco = encontrarHueco(listaDeLibres, cantidad_paginas);
-		sleep(retardoCompactacion);
+		usleep(retardoCompactacion * 1000);
 	}
 
 	log_info(ptrLog, "Comienzo a ocupar el espacio para el Proceso %d", pid);

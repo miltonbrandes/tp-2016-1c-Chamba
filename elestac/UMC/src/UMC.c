@@ -443,6 +443,7 @@ t_registro_tabla_de_paginas * crearRegistroPag(int pagina, int marco,
 	regPagina->modificado = modificado;
 	regPagina->estaEnUMC = presencia;
 	regPagina->bitDeReferencia = 0;
+	regPagina->esStack = 0;
 
 	return regPagina;
 }
@@ -571,8 +572,7 @@ void enviarACPUQueDebeFinalizarProceso(t_cpu * cpu,
 			bufferTamanio->tamanioBuffer, NOTHING, UMC);
 }
 
-void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
-		uint32_t tamanio, char * buffer) {
+void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer) {
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
 			cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
@@ -591,44 +591,31 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 				int bufferAsInt = atoi(buffer);
 				memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-				log_debug(ptrLog,
-						"Estado del Registro TLB luego de escritura: %s",
-						frame->contenido);
-
 				registro->modificado = 1;
+				registro->esStack = 1;
 			} else {
-				sleep(retardo);
+				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 
 					int bufferAsInt = atoi(buffer);
 					memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-					log_debug(ptrLog, "Estado del Frame luego de escritura: %s",
-							frame->contenido);
-
-					agregarATLB(cpu->procesoActivo, registro->paginaProceso,
-							frame->numeroFrame, frame->contenido);
+					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
 
 					registro->estaEnUMC = 1;
 					registro->frame = frame->numeroFrame;
 					registro->modificado = 1;
 					registro->bitDeReferencia = 1;
+					registro->esStack = 1;
 				} else {
-					log_info(ptrLog,
-							"La pagina %d, no estaba en UMC, se la pido a swap",
-							pagina);
-					t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
-							pagina);
+					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
 					if (frameSolicitado != NULL) {
 						int bufferAsInt = atoi(buffer);
 						memcpy(frameSolicitado->contenido + offset,
 								&bufferAsInt, tamanio);
-
-						log_debug(ptrLog,
-								"Estado del Frame luego de escritura: %s",
-								frameSolicitado->contenido);
 
 						agregarATLB(cpu->procesoActivo, registro->paginaProceso,
 								frameSolicitado->numeroFrame,
@@ -638,6 +625,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 						registro->frame = frameSolicitado->numeroFrame;
 						registro->modificado = 1;
 						registro->bitDeReferencia = 1;
+						registro->esStack = 1;
 					} else {
 						uint32_t successInt = ERROR;
 						t_buffer_tamanio * buffer_tamanio = serializarUint32(
@@ -717,7 +705,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 					offsetMemcpy += auxiliar->offset;
 					registro->bitDeReferencia = 1;
 				} else {
-					sleep(retardo);
+					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset);
@@ -1566,14 +1554,6 @@ void flushMemory(uint32_t pid) {
 	}
 }
 
-char imprimirContenido(char* contenido){
-	char buffer;
-	for(i = 0 ; i < strlen(contenido); i ++){
-		buffer += sprintf(buffer, "%02X", contenido[i]);
-		}
-	return buffer;
-}
-
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
 	pthread_mutex_unlock(&accesoAFrames);
@@ -1599,23 +1579,39 @@ void dumpDeUnPID(uint32_t pid) {
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 
-					//TODO: pasar de bytes a hexadecimal el contenido
+					if(registro->esStack > 0) {
+						int numerosPosiblesDentroDeStack = marcosSize/4;
+						int j, offset = 0;
+						char * contenidoStack = calloc(numerosPosiblesDentroDeStack, sizeof(int) + (3*sizeof(char)));
+						for(j = 0; j < numerosPosiblesDentroDeStack; j++) {
+							int numAux;
+							memcpy(&numAux, frame->contenido + offset, sizeof(int));
+							offset += 4;
+							char * auxChar = calloc(1, sizeof(int) + 1);
+							sprintf(auxChar, "%d", numAux);
+							strcat(contenidoStack, auxChar);
+							strcat(contenidoStack, " - ");
+						}
+						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
+								pid, registro->paginaProceso, registro->frame, contenidoStack);
+						log_info(ptrLog, "__________________________________________________________________\n");
+						escribirEnArchivo(pid, registro->paginaProceso, registro->frame, contenidoStack);
 
-					char * contenido;
-					contenido = malloc((marcosSize * sizeof(char)) + 1);
+						free(contenidoStack);
+					}else{
+						char * contenido;
+						contenido = malloc((marcosSize * sizeof(char)) + 1);
 
-					memcpy(contenido, frame->contenido,marcosSize);
-					contenido[marcosSize] = '\0';
+						memcpy(contenido, frame->contenido,marcosSize);
+						contenido[marcosSize] = '\0';
 
-					log_info(ptrLog,
-							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
-							pid, registro->paginaProceso, registro->frame, imprimirContenido(contenido));
-					log_info(ptrLog,
-							"__________________________________________________________________\n");
-					escribirEnArchivo(pid, registro->paginaProceso,
-							registro->frame, contenido);
+						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
+								pid, registro->paginaProceso, registro->frame, contenido);
+						log_info(ptrLog, "__________________________________________________________________\n");
+						escribirEnArchivo(pid, registro->paginaProceso, registro->frame, contenido);
 
-					free(contenido);
+						free(contenido);
+					}
 
 				} else {
 					log_info(ptrLog,

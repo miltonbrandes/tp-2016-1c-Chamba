@@ -439,7 +439,7 @@ void comenzarEjecucionDePrograma() {
 					default:
 						break;
 					}
-					sleep(pcb->quantumSleep);
+					usleep(pcb->quantumSleep * 1000);
 				}
 			} else {
 				log_info(ptrLog,
