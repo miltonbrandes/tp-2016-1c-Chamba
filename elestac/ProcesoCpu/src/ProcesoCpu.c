@@ -88,15 +88,14 @@ void revisarSigusR1(int signo) {
 	if (signo == SIGUSR1) {
 		char * buffer = "SIGUSR1";
 		uint32_t tam = 8;
-		log_info(ptrLog, "Se ha recibido la senial SIGUSR1");
+		log_info(ptrLog, "Se recibe SIGUSR1");
 		if (operacion == NOTHING) {
 			finalizarConexion(socketNucleo);
 			return;
 		}
 		cerrarCPU = true;
 		enviarDatos(socketNucleo, buffer, tam, SIGUSR, CPU);
-		log_debug(ptrLog,
-				"Se termina de ejecutar la rafaga actual y luego se cierra esta CPU");
+		log_debug(ptrLog, "Termina la rafaga actual y luego se cierra esta CPU.");
 	}
 }
 
@@ -137,7 +136,6 @@ int recibirMensaje(int socket) {
 	uint32_t op;
 
 	char *respuestaServidor = recibirDatos(socket, &op, &id);
-	log_info(ptrLog, "Recibo mensaje");
 
 	if (strcmp(respuestaServidor, "ERROR") == 0) {
 		//free(respuestaServidor);
@@ -223,7 +221,7 @@ void recibirTamanioStack(char *mensaje) {
 
 void recibirTamanioPagina(char *mensaje) {
 	tamanioPagina = deserializarUint32(mensaje);
-	log_info(ptrLog, "Tamanio Pagina: %d\n", tamanioPagina);
+	log_info(ptrLog, "Tamanio Pagina: %d", tamanioPagina);
 	free(mensaje);
 }
 
@@ -262,8 +260,7 @@ void notificarAUMCElCambioDeProceso(uint32_t pid) {
 	free(buffer_tamanio);
 
 	if (bytesEnviados <= 0) {
-		log_error(ptrLog,
-				"Algo malo ocurrio al enviar el Cambio de Proceso a UMC.");
+		log_error(ptrLog, "Error al enviar Cambio de Proceso a UMC.");
 	}
 }
 
@@ -298,7 +295,7 @@ void finalizarEjecucionPorIO() {
 			buffer_tamanio->tamanioBuffer, IO, CPU);
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog,
-				"Error al devolver el PCB por finalizacion de ejecucion por io a nucleo");
+				"Error al devolver el PCB por finalizacion de ejecucion por I/O a Nucleo");
 	}
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
@@ -311,7 +308,7 @@ void finalizarEjecucionPorWait() {
 			buffer_tamanio->tamanioBuffer, WAIT, CPU);
 	if (bytesEnviados <= 0) {
 		log_error(ptrLog,
-				"Error al devolver el PCB por finalizacion de ejecucion por wait a nucleo");
+				"Error al devolver el PCB por finalizacion de ejecucion por Wait a Nucleo");
 	}
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
@@ -367,7 +364,7 @@ void finalizarProcesoPorErrorEnUMC() {
 	int bytesEnviados = enviarDatos(socketNucleo, message->buffer,
 			message->tamanioBuffer, FINALIZO_POR_ERROR_UMC, CPU);
 	if (bytesEnviados <= 0) {
-		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
+		log_error(ptrLog, "Error al devolver el PCB por Error en UMC a Nucleo");
 	}
 	free(message->buffer);
 	free(message);
@@ -380,7 +377,7 @@ void finalizarProcesoPorStackOverflow() {
 	int bytesEnviados = enviarDatos(socketNucleo, message->buffer,
 			message->tamanioBuffer, STACKOVERFLOW, CPU);
 	if (bytesEnviados <= 0) {
-		log_error(ptrLog, "Error al devolver el PCB por Quantum a Nucleo");
+		log_error(ptrLog, "Error al devolver el PCB por StackOverflow a Nucleo");
 	}
 	free(message->buffer);
 	free(message);
@@ -401,13 +398,11 @@ void comenzarEjecucionDePrograma() {
 
 			if (proximaInstruccion != NULL) {
 				if (strcmp(proximaInstruccion, "FINALIZAR") == 0) {
-					log_error(ptrLog,
-							"Instruccion no pudo leerse. Hay que finalizar el Proceso.");
+					log_error(ptrLog, "Instruccion no pudo leerse. Hay que finalizar el Proceso.");
 					finalizarProcesoPorErrorEnUMC();
 					return;
 				} else {
-					log_debug(ptrLog, "Instruccion a ejecutar: %s",
-							proximaInstruccion);
+					log_debug(ptrLog, "Instruccion recibida: %s", proximaInstruccion);
 					if (strcmp(proximaInstruccion, "end") == 0) {
 						log_debug(ptrLog, "Finalizo la ejecucion del programa");
 						finalizarEjecucionPorExit();
@@ -425,14 +420,12 @@ void comenzarEjecucionDePrograma() {
 					pcb->PC = (pcb->PC) + 1;
 					switch (operacion) {
 					case IO:
-						log_debug(ptrLog,
-								"Finalizo ejecucion por operacion IO");
+						log_debug(ptrLog, "Finalizo ejecucion por operacion I/O");
 						finalizarEjecucionPorIO();
 						revisarFinalizarCPU();
 						return;
 					case WAIT:
-						log_debug(ptrLog,
-								"Finalizo ejecucion por un wait ansisop");
+						log_debug(ptrLog, "Finalizo ejecucion por un Wait.");
 						finalizarEjecucionPorWait();
 						revisarFinalizarCPU();
 						return;
@@ -442,19 +435,17 @@ void comenzarEjecucionDePrograma() {
 					usleep(pcb->quantumSleep * 1000);
 				}
 			} else {
-				log_info(ptrLog,
-						"No se pudo recibir la instruccion de UMC. Cierro la conexion");
+				log_info(ptrLog, "No se pudo recibir la instruccion de UMC. Cierro la conexion");
 				finalizarConexion(socketUMC);
 				return;
 			}
 		}
 
 	}
-	log_debug(ptrLog, "Finalizo ejecucion por fin de quantum");
+	log_debug(ptrLog, "Finalizo ejecucion por fin de Quantum");
 	finalizarEjecucionPorQuantum();
 
 	free(pcb);
-	//freePCB();
 	revisarFinalizarCPU();
 }
 
@@ -532,14 +523,9 @@ char * solicitarProximaInstruccionAUMC() {
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 	if (enviarBytes <= 0) {
-		log_error(ptrLog,
-				"Ocurrio un error al enviar una solicitud de instruccion a CPU");
+		log_error(ptrLog, "Ocurrio un error al enviar una solicitud de instruccion a CPU");
 		return NULL;
 	} else {
-		log_info(ptrLog,
-				"Recibo instruccion %d del Proceso %d -> Pagina: %d - Start: %d - Offset: %d",
-				pcb->PC, pcb->pcb_id, paginaAPedir, requestStart,
-				requestOffset);
 		uint32_t op, id;
 		char* instruccionRecibida = recibirDatos(socketUMC, &op, &id);
 		if (strcmp(instruccionRecibida, "ERROR") == 0) {

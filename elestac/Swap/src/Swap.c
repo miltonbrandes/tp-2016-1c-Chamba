@@ -67,8 +67,7 @@ int main() {
 		log_info(ptrLog, "El SWAP no pudo inicializarse correctamente");
 		return -1;
 	}
-	printf("Proceso SWAP finalizado.\n\n");
-	log_info(ptrLog, "Proceso SWAP finalizado.\n");
+	log_info(ptrLog, "Proceso SWAP finalizado.");
 	free(config);
 	free(listaOcupados);
 	free(listaLibres);
@@ -236,8 +235,7 @@ int crearArchivoControlMemoria() {
 //	inicializarArchivo();
 	libre = malloc(sizeof(espacioLibre)); //creamos el primero nodo libre (archivo entero)
 	if (!libre) {
-		printf("fallo el malloc para la lista de libres en swap.c \n");
-		log_error(ptrLog, "Fallo el malloc para la lista libres en swap");
+		log_error(ptrLog, "Fallo el malloc para la lista libres en Swap");
 		cerrarSwap();
 	}
 	libre->sgte = NULL;
@@ -252,7 +250,7 @@ int crearArchivoControlMemoria() {
 
 void cerrarSwap(void) //no cierra los sockets
 { //cerramos el swap ante un error
-	log_info(ptrLog, "Proceso SWAP finalizado abruptamente. \n");
+	log_info(ptrLog, "Proceso SWAP finalizado abruptamente.");
 	fclose(archivo_control);
 	eliminarListas();
 	log_destroy(ptrLog);
@@ -274,7 +272,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 	case NUEVOPROGRAMA:
 		checkEspacio = deserializarCheckEspacio(buffer);
 		log_info(ptrLog,
-				"UMC Solicita la creacion de espacio para el Proceso %d",
+				"UMC Solicita la creacion de espacio para el Proceso con PID %d",
 				checkEspacio->pid);
 		resultado = asignarMemoria(checkEspacio->pid,
 				checkEspacio->cantidadDePaginas, listaDeLibres,
@@ -286,7 +284,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 					SWAP);
 			if (enviado <= 0) {
 				log_error(ptrLog,
-						"Ocurrio un error al Notificar a UMC que se rechazo el Proceso %d.",
+						"Ocurrio un error al Notificar a UMC que se rechazo el Proceso con PID %d.",
 						checkEspacio->pid);
 			}
 			free(buffer_tamanio->buffer);
@@ -295,12 +293,15 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 			free(buffer);
 			return 0;
 		} else {
+			log_info(ptrLog,
+					"Proceso con PID %d puede almacenarse",
+					checkEspacio->pid);
 			buffer_tamanio = serializarUint32(SUCCESS);
 			int bytesEnviados = enviarDatos(socketUMC, buffer_tamanio->buffer,
 					buffer_tamanio->tamanioBuffer, ACEPTAR_PROCESO_A_UMC, SWAP);
 			if (bytesEnviados <= 0) {
 				log_error(ptrLog,
-						"Ocurrio un error al Notificar a UMC que se acepto el Proceso %d.",
+						"Ocurrio un error al Notificar a UMC que se acepto el Proceso con PID %d.",
 						checkEspacio->pid);
 			}
 			free(buffer_tamanio->buffer);
@@ -313,7 +314,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 	case FINALIZARPROGRAMA:
 		usleep(retardoAcceso * 1000);
 		finalizarPrograma = deserializarFinalizarPrograma(buffer);
-		log_info(ptrLog, "UMC Solicita la finalizacion del Proceso %i",
+		log_info(ptrLog, "UMC Solicita la finalizacion del Proceso con PID %i",
 				finalizarPrograma->programID);
 		liberarMemoria(listaDeLibres, listaDeOcupados,
 				finalizarPrograma->programID);
@@ -324,7 +325,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 				FINALIZARPROGRAMA, SWAP);
 		if (bytesEnviadosFinalizar <= 0) {
 			log_error(ptrLog,
-					"Ocurrio un error al Notificar a UMC que se finalizo el Proceso %d.",
+					"Ocurrio un error al Notificar a UMC que se finalizo el Proceso con PID %d.",
 					finalizarPrograma->programID);
 		}
 		free(buffer);
@@ -336,7 +337,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 		usleep(retardoAcceso * 1000);
 		solicitudPagina = deserializarSolicitudPagina(buffer);
 		log_info(ptrLog,
-				"UMC Solicita la lectura de la Pagina %d del Proceso %d",
+				"UMC Solicita la lectura de la Pagina %d del Proceso con PID %d",
 				solicitudPagina->paginaProceso, solicitudPagina->pid);
 
 		char* leido = leerProceso(solicitudPagina->paginaProceso,
@@ -351,7 +352,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 				buffer_tamanio->tamanioBuffer, ENVIAR_PAGINA_A_UMC, SWAP);
 		if (bytesEnviados <= 0) {
 			log_error(ptrLog,
-					"Ocurrio un error al enviar a UMC la Pagina %d del Proceso %d.",
+					"Ocurrio un error al enviar a UMC la Pagina %d del Proceso con PID %d.",
 					solicitudPagina->paginaProceso, solicitudPagina->pid);
 		}
 		free(buffer);
@@ -364,7 +365,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 		usleep(retardoAcceso * 1000);
 		escritura = deserializarEscribirEnSwap(buffer);
 		log_info(ptrLog,
-				"UMC Solicita la escritura de la Pagina %d del Proceso %d",
+				"UMC Solicita la escritura de la Pagina %d del Proceso con PID %d",
 				escritura->paginaProceso, escritura->pid);
 
 		escribirProceso(escritura->paginaProceso, escritura->contenido,
@@ -378,7 +379,7 @@ int interpretarMensajeRecibido(char* buffer, int op, int socketUMC,
 				ESCRITURA_OK_UMC, SWAP);
 		if (bytesEnviadosEscritura <= 0) {
 			log_error(ptrLog,
-					"Ocurrio un error al Notificar a UMC que se escribio la Pagina %d del Proceso %d.",
+					"Ocurrio un error al Notificar a UMC que se escribio la Pagina %d del Proceso con PID %d.",
 					escritura->paginaProceso, escritura->pid);
 		}
 		free(buffer_tamanio->buffer);
@@ -512,7 +513,7 @@ void iniciarProceso(int comienzo, int pags) {
 			close(fd);
 		}
 	} else {
-		log_info(ptrLog, "Data NULL o = -1 ?????");
+//		log_info(ptrLog, "Data NULL o = -1 ?????");
 	}
 
 }
@@ -613,8 +614,6 @@ void desfragmentar(t_list* listaDeOcupados, t_list* listaDeLibres) { //movemos l
 		munmap(data, tamanoPagina * paginasOcupadas);
 		close(fd);
 	}
-
-	//sleep(retardoCompactacion);
 
 	log_info(ptrLog, "La compactación finalizó.");
 }

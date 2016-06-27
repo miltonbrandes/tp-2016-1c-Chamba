@@ -300,7 +300,7 @@ void recibirPeticionesNucleo() {
 						mensajeRecibido);
 
 				log_info(ptrLog,
-						"Nucleo quiere iniciar Proceso %d. Vemos si Swap tiene espacio.",
+						"Nucleo quiere iniciar Proceso %d. Chequeamos espacio disponible en Swap.",
 						iniciarProg->programID);
 
 				uint32_t pudoSwap = checkDisponibilidadPaginas(iniciarProg); //pregunto a swap si tiene paginas
@@ -315,7 +315,7 @@ void recibirPeticionesNucleo() {
 					notificarProcesoIniciadoANucleo(iniciarPrograma);
 				} else {
 					operacion = ERROR;
-					log_info(ptrLog, "No hay espacio, no inicializa el PID: %d",
+					log_info(ptrLog, "No hay espacio, no inicializa el Proceso con PID: %d",
 							iniciarProg->programID);
 					notificarProcesoNoIniciadoANucleo();
 				}
@@ -326,7 +326,7 @@ void recibirPeticionesNucleo() {
 				t_finalizar_programa *finalizar = deserializarFinalizarPrograma(
 						mensajeRecibido); //deserializar finalizar
 				uint32_t PID = finalizar->programID;
-				log_info(ptrLog, "Se recibio orden de finalizacion del PID: %i",
+				log_info(ptrLog, "Nucleo ordena finalizar el Proceso con PID: %i",
 						PID);
 				finalizarPrograma(PID);
 
@@ -454,8 +454,7 @@ void aceptarConexionCpu() {
 
 		int socketCpu = AceptarConexionCliente(socketReceptorCPU);
 		if (socketCpu < 0) {
-			log_info(ptrLog,
-					"Ocurrio un error al intentar aceptar una conexion de CPU");
+			log_info(ptrLog, "Ocurrio un error al intentar aceptar una conexion de CPU");
 		} else {
 			log_info(ptrLog, "Nueva conexion de CPU");
 			enviarTamanioPaginaACPU(socketCpu);
@@ -493,8 +492,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 	uint32_t socketCpu = cpuEnAccion->socket;
 
 	while (1) {
-		log_debug(ptrLog, "A la espera de alguna solicitud de la CPU %d",
-				cpuEnAccion->numCpu);
+		log_debug(ptrLog, "Esperando solicitud de CPU %d", cpuEnAccion->numCpu);
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
 		if (strcmp(mensajeRecibido, "ERROR") == 0) {
@@ -514,8 +512,8 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 				uint32_t start = leer->start;
 				uint32_t offset = leer->offset;
 				log_debug(ptrLog,
-						"Recibo una solicitud de lectura de la CPU %d -> Pagina %d - Start %d - Offset %d",
-						cpuEnAccion->numCpu, pagina, start, offset);
+						"CPU %d solicita lectura -> Proceso Activo Actual %d - Pagina %d - Start %d - Offset %d",
+						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina, start, offset);
 
 				enviarDatoACPU(cpuEnAccion, pagina, start, offset, operacion);
 
@@ -529,8 +527,8 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 				uint32_t offset = escribir->offset;
 				char* buffer = escribir->buffer;
 				log_debug(ptrLog,
-						"Recibo una solicitud de escritura de la CPU %d -> Pagina %d - Tamanio %d - Offset %d - Buffer: %s",
-						cpuEnAccion->numCpu, pagina, tamanio, offset, buffer);
+						"CPU %d solicita escritura -> Proceso Activo Actual %d - Pagina %d - Tamanio %d - Offset %d - Buffer: %s",
+						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina, tamanio, offset, buffer);
 
 				escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 
@@ -554,7 +552,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 				free(procesoActivo);
 			} else {
 				operacion = ERROR;
-				log_info(ptrLog, "CPU no entiendo que queres, atte: UMC");
+				log_info(ptrLog, "Operacion no reconocida.");
 				//nucleo reciba error
 
 				//enviarMensajeACpu("Error, operacion no reconocida", operacion, socketCpu);
@@ -596,6 +594,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
+					log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC", pagina, cpu->procesoActivo);
 					t_frame * frame = list_get(frames, registro->frame);
 
 					int bufferAsInt = atoi(buffer);
@@ -609,7 +608,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->bitDeReferencia = 1;
 					registro->esStack = 1;
 				} else {
-					log_info(ptrLog, "La pagina %d, no estaba en UMC, se la pido a swap", pagina);
+					log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap", pagina, cpu->procesoActivo);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
 					if (frameSolicitado != NULL) {
@@ -645,12 +644,10 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 		} else {
-			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d",
-					cpu->procesoActivo, pagina);
+			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
 		}
 	} else {
-		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas",
-				cpu->procesoActivo);
+		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas", cpu->procesoActivo);
 	}
 }
 
@@ -683,9 +680,8 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
 						registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
-					log_info(ptrLog,
-							"La Pagina %d del Proceso %d esta en la TLB en la entrada: %i",
-							pagina, cpu->procesoActivo, entradaTLB);
+					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB",
+							pagina, cpu->procesoActivo);
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(
 							entradaTLB);
 					t_frame * frame = list_get(frames, registroTLB->numFrame);
@@ -707,6 +703,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				} else {
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
+						log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC", pagina, cpu->procesoActivo);
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset);
 						if (operacion == LEER) {
@@ -728,9 +725,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
-						log_info(ptrLog,
-								"UMC no tiene la Pagina %d del Proceso %d. Pido a Swap",
-								registro->paginaProceso, cpu->procesoActivo);
+						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap", pagina, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
 								registro->paginaProceso);
 
@@ -786,7 +781,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 		strcat(instruccionPosta, aux);
 		free(aux);
 	}
-	log_info(ptrLog, "La instruccion que pidio CPU es: %s", instruccionPosta);
+	log_info(ptrLog, "CPU %d pidio la instruccion: %s", cpu->procesoActivo, instruccionPosta);
 	t_instruccion * instruccion = malloc(strlen(instruccionPosta) + 1);
 	instruccion->instruccion = instruccionPosta;
 	t_buffer_tamanio * buffer_tamanio;
@@ -813,8 +808,7 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 	} else {
 		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
 		free(mensajeDeSwap);
-		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d -> %s", pagina,
-				cpu->procesoActivo, paginaSwap->paginaSolicitada);
+		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d.", pagina, cpu->procesoActivo);
 		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo,
 				pagina);
 
@@ -945,7 +939,7 @@ void enviarTamanioPaginaANUCLEO() {
 	free(buffer_tamanio->buffer);
 	free(buffer_tamanio);
 	if (bytesEnviados <= 0) {
-		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a CPU");
+		log_info(ptrLog, "No se pudo enviar Tamanio de Pagina a Nucleo");
 	}
 }
 
@@ -1131,16 +1125,15 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame) {
 			list_remove(TLB, indiceLibre);
 			list_add_in_index(TLB, indiceLibre, aInsertar);
 			pthread_mutex_unlock(&accesoATLB);
-			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB",
-					pagina, pid);
+			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
 		} else {
 			aInsertar->indice = list_size(TLB) - 1;
 			//Actualizo el Frame en Swap antes de eliminar
 			t_tlb * tlbAEliminar = list_get(TLB, 0);
 			//Elimino la primera entrada => La mas vieja
 			log_info(ptrLog,
-					"Se elimina la primer entrada de la TLB que es de la pagina %i, proceso %i",
-					tlbAEliminar->numPag, tlbAEliminar->pid);
+					"Se elimina entrada de la TLB: Proceso %i - Pagina %i",
+					tlbAEliminar->pid, tlbAEliminar->numPag);
 			pthread_mutex_lock(&accesoATLB);
 			list_remove(TLB, 0);
 			//aca falta que todos los anteriores cambien su indice hecho
@@ -1151,8 +1144,7 @@ void agregarATLB(int pid, int pagina, int frame, char * contenidoFrame) {
 			}
 			list_add(TLB, aInsertar);
 			pthread_mutex_unlock(&accesoATLB);
-			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB",
-					pagina, pid);
+			log_info(ptrLog, "La Pagina %d del Proceso %d se agrego en la TLB", pagina, pid);
 		}
 	}
 }
@@ -1173,7 +1165,7 @@ void tlbFlush() {
 			}
 			pthread_mutex_unlock(&accesoATLB);
 		}
-		log_info(ptrLog, "Flush en TLB");
+		log_info(ptrLog, "Flush en TLB realizado.");
 	}
 }
 
@@ -1191,7 +1183,7 @@ void tlbFlushDeUnPID(int PID) {
 			}
 		}
 		pthread_mutex_unlock(&accesoATLB);
-		log_info(ptrLog, "Flush en TLB de PID: %d realizado\n", PID);
+		log_info(ptrLog, "Flush en TLB de Proceso con PID %d realizado", PID);
 	}
 }
 
@@ -1548,9 +1540,9 @@ void flushMemory(uint32_t pid) {
 			registro->modificado = 1;
 		}
 		pthread_mutex_unlock(&accesoAFrames);
-		printf("Se realizo flush a las TP del PID: %d", pid);
+		printf("Se realizo flush a la Tabla de Paginas del Proceso con PID: %d", pid);
 	} else {
-		printf("No existe TP del PID: %d", pid);
+		printf("No existe Tabla de Paginas del Proceso con PID: %d", pid);
 	}
 }
 
@@ -1626,7 +1618,7 @@ void dumpDeUnPID(uint32_t pid) {
 		}
 		pthread_mutex_unlock(&accesoAFrames);
 	} else {
-		log_info(ptrLog, "No se encontro Tabla de Paginas del PID: %d", pid);
+		log_info(ptrLog, "No se encontro Tabla de Paginas del Proceso con PID: %d", pid);
 	}
 }
 

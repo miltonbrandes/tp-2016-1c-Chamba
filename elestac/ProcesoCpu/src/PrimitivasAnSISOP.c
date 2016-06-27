@@ -67,13 +67,12 @@ bool esArgumento(t_nombre_variable identificador_variable){
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	//TODO: ver bien si es tamanioStack - 1 o tamanioStack!!!!!!!!!!
 	if(!esArgumento(identificador_variable)){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
-		log_debug(ptrLog, "Llamada a definirVariable de la variable, %c", identificador_variable);
+		log_debug(ptrLog, "Definir variable %c", identificador_variable);
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
 			if(!huboStackOver){
-				log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
-				log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+				log_error(ptrLog, "StackOverflow. Se finaliza el proceso");
 				huboStackOver = true;
 			}
 			return -1;
@@ -114,13 +113,12 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		}
 	}else{
 		//en este caso es un argumento, realizar toda la logica aca y tambien en obtener posicion variable, asignar imprimir y retornar
-		log_debug(ptrLog, "Llamada a definirVariable del argumento, %c", identificador_variable);
+		log_debug(ptrLog, "Definir variable - argumento %c", identificador_variable);
 		t_argumento* nuevoArg = malloc(sizeof(t_argumento));
 		t_stack* lineaStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		if(pcb->stackPointer + 4 > tamanioPagina && pcb->paginaStackActual - pcb->primerPaginaStack == tamanioStack -1){
 			if(!huboStackOver){
-				log_error(ptrLog, "Hay stack overflow la concha de tu madre, va a morir todo");
-				log_error(ptrLog, "Hay que finalizar el Proceso porque te pasaste del tamanio del stack.");
+				log_error(ptrLog, "StackOverflow. Se finaliza el proceso");
 				huboStackOver = true;
 			}
 			return -1;
@@ -142,7 +140,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			}
 			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
 			uint32_t posicionRet = (nuevoArg->pagina * tamanioPagina) + nuevoArg->offset;
-			log_debug(ptrLog, "%c %i %i %i", identificador_variable, nuevoArg->pagina, nuevoArg->offset, nuevoArg->size);
 			return posicionRet;
 		}
 	}
@@ -155,7 +152,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		int i = 0;
 		char* nom = calloc(1, 2);
 		nom[0] = identificador_variable;
-		log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
+		log_debug(ptrLog, "Obtener posicion variable '%c'", identificador_variable);
 		//obtengo la linea del stack del contexto de ejecucion actual...
 		t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		//me posiciono al inicio de esta linea del stack
@@ -165,7 +162,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 				variable = list_get(lineaActualStack->variables, i);
 				if(variable->idVariable == identificador_variable ){
-					log_debug(ptrLog, "La posicion de '%c' es %u", variable->idVariable, variable->offset);
 					free(nom);
 					uint32_t posicionRet = (variable->pagina * tamanioPagina) + variable->offset;
 					return posicionRet;
@@ -182,7 +178,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		int i = 0;
 		char* nom = calloc(1, 2);
 		nom[0] = identificador_variable;
-		log_debug(ptrLog, "Se obtiene la posicion de '%c'", identificador_variable);
+		log_debug(ptrLog, "Obtener posicion variable '%c'", identificador_variable);
 		//obtengo la linea del stack del contexto de ejecucion actual...
 		t_stack* lineaActualStack = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 		//me posiciono al inicio de esta linea del stack
@@ -190,7 +186,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		if(list_size((t_list*)lineaActualStack->argumentos) > 0){
 			int lineaArg = identificador_variable - '0';
 			arg = list_get(lineaActualStack->argumentos, lineaArg);
-			log_debug(ptrLog, "La posicion de '%c' es %u", identificador_variable, arg->offset);
 			free(nom);
 			uint32_t posicionRet = (arg->pagina * tamanioPagina) + arg->offset;
 			return posicionRet;
@@ -212,7 +207,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	posicionRet.size = TAMANIO_VARIABLE;
 			//((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
 	t_valor_variable valor = 0;
-	log_debug(ptrLog, "Llamada a dereferenciar %d", direccion_variable);
+	log_debug(ptrLog, "Dereferenciar %d", direccion_variable);
 	t_solicitarBytes* solicitar = malloc(sizeof(t_solicitarBytes));
 	solicitar->pagina = posicionRet.pagina;
 	solicitar->offset = TAMANIO_VARIABLE;
@@ -221,13 +216,13 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	if(buffer != NULL) {
 		t_instruccion * instruccion = deserializarInstruccion(buffer);
 		if(strcmp(instruccion, "FINALIZAR") == 0) {
-			log_error(ptrLog, "Variable no pudo leerse. Hay que finalizar el Proceso.");
+			log_error(ptrLog, "La variable no pudo dereferenciarse. Se finaliza el Proceso.");
 			finalizarProcesoPorErrorEnUMC();
 			return 0;
 		}else{
 			int valueAsInt = atoi(instruccion->instruccion);
 			memcpy(&valor, &valueAsInt, sizeof(t_valor_variable));
-			log_debug(ptrLog, "El valor es %d", valor);
+			log_debug(ptrLog, "Variable dereferenciada. Valor: %d", valor);
 			free(buffer);
 		}
 	}
@@ -236,7 +231,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 }
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	log_debug(ptrLog, "Llamada a asignar en posicion %d y valor %d", direccion_variable, valor);
+	log_debug(ptrLog, "Asignar. Posicion %d - Valor %d", direccion_variable, valor);
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 
 	t_enviarBytes* enviar = malloc(sizeof(uint32_t) * 4);
@@ -258,7 +253,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor) {
 		if(result == SUCCESS) {
 			log_info(ptrLog, "Variable asignada");
 		}else if(result == ERROR){
-			log_error(ptrLog, "Variable no asignada. Hay que finalizar el Proceso.");
+			log_error(ptrLog, "La variable no pudo asignarse. Se finaliza el Proceso.");
 			finalizarProcesoPorErrorEnUMC();
 		}
 	}
@@ -274,7 +269,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	t_valor_variable valor = 0;
 	uint32_t lon = strlen(variable)+1;
 	operacion = LEER_VAR_COMPARTIDA;
-	log_debug(ptrLog, "Obteniendo el valor de la variable compartida '%s'", variable);
+	log_debug(ptrLog, "Obtener valor compartida '%s'", variable);
 	if (enviarDatos(socketNucleo, variable, lon, operacion, id) < 0)
 	return -1;
 	buffer = recibirDatos(socketNucleo, &operacion, &id);
@@ -284,7 +279,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 		return -1;
 	} else {
 		memcpy(&valor, buffer, sizeof(t_valor_variable));
-		log_debug(ptrLog, "El valor de '%s' es %d", variable, valor);
+		log_debug(ptrLog, "Valor compartida '%s' obtenido. Valor: %d", variable, valor);
 		free(buffer);
 		return valor;
 	}
@@ -294,8 +289,8 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	//uint32_t longitud = strlen(variable) + 1 + 8;
 	uint32_t op = ASIG_VAR_COMPARTIDA;
 	uint32_t id = CPU;
-	log_debug(ptrLog, "Asignando el valor %d a la variable compartida '%s'",
-			valor, variable);
+	log_debug(ptrLog, "Asignar valor compartida. Variable compartida: '%s' - Valor: %d",
+			variable, valor);
 	t_op_varCompartida* varCompartida = malloc(sizeof(t_op_varCompartida));
 	varCompartida->longNombre = strlen(variable) + 1;
 	varCompartida->nombre = malloc(strlen(variable) + 1);
@@ -309,7 +304,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	free(tamanio_buffer);
 	free(varCompartida->nombre);
 	free(varCompartida);
-	log_debug(ptrLog, "Valor asignado");
+	log_debug(ptrLog, "Valor compartida '%s' asignada", variable);
 	return valor;
 }
 
@@ -317,18 +312,15 @@ void irAlLabel(t_nombre_etiqueta etiqueta) {
 	//devuelvo la primer instruccion ejecutable de etiqueta o -1 en caso de error
 	//necesito el tamanio de etiquetas, lo tendria que agregar al pcb
 	//en vez de devolverla me conviene agregarla al program counter
-	log_debug(ptrLog, "Llamada a irAlLabel");
+	log_debug(ptrLog, "Ir al Label '%s'", etiqueta);
 	t_puntero_instruccion numeroInstr = metadata_buscar_etiqueta(etiqueta, pcb->ind_etiq, pcb->tamanioEtiquetas);
-	log_error(ptrLog, "el nro de instruccion a mostrar es: %i", numeroInstr);
 	pcb->PC = numeroInstr - 1;
-	log_debug(ptrLog, "El valor del pc ahora es: %i", pcb->PC);
 
 	return;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
-	log_debug(ptrLog, "Llamada a llamarFuncion");
-	log_debug(ptrLog,"Reservando espacio y cambiando al nuevo contexto de ejecucion");
+	log_debug(ptrLog, "Llamar con Retorno. Reservando espacio y cambiando al nuevo contexto de ejecucion");
 	uint32_t tamLineaStack = 4*sizeof(uint32_t)+2*sizeof(t_list);
 	t_stack * nuevaLineaStackEjecucionActual;
 	t_argumento* varRetorno = malloc(sizeof(t_argumento));
@@ -381,14 +373,13 @@ void retornar(t_valor_variable retorno) {
 	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
 	//aca me genera dudas donde tengo que guardar la direccion de retorno actual, si en el anterior o en el pc
 	t_stack* contextoEjecNuevo = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
-	log_debug(ptrLog, "En el contexto anterior tenia %i variables", list_size(contextoEjecNuevo->variables));
 	log_debug(ptrLog, "Llamada a retornar");
 	return;
 }
 
 void imprimir(t_valor_variable valor_mostrar) {
 	log_debug(ptrLog,
-			"Enviando al kernel el valor %d que se mostrara por pantalla",
+			"Envio a Nucleo valor %d para que Consola imprima por pantalla.",
 			valor_mostrar);
 	//char* buffer = malloc(sizeof(t_valor_variable));
 	t_buffer_tamanio*  buff = serializar(valor_mostrar);
@@ -398,20 +389,16 @@ void imprimir(t_valor_variable valor_mostrar) {
 	int bytesEnviados = enviarDatos(socketNucleo, buff->buffer, buff->tamanioBuffer, op, id);
 	free(buff->buffer);
 	free(buff);
-	log_debug(ptrLog, "Valor enviado");
 	//free(buffer);
 }
 
 void imprimirTexto(char* texto) {
-	log_debug(ptrLog,
-			"Enviando al kernel una cadena de texto que se mostrara por pantalla");
+	log_debug(ptrLog, "Envio la cadena '%s' a Nucleo para que Consola imprima por pantalla", texto);
 	texto = _string_trim(texto);
 	uint32_t op = IMPRIMIR_TEXTO;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(texto)+1;
-	log_trace(ptrLog, "La cadena es: %s", texto);
 	int bytesEnviados = enviarDatos(socketNucleo, texto, lon, op, id);
-	log_debug(ptrLog, "Cadena enviada");
 }
 
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
@@ -419,7 +406,7 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 	operacion = IO;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(dispositivo)+1+sizeof(uint32_t) + sizeof(int);
-	log_debug(ptrLog, "Se efectua la operacion de Entrada/Salida");
+	log_debug(ptrLog, "Entrada/Salida. Dispositivo: '%s' - Tiempo: %d", dispositivo, tiempo);
 	t_dispositivo_io* op_IO = malloc(sizeof(t_dispositivo_io));
 	op_IO->nombre = malloc(strlen(dispositivo)+1);
 	strcpy(op_IO->nombre, dispositivo);
@@ -427,8 +414,6 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 	char* buffer;
 	buffer = (char *)serializar_opIO(op_IO);
 	enviarDatos(socketNucleo, buffer, lon, operacion, id);
-	log_debug(ptrLog, "Dispositivo '%s' con un tiempo de %d enviados al kernel",
-			dispositivo, tiempo);
 	free(buffer);
 	free(op_IO->nombre);
 	free(op_IO);
@@ -440,18 +425,17 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	uint32_t op = WAIT;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(identificador_semaforo)+1;
-	log_debug(ptrLog, "Enviado al kernel funcion WAIT para el semaforo '%s'",
-			identificador_semaforo);
+	log_debug(ptrLog, "Wait. Semaforo: '%s'", identificador_semaforo);
 	enviarDatos(socketNucleo, identificador_semaforo, lon, op, id);
-	log_debug(ptrLog, "Esperando respuesta del nucleo");
+	log_debug(ptrLog, "Esperando respuesta del Nucleo para Wait.");
 	buffer = recibirDatos(socketNucleo, &op, &id);
 	if(operacion != NOTHING){
 		operacion = op;
+		log_debug(ptrLog,"Proceso no queda bloqueado por Semaforo '%s'", identificador_semaforo);
 	}
 	if (op == WAIT){
 		operacion = op;
-		log_debug(ptrLog,"El proceso queda bloqueado hasta que se haga un SIGNAL a '%s'",
-			identificador_semaforo);
+		log_debug(ptrLog,"Proceso bloqueado por Semaforo '%s'", identificador_semaforo);
 	}
 	free(buffer);
 }
@@ -461,7 +445,7 @@ void ansisop_signal(t_nombre_semaforo identificador_semaforo) {
 	uint32_t id = CPU;
 	uint32_t lon = strlen(identificador_semaforo)+1;
 
-	log_debug(ptrLog, "Enviado al nucleo funcion SIGNAL para el semaforo '%s'",
+	log_debug(ptrLog, "Signal. Semaforo: '%s'",
 			identificador_semaforo);
 	enviarDatos(socketNucleo, identificador_semaforo, lon, op, id);
 	return;
