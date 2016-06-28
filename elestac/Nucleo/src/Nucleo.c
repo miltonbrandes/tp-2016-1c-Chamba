@@ -465,8 +465,8 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 		unPcb = crearPCB(buffer, socketUMC);
 		if (unPcb == NULL) {
 			//Que carajos hace este codigo
-			char* mensajeError = "No habia lugar en swap para guardarlo";
-			int bytesEnviados = enviarDatos(socketConexion, mensajeError, strlen(mensajeError), ERROR, id);
+			char* mensajeError = "No habia lugar en swap para guardarlo\0";
+			int bytesEnviados = enviarDatos(socketConexion, mensajeError, strlen(mensajeError) + 1, ERROR, id);
 			FD_CLR(socketConexion, &tempSockets);
 			FD_CLR(socketConexion, &sockets);
 			finalizarConexionDeUnSocketEnParticular(socketConexion);
