@@ -120,7 +120,7 @@ int punteroCharEsInt(char* cadena);
 void crearConsola();
 void dump(uint32_t pid);
 void dumpDeUnPID(uint32_t pid);
-void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,char* contenido);
+void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame, uint32_t presencia, uint32_t modificado,char* contenido);
 void flushMemory(uint32_t pid);
 void retardar(int retardoNuevo);
 void tlbFlush();

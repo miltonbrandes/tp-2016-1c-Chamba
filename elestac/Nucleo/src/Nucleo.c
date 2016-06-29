@@ -934,7 +934,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 
 			free(bufferPCB);
 			list_add(colaBloqueados, unPcbBlocked);
-			log_debug(ptrLog, "PCB %d pasa a cola Bloqueados por Semaforo", unPcbBlocked->pcb->pcb_id);
+			log_debug(ptrLog, "PCB %d pasa a cola Bloqueados por Semaforo: %s", unPcbBlocked->pcb->pcb_id, unPcbBlocked->nombreSemaforo);
 
 			if (cpuAcerrar != unCliente->socket) {
 				unCliente->fueAsignado = false;

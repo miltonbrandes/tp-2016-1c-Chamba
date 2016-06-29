@@ -586,7 +586,8 @@ void enviarACPUQueDebeFinalizarProceso(t_cpu * cpu,
 			bufferTamanio->tamanioBuffer, NOTHING, UMC);
 }
 
-void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t tamanio, char * buffer) {
+void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
+		uint32_t tamanio, char * buffer) {
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
 			cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
@@ -596,7 +597,8 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
 					registro->paginaProceso);
 			if (entradasTLB > 0 && entradaTLB != -1) {
-				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB (TLB HIT)",
+				log_info(ptrLog,
+						"La Pagina %d del Proceso %d esta en la TLB (TLB HIT)",
 						pagina, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
@@ -610,13 +612,22 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
-					log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC (TLB MISS)", pagina, cpu->procesoActivo);
+					if (entradasTLB == -1) {
+						log_info(ptrLog,
+								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
+								registro->paginaProceso, cpu->procesoActivo);
+					}
+
+					log_info(ptrLog,
+							"La pagina %d del Proceso %d esta en UMC (TLB MISS)",
+							pagina, cpu->procesoActivo);
 					t_frame * frame = list_get(frames, registro->frame);
 
 					int bufferAsInt = atoi(buffer);
 					memcpy(frame->contenido + offset, &bufferAsInt, tamanio);
 
-					agregarATLB(cpu->procesoActivo, registro->paginaProceso, frame->numeroFrame, frame->contenido);
+					agregarATLB(cpu->procesoActivo, registro->paginaProceso,
+							frame->numeroFrame, frame->contenido);
 
 					registro->estaEnUMC = 1;
 					registro->frame = frame->numeroFrame;
@@ -624,8 +635,17 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->bitDeReferencia = 1;
 					registro->esStack = 1;
 				} else {
-					log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap (PAGE FAULT)", pagina, cpu->procesoActivo);
-					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
+
+					if (entradasTLB == -1) {
+						log_info(ptrLog,
+								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
+								registro->paginaProceso, cpu->procesoActivo);
+					}
+					log_info(ptrLog,
+							"La pag %d del PID %d no esta en UMC, se la pido a Swap (PAGE FAULT)",
+							pagina, cpu->procesoActivo);
+					t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
+							pagina);
 
 					if (frameSolicitado != NULL) {
 						int bufferAsInt = atoi(buffer);
@@ -660,10 +680,12 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			free(buffer_tamanio->buffer);
 			free(buffer_tamanio);
 		} else {
-			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d", cpu->procesoActivo, pagina);
+			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d",
+					cpu->procesoActivo, pagina);
 		}
 	} else {
-		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas", cpu->procesoActivo);
+		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas",
+				cpu->procesoActivo);
 	}
 }
 
@@ -719,7 +741,15 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				} else {
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
-						log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC (TLB MISS)", registro->paginaProceso, cpu->procesoActivo);
+
+						if (entradasTLB == -1) {
+							log_info(ptrLog,
+									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
+									registro->paginaProceso,
+									cpu->procesoActivo);
+						}
+
+						log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset);
 						if (operacion == LEER) {
@@ -741,6 +771,13 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
+						if (entradasTLB == -1) {
+							log_info(ptrLog,
+									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
+									registro->paginaProceso,
+									cpu->procesoActivo);
+						}
+
 						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap (PAGE FAULT)", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
 								registro->paginaProceso);
@@ -1578,7 +1615,7 @@ void dumpDeUnPID(uint32_t pid) {
 			}
 		}
 		if (noHayAlgo) {
-			log_info(ptrLog, "No hay nada en memoria");
+			log_info(ptrLog, "No hay nada en memoria del PID: %d", pid);
 		} else {
 			for (i = 0; i < list_size(tablaAMostrar->tablaDePaginas); i++) {
 				//Traigo cada tabla de paginas
@@ -1587,13 +1624,15 @@ void dumpDeUnPID(uint32_t pid) {
 				if (registro->estaEnUMC == 1) {
 					t_frame * frame = list_get(frames, registro->frame);
 
-					if(registro->esStack > 0) {
-						int numerosPosiblesDentroDeStack = marcosSize/4;
+					if (registro->esStack > 0) {
+						int numerosPosiblesDentroDeStack = marcosSize / 4;
 						int j, offset = 0;
-						char * contenidoStack = malloc(numerosPosiblesDentroDeStack * 45);
-						for(j = 0; j < numerosPosiblesDentroDeStack; j++) {
+						char * contenidoStack = malloc(
+								numerosPosiblesDentroDeStack * 45);
+						for (j = 0; j < numerosPosiblesDentroDeStack; j++) {
 							int numAux;
-							memcpy(&numAux, frame->contenido + offset, sizeof(int));
+							memcpy(&numAux, frame->contenido + offset,
+									sizeof(int));
 							offset += 4;
 							char * auxChar = calloc(1, sizeof(int) + 1);
 							sprintf(auxChar, "%d", numAux);
@@ -1601,41 +1640,56 @@ void dumpDeUnPID(uint32_t pid) {
 							strcat(contenidoStack, " - \0");
 						}
 						strcat(contenidoStack, "\0");
-						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
-								pid, registro->paginaProceso, registro->frame, contenidoStack);
-						log_info(ptrLog, "__________________________________________________________________\n");
-						escribirEnArchivo(pid, registro->paginaProceso, registro->frame, contenidoStack);
+						log_info(ptrLog,
+								"PID: %d | Pag: %d | Marco: %d | P: %d | M: %d | Contenido: \"%s\"\n",
+								pid, registro->paginaProceso, registro->frame,
+								registro->estaEnUMC, registro->modificado,
+								contenidoStack);
+						log_info(ptrLog,
+								"__________________________________________________________________\n");
+						escribirEnArchivo(pid, registro->paginaProceso,
+								registro->frame, registro->estaEnUMC,
+								registro->modificado, contenidoStack);
 
 						free(contenidoStack);
-					}else{
+					} else {
 						char * contenido;
 						contenido = malloc((marcosSize * sizeof(char)) + 1);
 
-						memcpy(contenido, frame->contenido,marcosSize);
+						memcpy(contenido, frame->contenido, marcosSize);
 						contenido[marcosSize] = '\0';
 
-						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
-								pid, registro->paginaProceso, registro->frame, contenido);
-						log_info(ptrLog, "__________________________________________________________________\n");
-						escribirEnArchivo(pid, registro->paginaProceso, registro->frame, contenido);
+						log_info(ptrLog,
+								"PID: %d | Pag: %d | Marco: %d | P: %d | M: %d | Contenido: \"%s\"\n",
+								pid, registro->paginaProceso, registro->frame,
+								registro->estaEnUMC, registro->modificado,
+								contenido);
+						log_info(ptrLog,
+								"__________________________________________________________________\n");
+						escribirEnArchivo(pid, registro->paginaProceso,
+								registro->frame, registro->estaEnUMC,
+								registro->modificado, contenido);
 
 						free(contenido);
 					}
 
 				} else {
 					log_info(ptrLog,
-							"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \n",
-							pid, registro->paginaProceso, registro->frame);
+							"PID: %d | Pag: %d | Marco: %d | P: %d | M: %d | Contenido: \n",
+							pid, registro->paginaProceso, registro->frame,
+							registro->estaEnUMC, registro->modificado);
 					log_info(ptrLog,
 							"__________________________________________________________________\n");
 					escribirEnArchivo(pid, registro->paginaProceso,
-							registro->frame, NULL);
+							registro->frame, registro->estaEnUMC,
+							registro->modificado, NULL);
 				}
 			}
 		}
 		pthread_mutex_unlock(&accesoAFrames);
 	} else {
-		log_info(ptrLog, "No se encontro Tabla de Paginas del Proceso con PID: %d", pid);
+		log_info(ptrLog,
+				"No se encontro Tabla de Paginas del Proceso con PID: %d", pid);
 	}
 }
 
@@ -1699,21 +1753,21 @@ void crearConsola() {
 }
 
 void escribirEnArchivo(uint32_t pid, uint32_t paginaProceso, uint32_t frame,
-		char* contenido) {
+		uint32_t presencia, uint32_t modificado, char* contenido) {
 
 	FILE*archivoDump = fopen("dump.txt", "a");
 
 	if (contenido != NULL) {
 		fprintf(archivoDump,
-				"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\" \n",
-				pid, paginaProceso, frame, contenido);
+				"PID: %d \t| Pagina: %d \t| Marco: %d \t| P: %d \t| M: %d \t| Contenido: \"%s\" \n",
+				pid, paginaProceso, frame, presencia, modificado, contenido);
 
 		fprintf(archivoDump,
 				"__________________________________________________________________\n");
 	} else {
 		fprintf(archivoDump,
-				"PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \n", pid,
-				paginaProceso, frame);
+				"PID: %d \t| Pagina: %d \t| Marco: %d \t| P: %d \t| M: %d \t| Contenido: \n",
+				pid, paginaProceso, frame, presencia, modificado);
 		fprintf(archivoDump,
 				"__________________________________________________________________\n");
 	}
