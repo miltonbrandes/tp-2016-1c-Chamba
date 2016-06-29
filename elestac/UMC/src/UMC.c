@@ -1564,7 +1564,7 @@ void flushMemory(uint32_t pid) {
 
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
-	pthread_mutex_unlock(&accesoAFrames);
+	pthread_mutex_lock(&accesoAFrames);
 	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
 	int i;
 	if (tablaAMostrar != NULL) {
@@ -1590,7 +1590,7 @@ void dumpDeUnPID(uint32_t pid) {
 					if(registro->esStack > 0) {
 						int numerosPosiblesDentroDeStack = marcosSize/4;
 						int j, offset = 0;
-						char * contenidoStack = calloc(numerosPosiblesDentroDeStack, sizeof(int) + (3*sizeof(char)));
+						char * contenidoStack = malloc(numerosPosiblesDentroDeStack * 45);
 						for(j = 0; j < numerosPosiblesDentroDeStack; j++) {
 							int numAux;
 							memcpy(&numAux, frame->contenido + offset, sizeof(int));
@@ -1598,8 +1598,9 @@ void dumpDeUnPID(uint32_t pid) {
 							char * auxChar = calloc(1, sizeof(int) + 1);
 							sprintf(auxChar, "%d", numAux);
 							strcat(contenidoStack, auxChar);
-							strcat(contenidoStack, " - ");
+							strcat(contenidoStack, " - \0");
 						}
+						strcat(contenidoStack, "\0");
 						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
 								pid, registro->paginaProceso, registro->frame, contenidoStack);
 						log_info(ptrLog, "__________________________________________________________________\n");
