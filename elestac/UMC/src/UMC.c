@@ -596,7 +596,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
 					registro->paginaProceso);
 			if (entradasTLB > 0 && entradaTLB != -1) {
-				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB",
+				log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB (TLB HIT)",
 						pagina, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
@@ -610,7 +610,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
-					log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC", pagina, cpu->procesoActivo);
+					log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC (TLB MISS)", pagina, cpu->procesoActivo);
 					t_frame * frame = list_get(frames, registro->frame);
 
 					int bufferAsInt = atoi(buffer);
@@ -624,7 +624,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset, uint32_t t
 					registro->bitDeReferencia = 1;
 					registro->esStack = 1;
 				} else {
-					log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap", pagina, cpu->procesoActivo);
+					log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap (PAGE FAULT)", pagina, cpu->procesoActivo);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu, pagina);
 
 					if (frameSolicitado != NULL) {
@@ -696,7 +696,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
 						registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
-					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB(TLB HIT)",
+					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB (TLB HIT)",
 							registro->paginaProceso, cpu->procesoActivo);
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(
 							entradaTLB);
@@ -741,7 +741,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
-						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap PAGE FAULT", registro->paginaProceso, cpu->procesoActivo);
+						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap (PAGE FAULT)", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
 								registro->paginaProceso);
 
@@ -1564,7 +1564,7 @@ void flushMemory(uint32_t pid) {
 
 void dumpDeUnPID(uint32_t pid) {
 	//traigo la tabla del proceso
-	pthread_mutex_unlock(&accesoAFrames);
+	pthread_mutex_lock(&accesoAFrames);
 	t_tabla_de_paginas * tablaAMostrar = buscarTablaDelProceso(pid);
 	int i;
 	if (tablaAMostrar != NULL) {
@@ -1590,7 +1590,7 @@ void dumpDeUnPID(uint32_t pid) {
 					if(registro->esStack > 0) {
 						int numerosPosiblesDentroDeStack = marcosSize/4;
 						int j, offset = 0;
-						char * contenidoStack = calloc(numerosPosiblesDentroDeStack, sizeof(int) + (3*sizeof(char)));
+						char * contenidoStack = malloc(numerosPosiblesDentroDeStack * 45);
 						for(j = 0; j < numerosPosiblesDentroDeStack; j++) {
 							int numAux;
 							memcpy(&numAux, frame->contenido + offset, sizeof(int));
@@ -1598,8 +1598,9 @@ void dumpDeUnPID(uint32_t pid) {
 							char * auxChar = calloc(1, sizeof(int) + 1);
 							sprintf(auxChar, "%d", numAux);
 							strcat(contenidoStack, auxChar);
-							strcat(contenidoStack, " - ");
+							strcat(contenidoStack, " - \0");
 						}
+						strcat(contenidoStack, "\0");
 						log_info(ptrLog, "PID: %d \t| Pagina: %d \t| Marco: %d \t| Contenido: \"%s\"\n",
 								pid, registro->paginaProceso, registro->frame, contenidoStack);
 						log_info(ptrLog, "__________________________________________________________________\n");
