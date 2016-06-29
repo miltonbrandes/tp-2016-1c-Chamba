@@ -400,6 +400,7 @@ t_nuevo_prog_en_umc * inicializarProceso(t_iniciar_programa *iniciarProg) {
 
 void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 	int i, offset = 0;
+	int hastaAcaCodigo;
 	uint32_t longitudCodigo = strlen(iniciarProg->codigoAnsisop);
 	for (i = 0; i < iniciarProg->tamanio; i++) {
 		t_escribir_en_swap * escribirEnSwap = malloc(
@@ -417,6 +418,7 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 			escribirEnSwap->contenido = malloc(longitudACopiar);
 			memcpy(escribirEnSwap->contenido,
 					(iniciarProg->codigoAnsisop) + offset, longitudACopiar);
+			hastaAcaCodigo = i;
 			i = iniciarProg->tamanio;
 		}
 
@@ -425,6 +427,20 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio,
 				ESCRIBIR);
 
+		free(resultadoSwap);
+		free(escribirEnSwap->contenido);
+		free(escribirEnSwap);
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
+	}
+	int a = 0;
+	for(a = hastaAcaCodigo +1; a < iniciarProg->tamanio; a++){
+		t_escribir_en_swap * escribirEnSwap = malloc((sizeof(uint32_t) * 2) + marcosSize);
+		escribirEnSwap->paginaProceso = a;
+		escribirEnSwap->pid = iniciarProg->programID;
+		escribirEnSwap->contenido = malloc(marcosSize);
+		t_buffer_tamanio * buffer_tamanio = serializarEscribirEnSwap(escribirEnSwap, marcosSize);
+		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio,ESCRIBIR);
 		free(resultadoSwap);
 		free(escribirEnSwap->contenido);
 		free(escribirEnSwap);
@@ -680,8 +696,8 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				int entradaTLB = pagEstaEnTLB(cpu->procesoActivo,
 						registro->paginaProceso);
 				if (entradasTLB > 0 && entradaTLB != -1) {
-					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB",
-							pagina, cpu->procesoActivo);
+					log_info(ptrLog, "La Pagina %d del Proceso %d esta en la TLB(TLB HIT)",
+							registro->paginaProceso, cpu->procesoActivo);
 					t_tlb * registroTLB = obtenerYActualizarRegistroTLB(
 							entradaTLB);
 					t_frame * frame = list_get(frames, registroTLB->numFrame);
@@ -703,7 +719,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				} else {
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
-						log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC", pagina, cpu->procesoActivo);
+						log_info(ptrLog, "La pagina %d del Proceso %d esta en UMC (TLB MISS)", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frame = list_get(frames, registro->frame);
 						char * bufferAux = calloc(1, auxiliar->offset);
 						if (operacion == LEER) {
@@ -725,7 +741,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
-						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap", pagina, cpu->procesoActivo);
+						log_info(ptrLog, "La pagina %d del Proceso %d no esta en UMC, se la pido a Swap PAGE FAULT", registro->paginaProceso, cpu->procesoActivo);
 						t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
 								registro->paginaProceso);
 
