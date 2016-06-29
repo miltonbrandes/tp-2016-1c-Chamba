@@ -5,8 +5,9 @@ variables f, i, t
 
 	#`f`: Hasta donde contar
 	f=20
+	i=0	
 	:inicio
-
+	
 	#`i`: Iterador
 	i=i+1
 	
