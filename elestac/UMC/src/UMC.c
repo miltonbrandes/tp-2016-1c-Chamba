@@ -109,9 +109,8 @@ int main() {
 
 ////FUNCIONES UMC////
 
-char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio,
-		uint32_t operacion) {
-	pthread_mutex_lock(&comunicacionConSwap);
+char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio, uint32_t operacion) {
+//	pthread_mutex_lock(&comunicacionConSwap);
 	char * mensajeDeSwap;
 
 	int bytesEnviados = enviarDatos(socketSwap, bufferTamanio->buffer,
@@ -123,7 +122,7 @@ char * enviarYRecibirMensajeSwap(t_buffer_tamanio * bufferTamanio,
 		uint32_t operacion, id;
 		mensajeDeSwap = recibirDatos(socketSwap, &operacion, &id);
 	}
-	pthread_mutex_unlock(&comunicacionConSwap);
+//	pthread_mutex_unlock(&comunicacionConSwap);
 	return mensajeDeSwap;
 }
 
