@@ -917,7 +917,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 
 		if (semaforo->valor > 0) {
 			//No se bloquea
-			log_debug(ptrLog, "CPU %d no bloquea Proceso por Semaforo %s", unCliente->pcbId, semaforo->nombre);
+			log_debug(ptrLog, "CPU %d no bloquea PCB %d por Semaforo %s", unCliente->id, unCliente->pcbId, semaforo->nombre);
 			enviarDatos(unCliente->socket, buffer, sizeof(buffer), NOTHING,
 					NUCLEO);
 		} else {
@@ -976,7 +976,7 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 				pthread_mutex_unlock(&mutex);
 			}
 		}
-		log_debug(ptrLog, "CPU %d hace un signal del Semaforo %s", unCliente->id, semaforo->nombre);
+		log_debug(ptrLog, "CPU %d hace un signal para PCB %d del Semaforo %s", unCliente->id, unCliente->pcbId, semaforo->nombre);
 		semaforo->valor++;
 		pthread_mutex_unlock(&mutexSemaforos);
 		free(buffer);
@@ -1100,10 +1100,11 @@ void envioPCBaClienteOcioso(t_clienteCpu *clienteSeleccionado, t_pcb * unPCB) {
 	t_buffer_tamanio* pcbSer = serializar_pcb(unPCB);
 
 
+	log_debug(ptrLog, "Envio PCB %d a la CPU %d", unPCB->pcb_id, clienteSeleccionado->id);
 	pthread_mutex_lock(&mutexListaPCBEjecutando);
+	log_debug(ptrLog, "PCB %d pasa a cola EXECUTE", unPCB->pcb_id);
 	list_add(colaExecute, unPCB);
 	pthread_mutex_unlock(&mutexListaPCBEjecutando);
-	log_debug(ptrLog, "Envio PCB %d a la CPU %d", unPCB->pcb_id, clienteSeleccionado->id);
 	enviarDatos(clienteSeleccionado->socket, pcbSer->buffer, pcbSer->tamanioBuffer, EXECUTE_PCB, NUCLEO);
 	clienteSeleccionado->pcbId = unPCB->pcb_id;
 	clienteSeleccionado->fueAsignado = true;
