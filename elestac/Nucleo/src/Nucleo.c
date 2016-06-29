@@ -452,38 +452,47 @@ void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion) {
 	free(buffer_tamanio);
 }
 
+void aceptarScriptConsola(t_crear_pcb * pcbStruct) {
+	t_pcb *unPcb = crearPCB(pcbStruct->buffer, socketUMC);
+	if (unPcb == NULL) {
+		//Que carajos hace este codigo
+		char* mensajeError = "No habia lugar en swap para guardarlo\0";
+		int bytesEnviados = enviarDatos(pcbStruct->socketConexion, mensajeError, strlen(mensajeError) + 1, ERROR, pcbStruct->id);
+		FD_CLR(pcbStruct->socketConexion, &tempSockets);
+		FD_CLR(pcbStruct->socketConexion, &sockets);
+		finalizarConexionDeUnSocketEnParticular(pcbStruct->socketConexion);
+		//free(buffer);
+		pthread_join(hiloAceptarScriptConsola, NULL);
+		return;
+	}
+
+	/*Definimos la estructura del cliente con su socket y pid asociado*/
+	t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));
+	unCliente->pid = unPcb->pcb_id;
+	unCliente->socket = pcbStruct->socketConexion;
+	unCliente->terminado = false;
+	list_add(listaSocketsConsola, unCliente);
+
+	list_add(colaNew, unPcb);
+	log_debug(ptrLog, "Proceso %d pasa a la cola NEW", unPcb->pcb_id);
+	sem_post(&semNuevoProg);
+
+	pthread_join(hiloAceptarScriptConsola, NULL);
+}
+
 void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 	uint32_t id;
-	t_pcb *unPcb;
 	uint32_t operacion;
 	char* buffer = recibirDatos(socketConexion, &operacion, &id);
 	if (strcmp("ERROR", buffer) == 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos de una Consola");
 	} else {
 		//log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
-
-		unPcb = crearPCB(buffer, socketUMC);
-		if (unPcb == NULL) {
-			//Que carajos hace este codigo
-			char* mensajeError = "No habia lugar en swap para guardarlo\0";
-			int bytesEnviados = enviarDatos(socketConexion, mensajeError, strlen(mensajeError) + 1, ERROR, id);
-			FD_CLR(socketConexion, &tempSockets);
-			FD_CLR(socketConexion, &sockets);
-			finalizarConexionDeUnSocketEnParticular(socketConexion);
-			//free(buffer);
-			return;
-		}
-
-		/*Definimos la estructura del cliente con su socket y pid asociado*/
-		t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));
-		unCliente->pid = unPcb->pcb_id;
-		unCliente->socket = socketConexion;
-		unCliente->terminado = false;
-		list_add(listaSocketsConsola, unCliente);
-
-		list_add(colaNew, unPcb);
-		log_debug(ptrLog, "Proceso %d pasa a la cola NEW", unPcb->pcb_id);
-		sem_post(&semNuevoProg);
+		t_crear_pcb * crearPCB = malloc(sizeof(int) + sizeof(uint32_t) + strlen(buffer) + 1);
+		crearPCB->id = id;
+		crearPCB->socketConexion = socketConexion;
+		crearPCB->buffer = buffer;
+		pthread_create(&hiloAceptarScriptConsola, NULL, (void *) aceptarScriptConsola, crearPCB);
 	}
 }
 
