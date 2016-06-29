@@ -628,7 +628,7 @@ void escucharPuertos() {
 							FD_CLR(socketFor, &tempSockets);
 							FD_CLR(socketFor, &sockets);
 							finalizarConexionDeUnSocketEnParticular(socketFor);
-							log_info(ptrLog, "Error al recibir datos de un Socket.");
+							log_info(ptrLog, "Se cerro la conexion con el socket: %i.", socketFor);
 						} else {
 							if (id == CPU) {
 								recibirDatosDeSocketCPU(buffer, socketFor,
