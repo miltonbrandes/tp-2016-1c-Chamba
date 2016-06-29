@@ -1227,6 +1227,7 @@ void* vaciarColaExit() {
 		t_finalizar_programa * finalizarProg = malloc(
 				sizeof(t_finalizar_programa));
 		finalizarProg->programID = aux->pcb_id;
+		pthread_mutex_lock(&recibirDeUMC);
 		if ((enviarOperacion(FINALIZARPROGRAMA, finalizarProg, socketUMC))
 				< 0) {
 			log_error(ptrLog, "No se pueden borrar las estructuras del PCB %d",
@@ -1234,6 +1235,7 @@ void* vaciarColaExit() {
 		}else{
 		 log_info(ptrLog,"Se borraron las estructuras del PCB %d", aux->pcb_id);
 		 }
+		pthread_mutex_unlock(&recibirDeUMC);
 
 		free(finalizarProg);
 		free(aux);
