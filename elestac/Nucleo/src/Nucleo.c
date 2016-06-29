@@ -689,8 +689,7 @@ void borrarPCBDeColaExecuteYMeterEnColaExit(uint32_t pcbId) {
 }
 
 void operacionQuantum(t_clienteCpu* unCliente, char* buffer) {
-	t_pcb* unPCB = deserializar_pcb(buffer); // aca deberia deserializar el pcb mediante lo que lei desde leer.
-
+	t_pcb* unPCB = deserializar_pcb(buffer);
 	pthread_mutex_lock(&mutexListaPCBEjecutando);
 	borrarPCBDeColaExecute(unPCB->pcb_id);
 	pthread_mutex_unlock(&mutexListaPCBEjecutando);
@@ -764,7 +763,7 @@ void operacionEXIT(t_clienteCpu* unCliente, char* buffer) {
 	//log_debug(ptrLog, "CPU %d envía unPCB para desalojar", unCliente->id);
 	t_pcb * unPCB = deserializar_pcb(buffer); //debo deserializar el pcb que me envio la cpu
 
-	char* texto = "Se ha finalizado el programa correctamente";
+	char* texto = "Se ha finalizado el programa correctamente\0";
 
 	mensajesPrograma(unPCB->pcb_id, EXIT, texto);
 
@@ -986,7 +985,6 @@ void operacionesConSemaforos(uint32_t operacion, char* buffer, t_clienteCpu *unC
 
 t_pcb* crearPCB(char* programa, int socket) {
 	log_debug(ptrLog, "Se crea un PCB para el Programa Solicitado.");
-	// lo que esta comentado en esta funcion hay que descomentarlo cuando este hecho el leer y escribir
 	t_metadata_program* datos;
 
 	//Obtengo la metadata utilizando el preprocesador del parser
@@ -998,7 +996,6 @@ t_pcb* crearPCB(char* programa, int socket) {
 	tamanioPCB += tamanioStack * tamanioMarcos;
 	if (datos->cantidad_de_etiquetas == 0
 			&& datos->cantidad_de_funciones == 0) {
-		//No se suma nada
 	} else {
 		tamanioPCB += datos->etiquetas_size;
 	}
@@ -1008,7 +1005,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	pcb->pcb_id = nroProg++;
 	pthread_mutex_unlock(&mutex_pid_counter);
 
-	//log_info(ptrLog, "Solicitamos espacio a UMC para nuevo Proceso AnSISOP");
+
 	t_iniciar_programa * iniciarProg = malloc(
 			(sizeof(uint32_t) * 2) + strlen(programa));
 	iniciarProg->programID = pcb->pcb_id;
@@ -1022,7 +1019,6 @@ t_pcb* crearPCB(char* programa, int socket) {
 	iniciarProg->codigoAnsisop = malloc(strlen(programa) + 1);
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
-	//log_debug(ptrLog, "Enviamos a la UMC el codigo del Programa");
 	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
 	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 
@@ -1058,9 +1054,8 @@ t_pcb* crearPCB(char* programa, int socket) {
 			char* indiceEtiquetas = malloc(datos->etiquetas_size);
 			indiceEtiquetas = datos->etiquetas;
 			pcb->ind_etiq = indiceEtiquetas;
-			//pcb->ind_etiq = datos->etiquetas;
 		} else {
-			//Harcodeo
+
 			pcb->ind_etiq = NULL;
 		}
 		free(datos);

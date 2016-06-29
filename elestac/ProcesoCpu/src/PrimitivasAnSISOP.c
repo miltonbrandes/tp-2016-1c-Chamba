@@ -65,7 +65,6 @@ bool esArgumento(t_nombre_variable identificador_variable){
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	//TODO: ver bien si es tamanioStack - 1 o tamanioStack!!!!!!!!!!
 	if(!esArgumento(identificador_variable)){//si entra a este if es porque es una variable, si no entra es porque es un argumento, me tengo que fijar si es del 0 al 9, no solo del 0
 		log_debug(ptrLog, "Definir variable %c", identificador_variable);
 		t_variable* nuevaVar = malloc(sizeof(t_variable));
@@ -146,7 +145,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
-	//ver bien que deberia devolver aca, como calcular el stack pointer...
 	if(!esArgumento(identificador_variable)){
 		t_variable* variable = malloc(sizeof(t_variable));
 		int i = 0;
@@ -199,13 +197,11 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
-	//uint32_t operacion;
 	//calculo el la posicion de la variable en el stack mediante el desplazamiento
 	t_posicion_stack posicionRet;
 	posicionRet.pagina = (direccion_variable/tamanioPagina);
 	posicionRet.offset = direccion_variable%tamanioPagina;
 	posicionRet.size = TAMANIO_VARIABLE;
-			//((posicionDevolver.pagina-pcb->primerPaginaStack)*tamanioPagina)+(posicionDevolver.pagina*tamanioPagina)+posicionDevolver.offset;
 	t_valor_variable valor = 0;
 	log_debug(ptrLog, "Dereferenciar %d", direccion_variable);
 	t_solicitarBytes* solicitar = malloc(sizeof(t_solicitarBytes));
@@ -286,7 +282,6 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {
-	//uint32_t longitud = strlen(variable) + 1 + 8;
 	uint32_t op = ASIG_VAR_COMPARTIDA;
 	uint32_t id = CPU;
 	log_debug(ptrLog, "Asignar valor compartida. Variable compartida: '%s' - Valor: %d",
@@ -364,14 +359,12 @@ void retornar(t_valor_variable retorno) {
 	t_puntero direcVariable = (retVar->pagina * tamanioPagina) + retVar->offset;
 	//calculo la direccion a la que tengo que retornar mediante la direccion de pagina start y offset que esta en el campo retvar
 	asignar(direcVariable, retorno);
-	//free(retVar);
 	//elimino el contexto actual del indice del stack
 	//Seteo el contexto de ejecucion actual en el anterior
 	pcb->PC =  contextoEjecucionActual->direcretorno;
 	free(contextoEjecucionActual);
 	list_remove(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	pcb->numeroContextoEjecucionActualStack = pcb->numeroContextoEjecucionActualStack -1;
-	//aca me genera dudas donde tengo que guardar la direccion de retorno actual, si en el anterior o en el pc
 	t_stack* contextoEjecNuevo = list_get(pcb->ind_stack, pcb->numeroContextoEjecucionActualStack);
 	log_debug(ptrLog, "Llamada a retornar");
 	return;
@@ -381,15 +374,12 @@ void imprimir(t_valor_variable valor_mostrar) {
 	log_debug(ptrLog,
 			"Envio a Nucleo valor %d para que Consola imprima por pantalla.",
 			valor_mostrar);
-	//char* buffer = malloc(sizeof(t_valor_variable));
 	t_buffer_tamanio*  buff = serializar(valor_mostrar);
 	uint32_t op = IMPRIMIR_VALOR;
 	uint32_t id = CPU;
-	//memcpy(buffer, buff->buffer, buff->tamanioBuffer);
 	int bytesEnviados = enviarDatos(socketNucleo, buff->buffer, buff->tamanioBuffer, op, id);
 	free(buff->buffer);
 	free(buff);
-	//free(buffer);
 }
 
 void imprimirTexto(char* texto) {
@@ -421,7 +411,6 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
 
 void wait(t_nombre_semaforo identificador_semaforo) {
 	char* buffer;
-	//char op;
 	uint32_t op = WAIT;
 	uint32_t id = CPU;
 	uint32_t lon = strlen(identificador_semaforo)+1;
