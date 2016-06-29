@@ -492,6 +492,9 @@ void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 		crearPCB->id = id;
 		crearPCB->socketConexion = socketConexion;
 		crearPCB->buffer = buffer;
+
+//		if (pthread_create(&hiloIO, NULL, hiloPorIO, (void *) entradaSalida) != 0) {
+		pthread_mutex_lock(&recibirDeUMC);
 		pthread_create(&hiloAceptarScriptConsola, NULL, (void *) aceptarScriptConsola, crearPCB);
 	}
 }
@@ -593,7 +596,9 @@ void escucharPuertos() {
 					aceptarConexionEnSocketReceptorConsola(nuevoSocketConexion);
 				}
 			} else if (FD_ISSET(socketUMC, &tempSockets)) {
+				pthread_mutex_lock(&recibirDeUMC);
 				int returnDeUMC = datosEnSocketUMC();
+				pthread_mutex_unlock(&recibirDeUMC);
 				if (returnDeUMC == -1) {
 					//Aca matamos Socket UMC
 					FD_CLR(socketUMC, &sockets);
@@ -1029,6 +1034,7 @@ t_pcb* crearPCB(char* programa, int socket) {
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
 	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
+	pthread_mutex_unlock(&recibirDeUMC);
 	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 
 	if ((nuevoProgEnUMC->primerPaginaDeProc) == -1) {

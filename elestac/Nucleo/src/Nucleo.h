@@ -37,6 +37,7 @@ pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexListaPCBEjecutando = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexVariablesCompartidas = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexSemaforos = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t recibirDeUMC = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_t hiloAceptarScriptConsola;
 
