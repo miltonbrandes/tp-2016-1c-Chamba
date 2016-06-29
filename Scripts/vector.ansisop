@@ -1,7 +1,7 @@
 #!/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/Consola
 begin
-
-variables a,b,c,d,e,i
+#un vector de 5 posiciones
+variables a, b, c, d, e, i
 	#No inicializo las primeras 5 variables (vector) para tener elementos aleatorios
 	#i va a ser mi iterador, me interesa que empieze en 0
 	i=0
@@ -20,5 +20,4 @@ variables a,b,c,d,e,i
 	#Final del bucle
 	textPrint Fin
 end
-
 

@@ -80,5 +80,3 @@ variables x,y,A
 	A <- mcd x,y
 	print A
 end
-
-

@@ -1,7 +1,7 @@
-#!/usr/bin/ansisop
+#!/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/Consola
 begin
 	goto Etiqueta19
-end	
+end
 
 :Etiqueta1
 :Etiqueta2
@@ -32,3 +32,4 @@ end
 :Etiqueta27
 textPrint Alfin entre!
 end
+

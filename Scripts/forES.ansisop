@@ -1,13 +1,13 @@
 #!/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/Consola
+#Alliance - S4
 
 begin
 variables f, i, t
 
 	#`f`: Hasta donde contar
 	f=20
-	i=0	
 	:inicio
-	
+
 	#`i`: Iterador
 	i=i+1
 	

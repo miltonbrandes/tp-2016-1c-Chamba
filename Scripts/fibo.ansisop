@@ -1,5 +1,4 @@
 #!/home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/Consola
-
 begin
 variables x
 	x <- fibo 50
