@@ -599,7 +599,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 			if (entradasTLB > 0 && entradaTLB != -1) {
 				log_info(ptrLog,
 						"La Pagina %d del Proceso %d esta en la TLB (TLB HIT)",
-						pagina, cpu->procesoActivo);
+						registro->paginaProceso, cpu->procesoActivo);
 
 				t_tlb * registroTLB = obtenerYActualizarRegistroTLB(entradaTLB);
 				t_frame * frame = list_get(frames, registroTLB->numFrame);
@@ -612,15 +612,15 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
-					if (entradasTLB == -1) {
+					if (entradaTLB == -1) {
 						log_info(ptrLog,
 								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 								registro->paginaProceso, cpu->procesoActivo);
 					}
 
 					log_info(ptrLog,
-							"La pagina %d del Proceso %d esta en UMC (TLB MISS)",
-							pagina, cpu->procesoActivo);
+							"La pagina %d del Proceso %d esta en UMC",
+							registro->paginaProceso, cpu->procesoActivo);
 					t_frame * frame = list_get(frames, registro->frame);
 
 					int bufferAsInt = atoi(buffer);
@@ -636,14 +636,14 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 					registro->esStack = 1;
 				} else {
 
-					if (entradasTLB == -1) {
+					if (entradaTLB == -1) {
 						log_info(ptrLog,
 								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 								registro->paginaProceso, cpu->procesoActivo);
 					}
 					log_info(ptrLog,
 							"La pag %d del PID %d no esta en UMC, se la pido a Swap (PAGE FAULT)",
-							pagina, cpu->procesoActivo);
+							registro->paginaProceso, cpu->procesoActivo);
 					t_frame * frameSolicitado = solicitarPaginaASwap(cpu,
 							pagina);
 
@@ -742,7 +742,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
 
-						if (entradasTLB == -1) {
+						if (entradaTLB == -1) {
 							log_info(ptrLog,
 									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 									registro->paginaProceso,
@@ -771,7 +771,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 						registro->frame = frame->numeroFrame;
 						registro->bitDeReferencia = 1;
 					} else {
-						if (entradasTLB == -1) {
+						if (entradaTLB == -1) {
 							log_info(ptrLog,
 									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 									registro->paginaProceso,

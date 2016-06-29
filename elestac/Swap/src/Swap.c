@@ -467,8 +467,8 @@ int asignarMemoria(uint32_t pid, uint32_t cantidad_paginas,
 				"Necesito desfragmentar / compactar memoria para alojar el Proceso %d",
 				pid);
 		desfragmentar(listaDeOcupados, listaDeLibres);
-		hueco = encontrarHueco(listaDeLibres, cantidad_paginas);
 		usleep(retardoCompactacion * 1000);
+		hueco = encontrarHueco(listaDeLibres, cantidad_paginas);
 	}
 
 	log_info(ptrLog, "Comienzo a ocupar el espacio para el Proceso %d", pid);
