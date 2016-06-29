@@ -797,7 +797,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 		strcat(instruccionPosta, aux);
 		free(aux);
 	}
-	log_info(ptrLog, "CPU %d pidio la instruccion: %s", cpu->procesoActivo, instruccionPosta);
+	log_info(ptrLog, "CPU %d pidio la instruccion: %s", cpu->numCpu, instruccionPosta);
 	t_instruccion * instruccion = malloc(strlen(instruccionPosta) + 1);
 	instruccion->instruccion = instruccionPosta;
 	t_buffer_tamanio * buffer_tamanio;
