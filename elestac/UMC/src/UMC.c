@@ -611,7 +611,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
-					if (entradaTLB == -1) {
+					if (entradaTLB == -1 && entradasTLB > 0) {
 						log_info(ptrLog,
 								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 								registro->paginaProceso, cpu->procesoActivo);
@@ -741,7 +741,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
 
-						if (entradaTLB == -1) {
+						if (entradaTLB == -1 && entradasTLB > 0) {
 							log_info(ptrLog,
 									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 									registro->paginaProceso,
