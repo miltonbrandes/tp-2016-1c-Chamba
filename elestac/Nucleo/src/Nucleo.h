@@ -37,9 +37,6 @@ pthread_mutex_t mutex_cpu = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexListaPCBEjecutando = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexVariablesCompartidas = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexSemaforos = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t recibirDeUMC = PTHREAD_MUTEX_INITIALIZER;
-
-pthread_t hiloAceptarScriptConsola;
 
 pthread_t hiloCpuOciosa;
 pthread_t threadSocket;
@@ -110,10 +107,5 @@ void recibirDatosDeSocketCPU(char * buffer, int socketFor, uint32_t operacion);
 void* hiloPCBaFinalizar();
 void* vaciarColaExit();
 
-typedef struct{
-	int socketConexion;
-	uint32_t id;
-	char * buffer;
-} t_crear_pcb;
 
 #endif /* SRC_NUCLEO_H_ */

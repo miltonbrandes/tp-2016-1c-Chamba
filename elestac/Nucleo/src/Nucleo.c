@@ -386,6 +386,7 @@ void operacionesConVariablesCompartidas(char operacion, char *buffer, uint32_t s
 			free(varCompartida);
 			free(buffer);
 		} else {
+			enviarDatos(socketCliente, 0, sizeof(uint32_t), NOTHING, NUCLEO);
 			log_error(ptrLog, "No existe la variable compartida");
 			free(valorEnBuffer);
 			free(varCompartida);
@@ -452,50 +453,38 @@ void aceptarConexionEnSocketReceptorCPU(int nuevoSocketConexion) {
 	free(buffer_tamanio);
 }
 
-void aceptarScriptConsola(t_crear_pcb * pcbStruct) {
-	t_pcb *unPcb = crearPCB(pcbStruct->buffer, socketUMC);
-	if (unPcb == NULL) {
-		//Que carajos hace este codigo
-		char* mensajeError = "No habia lugar en swap para guardarlo\0";
-		int bytesEnviados = enviarDatos(pcbStruct->socketConexion, mensajeError, strlen(mensajeError) + 1, ERROR, pcbStruct->id);
-		FD_CLR(pcbStruct->socketConexion, &tempSockets);
-		FD_CLR(pcbStruct->socketConexion, &sockets);
-		finalizarConexionDeUnSocketEnParticular(pcbStruct->socketConexion);
-		//free(buffer);
-		pthread_join(hiloAceptarScriptConsola, NULL);
-		return;
-	}
-
-	/*Definimos la estructura del cliente con su socket y pid asociado*/
-	t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));
-	unCliente->pid = unPcb->pcb_id;
-	unCliente->socket = pcbStruct->socketConexion;
-	unCliente->terminado = false;
-	list_add(listaSocketsConsola, unCliente);
-
-	list_add(colaNew, unPcb);
-	log_debug(ptrLog, "Proceso %d pasa a la cola NEW", unPcb->pcb_id);
-	sem_post(&semNuevoProg);
-
-	pthread_join(hiloAceptarScriptConsola, NULL);
-}
-
 void aceptarConexionEnSocketReceptorConsola(int socketConexion) {
 	uint32_t id;
+	t_pcb *unPcb;
 	uint32_t operacion;
 	char* buffer = recibirDatos(socketConexion, &operacion, &id);
 	if (strcmp("ERROR", buffer) == 0) {
 		log_info(ptrLog, "Ocurrio un error al recibir datos de una Consola");
 	} else {
 		//log_info(ptrLog, "Recibi lo siguiente de consola: %s", buffer);
-		t_crear_pcb * crearPCB = malloc(sizeof(int) + sizeof(uint32_t) + strlen(buffer) + 1);
-		crearPCB->id = id;
-		crearPCB->socketConexion = socketConexion;
-		crearPCB->buffer = buffer;
 
-//		if (pthread_create(&hiloIO, NULL, hiloPorIO, (void *) entradaSalida) != 0) {
-		pthread_mutex_lock(&recibirDeUMC);
-		pthread_create(&hiloAceptarScriptConsola, NULL, (void *) aceptarScriptConsola, crearPCB);
+		unPcb = crearPCB(buffer, socketUMC);
+		if (unPcb == NULL) {
+			//Que carajos hace este codigo
+			char* mensajeError = "No habia lugar en swap para guardarlo\0";
+			int bytesEnviados = enviarDatos(socketConexion, mensajeError, strlen(mensajeError) + 1, ERROR, id);
+			FD_CLR(socketConexion, &tempSockets);
+			FD_CLR(socketConexion, &sockets);
+			finalizarConexionDeUnSocketEnParticular(socketConexion);
+			//free(buffer);
+			return;
+		}
+
+		/*Definimos la estructura del cliente con su socket y pid asociado*/
+		t_socket_pid* unCliente = malloc(sizeof(t_socket_pid));
+		unCliente->pid = unPcb->pcb_id;
+		unCliente->socket = socketConexion;
+		unCliente->terminado = false;
+		list_add(listaSocketsConsola, unCliente);
+
+		list_add(colaNew, unPcb);
+		log_debug(ptrLog, "Proceso %d pasa a la cola NEW", unPcb->pcb_id);
+		sem_post(&semNuevoProg);
 	}
 }
 
@@ -596,9 +585,7 @@ void escucharPuertos() {
 					aceptarConexionEnSocketReceptorConsola(nuevoSocketConexion);
 				}
 			} else if (FD_ISSET(socketUMC, &tempSockets)) {
-				pthread_mutex_lock(&recibirDeUMC);
 				int returnDeUMC = datosEnSocketUMC();
-				pthread_mutex_unlock(&recibirDeUMC);
 				if (returnDeUMC == -1) {
 					//Aca matamos Socket UMC
 					FD_CLR(socketUMC, &sockets);
@@ -1034,7 +1021,6 @@ t_pcb* crearPCB(char* programa, int socket) {
 	strcpy(iniciarProg->codigoAnsisop, programa);
 
 	char * rtaEnvio = enviarOperacion(NUEVOPROGRAMA, iniciarProg, socket);
-	pthread_mutex_unlock(&recibirDeUMC);
 	t_nuevo_prog_en_umc* nuevoProgEnUMC = deserializarNuevoProgEnUMC(rtaEnvio);
 
 	if ((nuevoProgEnUMC->primerPaginaDeProc) == -1) {
@@ -1227,7 +1213,6 @@ void* vaciarColaExit() {
 		t_finalizar_programa * finalizarProg = malloc(
 				sizeof(t_finalizar_programa));
 		finalizarProg->programID = aux->pcb_id;
-		pthread_mutex_lock(&recibirDeUMC);
 		if ((enviarOperacion(FINALIZARPROGRAMA, finalizarProg, socketUMC))
 				< 0) {
 			log_error(ptrLog, "No se pueden borrar las estructuras del PCB %d",
@@ -1235,7 +1220,6 @@ void* vaciarColaExit() {
 		}else{
 		 log_info(ptrLog,"Se borraron las estructuras del PCB %d", aux->pcb_id);
 		 }
-		pthread_mutex_unlock(&recibirDeUMC);
 
 		free(finalizarProg);
 		free(aux);
