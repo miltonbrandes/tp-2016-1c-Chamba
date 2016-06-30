@@ -139,7 +139,9 @@ void reservarMemoria(int cantidadMarcos, int tamanioMarco) {
 }
 
 void enviarMensajeASwap(char *mensajeSwap, int tamanioMensaje, int operacion) {
+	pthread_mutex_lock(&comunicacionConSwap);
 	enviarDatos(socketSwap, mensajeSwap, tamanioMensaje, operacion, UMC);
+	pthread_mutex_unlock(&comunicacionConSwap);
 }
 
 //Metodos para Iniciar valores de la UMC
@@ -611,7 +613,7 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 			} else {
 				usleep(retardo * 1000);
 				if (registro->estaEnUMC == 1) {
-					if (entradaTLB == -1 && entradasTLB > 0) {
+					if (entradaTLB == -1) {
 						log_info(ptrLog,
 								"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 								registro->paginaProceso, cpu->procesoActivo);
@@ -741,7 +743,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 					usleep(retardo * 1000);
 					if (registro->estaEnUMC == 1) {
 
-						if (entradaTLB == -1 && entradasTLB > 0) {
+						if (entradaTLB == -1) {
 							log_info(ptrLog,
 									"La Pag %d del PID %d no esta en la TLB, busco en la TP (TLB MISS)",
 									registro->paginaProceso,
@@ -1061,18 +1063,18 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg) {
 	t_buffer_tamanio * iniciarProgSerializado = serializarCheckEspacio(check);
 	free(check);
 
-	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d",
-			iniciarProg->programID);
-	enviarMensajeASwap(iniciarProgSerializado->buffer,
-			iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA); // enviar tmb el PID
+	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
+	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA);
 	free(iniciarProgSerializado->buffer);
 	free(iniciarProgSerializado);
 	uint32_t operacion;
 	uint32_t id;
-	log_info(ptrLog,
-			"Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.",
-			iniciarProg->programID);
+	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
+
+	pthread_mutex_lock(&comunicacionConSwap);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
+	pthread_mutex_unlock(&comunicacionConSwap);
+
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
 	free(hayEspacio);
 	return pudoSwap;
