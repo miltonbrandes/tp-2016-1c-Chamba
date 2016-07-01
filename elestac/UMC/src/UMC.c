@@ -1064,15 +1064,18 @@ uint32_t checkDisponibilidadPaginas(t_iniciar_programa * iniciarProg) {
 	free(check);
 
 	log_info(ptrLog, "Envio a Swap Cantidad de Paginas requeridas y PID: %d", iniciarProg->programID);
-	enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA);
-	free(iniciarProgSerializado->buffer);
-	free(iniciarProgSerializado);
+	//enviarMensajeASwap(iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA);
+	//;
 	uint32_t operacion;
 	uint32_t id;
 	log_info(ptrLog, "Espero que Swap me diga si puede o no alojar el Proceso con PID: %d.", iniciarProg->programID);
 
 	pthread_mutex_lock(&comunicacionConSwap);
+	enviarDatos(socketSwap, iniciarProgSerializado->buffer, iniciarProgSerializado->tamanioBuffer, NUEVOPROGRAMA, UMC);
+	free(iniciarProgSerializado->buffer);
+	free(iniciarProgSerializado);
 	char* hayEspacio = recibirDatos(socketSwap, &operacion, &id);
+	usleep(30);
 	pthread_mutex_unlock(&comunicacionConSwap);
 
 	uint32_t pudoSwap = deserializarUint32(hayEspacio);
