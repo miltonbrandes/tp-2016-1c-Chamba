@@ -425,7 +425,7 @@ void enviarPaginasASwap(t_iniciar_programa * iniciarProg) {
 				escribirEnSwap, marcosSize);
 		char * resultadoSwap = enviarYRecibirMensajeSwap(buffer_tamanio,
 				ESCRIBIR);
-
+		usleep(10);
 		free(resultadoSwap);
 		free(escribirEnSwap->contenido);
 		free(escribirEnSwap);
@@ -1256,7 +1256,7 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid,
 	if (!strcmp(algoritmoReemplazo, "CLOCK")) {
 		return actualizarFramesConClock(paginaSwap, pid, pagina);
 	}
-	if (!strcmp(algoritmoReemplazo, "CLOCK_MODIFICADO")) {
+	if (!strcmp(algoritmoReemplazo, "CLOCK-M")) {
 		return actualizarFramesConClockModificado(paginaSwap, pid, pagina);
 	} else {
 		log_info(ptrLog, "Algoritmo de reemplazo no reconocido");
