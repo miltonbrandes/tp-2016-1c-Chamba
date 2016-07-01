@@ -683,10 +683,20 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 		} else {
 			log_error(ptrLog, "El Proceso %d no tiene pagina nro %d",
 					cpu->procesoActivo, pagina);
+			uint32_t successInt = ERROR;
+			t_buffer_tamanio * buffer_tamanio = serializarUint32(
+					successInt);
+			enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
+			return;
 		}
 	} else {
 		log_error(ptrLog, "El Proceso %d no tiene Tabla de Paginas",
 				cpu->procesoActivo);
+		uint32_t successInt = ERROR;
+		t_buffer_tamanio * buffer_tamanio = serializarUint32(
+				successInt);
+		enviarACPUQueDebeFinalizarProceso(cpu, buffer_tamanio);
+		return;
 	}
 }
 
@@ -706,8 +716,7 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 		uint32_t offset, uint32_t operacion) {
 	uint32_t offsetMemcpy = 0;
 	t_list * datosParaCPU = list_create();
-	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
-			cpu->procesoActivo);
+	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(cpu->procesoActivo);
 	if (tablaDeProceso != NULL) {
 		t_list * listaRegistros = registrosABuscarParaPeticion(tablaDeProceso,
 				pagina, start, offset);
@@ -827,7 +836,29 @@ void enviarDatoACPU(t_cpu * cpu, uint32_t pagina, uint32_t start,
 				free(auxiliar);
 			}
 			free(listaRegistros);
+		}else{
+			char * instrFinalizar = "FINALIZAR";
+			t_instruccion * instruccion = malloc(
+					strlen(instrFinalizar) + 1);
+			instruccion->instruccion = instrFinalizar;
+			t_buffer_tamanio * buffer_tamanio =
+					serializarInstruccion(instruccion,
+							strlen(instrFinalizar) + 1);
+			enviarACPUQueDebeFinalizarProceso(cpu,
+					buffer_tamanio);
+			return;
 		}
+	}else{
+		char * instrFinalizar = "FINALIZAR";
+		t_instruccion * instruccion = malloc(
+				strlen(instrFinalizar) + 1);
+		instruccion->instruccion = instrFinalizar;
+		t_buffer_tamanio * buffer_tamanio =
+				serializarInstruccion(instruccion,
+						strlen(instrFinalizar) + 1);
+		enviarACPUQueDebeFinalizarProceso(cpu,
+				buffer_tamanio);
+		return;
 	}
 	char *instruccionPosta = calloc(list_size(datosParaCPU), 50);
 	for (i = 0; i < list_size(datosParaCPU); i++) {
@@ -885,69 +916,90 @@ t_list * registrosABuscarParaPeticion(t_tabla_de_paginas * tablaDeProceso,
 	t_list * registros = list_create();
 
 	//Armo el primer request
-	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso,
-			pagina);
-	t_auxiliar_registro * auxiliar = malloc(
-			sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t) * 2));
-	auxiliar->registro = registro;
+	t_registro_tabla_de_paginas * registro = buscarPaginaEnTabla(tablaDeProceso, pagina);
 
-	if ((start + offset) <= marcosSize) {
-		//Es solo 1 pagina la que hay que agarrar
-		auxiliar->start = start;
-		auxiliar->offset = offset;
-		start = -1;
-		offset = -1;
-		list_add(registros, auxiliar);
-	} else {
-		auxiliar->start = start;
-		auxiliar->offset = (marcosSize - start);
-		offset = offset - (marcosSize - start);
-		start = 0;
-		list_add(registros, auxiliar);
+	if(registro != NULL) {
+		t_auxiliar_registro * auxiliar = malloc(
+					sizeof(t_registro_tabla_de_paginas) + (sizeof(uint32_t) * 2));
+			auxiliar->registro = registro;
 
-		while ((start + offset) > marcosSize) {
-			pagina++;
-			t_registro_tabla_de_paginas * registroAdicional =
-					buscarPaginaEnTabla(tablaDeProceso, pagina);
-			t_auxiliar_registro * auxiliarAdicional = malloc(
-					sizeof(t_registro_tabla_de_paginas)
-							+ (sizeof(uint32_t) * 2));
-			auxiliarAdicional->registro = registroAdicional;
-			auxiliarAdicional->start = start;
-			auxiliarAdicional->offset = marcosSize;
-			offset = offset - marcosSize;
-			list_add(registros, auxiliarAdicional);
-		}
+			if ((start + offset) <= marcosSize) {
+				//Es solo 1 pagina la que hay que agarrar
+				auxiliar->start = start;
+				auxiliar->offset = offset;
+				start = -1;
+				offset = -1;
+				list_add(registros, auxiliar);
+			} else {
+				auxiliar->start = start;
+				auxiliar->offset = (marcosSize - start);
+				offset = offset - (marcosSize - start);
+				start = 0;
+				list_add(registros, auxiliar);
 
-		if (offset >= 0 && (start + offset) < marcosSize) {
-			pagina++;
-			t_registro_tabla_de_paginas * registroAdicional2 =
-					buscarPaginaEnTabla(tablaDeProceso, pagina);
-			t_auxiliar_registro * auxiliarAdicional2 = malloc(
-					sizeof(t_registro_tabla_de_paginas)
-							+ (sizeof(uint32_t) * 2));
-			auxiliarAdicional2->registro = registroAdicional2;
-			auxiliarAdicional2->start = 0;
-			//if(offset == 0) {
-			auxiliarAdicional2->offset = offset;
-			/*}else{
-			 auxiliarAdicional2->offset = offset;
-			 }*/
-			list_add(registros, auxiliarAdicional2);
-		}
+				while ((start + offset) > marcosSize) {
+					pagina++;
+					t_registro_tabla_de_paginas * registroAdicional =
+							buscarPaginaEnTabla(tablaDeProceso, pagina);
+					if(registroAdicional != NULL) {
+						t_auxiliar_registro * auxiliarAdicional = malloc(
+								sizeof(t_registro_tabla_de_paginas)
+										+ (sizeof(uint32_t) * 2));
+						auxiliarAdicional->registro = registroAdicional;
+						auxiliarAdicional->start = start;
+						auxiliarAdicional->offset = marcosSize;
+						offset = offset - marcosSize;
+						list_add(registros, auxiliarAdicional);
+					}else{
+						return NULL;
+					}
+				}
+
+				if (offset >= 0 && (start + offset) < marcosSize) {
+					pagina++;
+					t_registro_tabla_de_paginas * registroAdicional2 =
+							buscarPaginaEnTabla(tablaDeProceso, pagina);
+					if(registroAdicional2 != NULL) {
+						t_auxiliar_registro * auxiliarAdicional2 = malloc(
+								sizeof(t_registro_tabla_de_paginas)
+										+ (sizeof(uint32_t) * 2));
+						auxiliarAdicional2->registro = registroAdicional2;
+						auxiliarAdicional2->start = 0;
+						//if(offset == 0) {
+						auxiliarAdicional2->offset = offset;
+						/*}else{
+						 auxiliarAdicional2->offset = offset;
+						 }*/
+						list_add(registros, auxiliarAdicional2);
+					}else{
+						return NULL;
+					}
+				}
+			}
+
+			return registros;
+	}else{
+		return NULL;
 	}
 
-	return registros;
 }
 
 t_registro_tabla_de_paginas * buscarPaginaEnTabla(t_tabla_de_paginas * tabla,
 		uint32_t pagina) {
 	int i;
 	for (i = 0; i < list_size(tabla->tablaDePaginas); i++) {
-		t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas,
-				i);
-		if (registro->paginaProceso == pagina) {
-			return registro;
+		if(tabla != NULL) {
+			t_registro_tabla_de_paginas * registro = list_get(tabla->tablaDePaginas,
+					i);
+			if(registro != NULL) {
+				if (registro->paginaProceso == pagina) {
+					return registro;
+				}
+			}else{
+				return NULL;
+			}
+		}else{
+			return NULL;
 		}
 	}
 	return NULL;
@@ -1270,19 +1322,25 @@ t_frame * agregarPaginaAUMC(t_pagina_de_swap * paginaSwap, uint32_t pid,
 }
 
 int procesoPuedeGuardarFrameSinDesalojar(uint32_t pid) {
-	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	if (list_size(tablaDeProceso->paginasEnUMC) < marcoXProc) {
-		return 1;
-	} else {
+	if(tablaDeProceso != NULL) {
+		if (list_size(tablaDeProceso->paginasEnUMC) < marcoXProc) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}else{
 		return 0;
 	}
 }
 
 int procesoTieneAlgunaPaginaEnUMC(uint32_t pid) {
-	int framesOcupados = 0, i;
 	t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-	return list_size(tablaDeProceso->paginasEnUMC) > 0;
+	if(tablaDeProceso != NULL) {
+		return list_size(tablaDeProceso->paginasEnUMC) > 0;
+	}else{
+		return 0;
+	}
 }
 
 t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
@@ -1311,15 +1369,23 @@ t_frame * actualizarFramesConClock(t_pagina_de_swap * paginaSwap, uint32_t pid,
 			if (procesoTieneAlgunaPaginaEnUMC(pid)) {
 				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
 						pid);
-				return desalojarFrameConClock(paginaSwap, pid, pagina,
-						tablaDeProceso);
+				if(tablaDeProceso != NULL) {
+					return desalojarFrameConClock(paginaSwap, pid, pagina,
+							tablaDeProceso);
+				}else{
+					return NULL;
+				}
 			} else {
 				return NULL;
 			}
 		}
 	} else {
 		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-		return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+		if(tablaDeProceso != NULL) {
+			return desalojarFrameConClock(paginaSwap, pid, pagina, tablaDeProceso);
+		}else{
+			return NULL;
+		}
 	}
 }
 
@@ -1413,16 +1479,24 @@ t_frame * actualizarFramesConClockModificado(t_pagina_de_swap * paginaSwap,
 			if (procesoTieneAlgunaPaginaEnUMC(pid)) {
 				t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(
 						pid);
-				return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
-						tablaDeProceso);
+				if(tablaDeProceso != NULL) {
+					return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
+							tablaDeProceso);
+				}else{
+					return NULL;
+				}
 			} else {
 				return NULL;
 			}
 		}
 	} else {
 		t_tabla_de_paginas * tablaDeProceso = buscarTablaDelProceso(pid);
-		return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
-				tablaDeProceso);
+		if(tablaDeProceso != NULL) {
+			return desalojarFrameConClockModificado(paginaSwap, pid, pagina,
+					tablaDeProceso);
+		}else{
+			return NULL;
+		}
 	}
 }
 
