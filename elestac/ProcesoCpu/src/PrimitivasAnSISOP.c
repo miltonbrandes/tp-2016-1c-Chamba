@@ -139,6 +139,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			}
 			//calculo el desplazamiento desde la primer pagina del stack hasta donde arranca mi nueva variable
 			uint32_t posicionRet = (nuevoArg->pagina * tamanioPagina) + nuevoArg->offset;
+			log_debug(ptrLog, "%c %i %i %i", identificador_variable, nuevoArg->pagina, nuevoArg->offset, nuevoArg->size);
 			return posicionRet;
 		}
 	}

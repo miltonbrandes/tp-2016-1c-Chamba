@@ -18,6 +18,6 @@ function g
 	io HDD1 1
 	a=$0+1
 	print a
-	t <- f a
+	r <- f a
 end
 
