@@ -89,10 +89,10 @@ void revisarSigusR1(int signo) {
 		char * buffer = "SIGUSR1";
 		uint32_t tam = 8;
 		log_info(ptrLog, "Se recibe SIGUSR1");
-		if (operacion == NOTHING) {
-			finalizarConexion(socketNucleo);
-			return;
-		}
+//		if (operacion == NOTHING) {
+//			finalizarConexion(socketNucleo);
+//			return;
+//		}
 		cerrarCPU = true;
 		enviarDatos(socketNucleo, buffer, tam, SIGUSR, CPU);
 		log_debug(ptrLog, "Termina la rafaga actual y luego se cierra esta CPU.");
