@@ -53,25 +53,6 @@ cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/makefile /home/utnso/tp-
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/UMC/src/subdir.mk /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/src/
 
-#Libraries
-cd /home/utnso/tp-2016-1c-Chamba/so-commons-library
-sudo make clean
-sudo make all
-sudo make install
-
-cd /home/utnso/tp-2016-1c-Chamba/elestac/
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/
-
-cd /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/
-sudo make clean
-sudo make all
-sudo make install
-
-cd /home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser 
-sudo make all
-ls build/
-sudo make install
-
 cd /home/utnso/tp-2016-1c-Chamba/elestac/
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser/build/
 
