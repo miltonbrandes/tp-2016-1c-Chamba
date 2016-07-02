@@ -742,6 +742,10 @@ void escribirDatoDeCPU(t_cpu * cpu, uint32_t pagina, uint32_t offset,
 	}
 }
 
+int estaElProcesoEnUMC(uint32_t pid) {
+	return buscarTablaDelProceso(pid) != NULL;
+}
+
 void limpiarInstruccion(char * instruccion) {
 	char *p2 = instruccion;
 	while (*instruccion != '\0') {
@@ -924,36 +928,37 @@ t_frame * solicitarPaginaASwap(t_cpu * cpu, uint32_t pagina) {
 	t_solicitud_pagina * solicitudPagina = malloc(sizeof(t_solicitud_pagina));
 	solicitudPagina->pid = cpu->procesoActivo;
 	solicitudPagina->paginaProceso = pagina;
-	t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(
-			solicitudPagina);
-	char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, LEER);
-	free(solicitudPagina);
-	free(buffer_tamanio->buffer);
-	free(buffer_tamanio);
-	if (strcmp(mensajeDeSwap, "ERROR") == 0) {
-		log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
-		printf("Ocurrio un error al Solicitar una Pagina a Swap\n");
-		return NULL;
-	} else {
-		t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
-		free(mensajeDeSwap);
-		log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d.", pagina,
-				cpu->procesoActivo);
-		t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo,
-				pagina);
-
-		if (frame != NULL) {
-			log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
-			free(paginaSwap);
-			return frame;
-		} else {
-			log_info(ptrLog,
-					"No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.",
-					cpu->procesoActivo);
-			printf(
-					"No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.\n",
-					cpu->procesoActivo);
+	if(estaElProcesoEnUMC(cpu->procesoActivo)) {
+		t_buffer_tamanio * buffer_tamanio = serializarSolicitudPagina(solicitudPagina);
+		char * mensajeDeSwap = enviarYRecibirMensajeSwap(buffer_tamanio, LEER);
+		free(solicitudPagina);
+		free(buffer_tamanio->buffer);
+		free(buffer_tamanio);
+		if (strcmp(mensajeDeSwap, "ERROR") == 0) {
+			log_error(ptrLog, "Ocurrio un error al Solicitar una Pagina a Swap");
+			printf("Ocurrio un error al Solicitar una Pagina a Swap\n");
 			return NULL;
+		} else {
+			t_pagina_de_swap * paginaSwap = deserializarPaginaDeSwap(mensajeDeSwap);
+			free(mensajeDeSwap);
+			log_info(ptrLog, "Swap envia la Pagina %d del Proceso %d.", pagina,
+					cpu->procesoActivo);
+			t_frame * frame = agregarPaginaAUMC(paginaSwap, cpu->procesoActivo,
+					pagina);
+
+			if (frame != NULL) {
+				log_info(ptrLog, "Se agrego la pagina %i a umc", pagina);
+				free(paginaSwap);
+				return frame;
+			} else {
+				log_info(ptrLog,
+						"No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.",
+						cpu->procesoActivo);
+				printf(
+						"No hay lugar para guardar una pagina del Proceso %d. Se finaliza el Proceso.\n",
+						cpu->procesoActivo);
+				return NULL;
+			}
 		}
 	}
 	return NULL;
