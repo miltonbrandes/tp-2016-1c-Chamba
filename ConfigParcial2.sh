@@ -32,6 +32,25 @@ sudo rm objects.mk
 cd /home/utnso/tp-2016-1c-Chamba/elestac/UMC/Debug/src/
 sudo rm subdir.mk
 
+#Libraries
+cd /home/utnso/tp-2016-1c-Chamba/so-commons-library
+sudo make clean
+sudo make all
+sudo make install
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/utnso/tp-2016-1c-Chamba/so-commons-library/src/build/
+
+cd /home/utnso/tp-2016-1c-Chamba/elestac/sockets/Debug/
+sudo make clean
+sudo make all
+sudo make install
+
+cd /home/utnso/tp-2016-1c-Chamba/ansisop-parser/parser 
+sudo make all
+ls build/
+sudo make install
+
 #Ahora agrego los makefile modificados que tenemos en la otra carpeta
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/makefile /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
 cp -i /home/utnso/tp-2016-1c-Chamba/ServerMakefiles/Consola/objects.mk /home/utnso/tp-2016-1c-Chamba/elestac/Consola/Debug/
