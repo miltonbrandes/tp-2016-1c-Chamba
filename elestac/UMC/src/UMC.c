@@ -281,7 +281,7 @@ void manejarConexionesRecibidas() {
 	pthread_create(&hiloNucleo, NULL, (void *) recibirPeticionesNucleo, NULL);
 	//recibirPeticionesNucleo();
 	log_info(ptrLog, "Esperando conexiones CPU");
-	printf("Esperando conexiones CPU\n");
+//	printf("Esperando conexiones CPU\n");
 	pthread_create(&hiloCpu, NULL, (void *) aceptarConexionCpu, NULL);
 	//aceptarConexionCpu();
 
@@ -295,8 +295,8 @@ void recibirPeticionesNucleo() {
 
 	while (1) {
 
-		log_info(ptrLog, "Esperando Peticion de Nucleo");
-		printf("Esperando conexiones CPU\n");
+		log_info(ptrLog, "Esperando Peticion de CPU");
+//		printf("Esperando conexiones CPU\n");
 		char* mensajeRecibido = recibirDatos(socketClienteNucleo, &operacion,
 				&id);
 
@@ -541,7 +541,7 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 
 	while (1) {
 		log_debug(ptrLog, "Esperando solicitud de CPU %d", cpuEnAccion->numCpu);
-		printf("Esperando solicitud de CPU %d\n", cpuEnAccion->numCpu);
+//		printf("Esperando solicitud de CPU %d\n", cpuEnAccion->numCpu);
 		char* mensajeRecibido = recibirDatos(socketCpu, &operacion, &id);
 
 		if (strcmp(mensajeRecibido, "ERROR") == 0) {
@@ -566,11 +566,9 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 						"CPU %d solicita lectura -> Proceso Activo Actual %d - Pagina %d - Start %d - Offset %d",
 						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina,
 						start, offset);
-				printf(
-						"CPU %d solicita lectura -> Proceso Activo Actual %d - Pagina %d - Start %d - Offset %d\n",
-						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina,
-						start, offset);
-
+//				printf(
+//						"CPU %d solicita lectura -> Proceso Activo Actual %d - Pagina %d - Start %d - Offset %d\n",
+//						cpuEnsssssss
 				enviarDatoACPU(cpuEnAccion, pagina, start, offset, operacion);
 
 				free(leer);
@@ -586,10 +584,10 @@ void recibirPeticionesCpu(t_cpu * cpuEnAccion) {
 						"CPU %d solicita escritura -> Proceso Activo Actual %d - Pagina %d - Tamanio %d - Offset %d - Buffer: %s",
 						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina,
 						tamanio, offset, buffer);
-				printf(
-						"CPU %d solicita escritura -> Proceso Activo Actual %d - Pagina %d - Tamanio %d - Offset %d - Buffer: %s\n",
-						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina,
-						tamanio, offset, buffer);
+//				printf(
+//						"CPU %d solicita escritura -> Proceso Activo Actual %d - Pagina %d - Tamanio %d - Offset %d - Buffer: %s\n",
+//						cpuEnAccion->numCpu, cpuEnAccion->procesoActivo, pagina,
+//						tamanio, offset, buffer);
 
 				escribirDatoDeCPU(cpuEnAccion, pagina, offset, tamanio, buffer);
 
